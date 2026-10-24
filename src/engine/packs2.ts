@@ -294,7 +294,7 @@ export const creator: Pack = {
     { title: 'Asset lineage', detail: 'Each published piece points back to its brief, shoot and final cut.' },
     { title: 'Format scorecards', detail: 'Performance is normalised per channel and format so comparisons are honest.' },
   ],
-  integrations: ['Instagram', 'YouTube', 'TikTok', 'Notion', 'Figma', 'Buffer'],
+  integrations: ['Instagram', 'YouTube', 'TikTok', 'Notion', 'Buffer'],
   nonGoals: ['Non-linear video editing', 'Stock asset licensing', 'Influencer payments'],
   principles: ['The calendar is the truth', 'An asset without lineage is a liability', 'Measure the format, not the post'],
   moodWords: ['expressive', 'editorial', 'fast'],

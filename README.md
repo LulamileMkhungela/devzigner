@@ -10,6 +10,26 @@ seed + archetype + genome  ──►  brief · roadmap · schema · tokens · 18
 
 ---
 
+## The workspace
+
+The app is a five-phase product workspace. Each phase is a page, and each page is a numbered step rail — the same five steps from start to finish:
+
+| Phase | Page | What it holds |
+| --- | --- | --- |
+| **Product** | `/` | Product vision (problems, personas, differentiators, success measures, principles, voice, non-goals) and the roadmap. Collapsible cards throughout, engine log at the bottom. |
+| **Data Shape** | `/data-shape` | Entities in a two-column grid with fields and seeded rows, the relationships list, and the generated schema. |
+| **Design** | `/design` | Colour roles, type roles, the full palette, scale, radii, elevation and motion, then the shell: navigation items and a **View Shell Design** preview. |
+| **Sections** | `/sections` | The build order. Every row shows completion, priority, spec/data/screen/screenshot progress and a chevron into the section. |
+| **Section** | `/sections/:id` | Four steps: Spec → Sample data → Screen designs → Screenshots. |
+| **Screen design** | `/sections/:id/screen-designs/:name` | The rendered screen at 30 / 60 / 100 %, a live percentage readout, edge grips that resize from the centre, a light/dark switch and a fullscreen address. |
+| **Export** | `/export` | Readiness checklist, the package card, what's included, Option A / Option B usage, the full audit and every file in the ZIP. |
+
+Navigation is LulaZel's: a sticky 268 px rail with the five phases, collapsible section list and a product menu; a pill stepper across the top of every phase page; warm paper, rust accent, Inter, 14 px cards. The flow inside those slots is Design OS's, closely: phase stepper with completion ticks, numbered step rails, collapsible cards, dashed empty states with the command that fills them, a dismissible warning banner when earlier phases are incomplete, progress dots per section, resizable screen previews, and an export checklist with two usage paths.
+
+The one artefact that is deliberately *not* pre-filled is screenshots — the only step a designer still takes by hand. The starter product ships captured so the flow is complete on first paint; a newly compiled product starts with the empty state and a capture action.
+
+---
+
 ## Why this exists
 
 Design-first workflows (Design OS, spec-driven development, "plan before you prompt") fixed the biggest problem with AI-assisted building: coding agents were being asked to invent the product and implement it at the same time. The fix was a design phase that produces a handoff package.
@@ -109,7 +129,9 @@ npm run qa             # compiles all 12 archetypes × 3 seeds, checks invariant
 npm run check          # all three
 ```
 
-There is no backend, no database and no network call at runtime. Projects are stored in `localStorage` (with automatic pruning if the quota is reached). Clearing site data clears projects; use **Export ZIP** to keep anything you care about.
+There is no backend, no database and no network call at runtime. Projects are stored in `localStorage` (with automatic pruning if the quota is reached). Clearing site data clears projects; use **Export → Download package** to keep anything you care about.
+
+The first load compiles the starter product (marketplace, seed `112233`) and captures its screens, so all five phases are complete before you touch anything. The **New product** dialog is optional: one line of description, or none at all.
 
 ---
 
@@ -131,9 +153,15 @@ src/
     audit.ts             # 22 computed checks + weighted score
     index.ts             # compileProject() — the only entry point
   export/package.ts      # 20+ markdown/SQL/token files for handoff
-  components/AppPreview  # renders a screen using the project's own tokens
-  views/                 # brief, roadmap, data, design, sections, player, audit, handoff
-  lib/                   # store (localStorage), hash router, formatting, zip download
+  components/
+    AppPreview.tsx       # renders a screen using the project's own tokens
+    PreviewStage.tsx     # 30/60/100 % device canvas, edge grips, fullscreen
+    ui.tsx               # phase header, step rail, collapsibles, empty states, banner
+  views/                 # ProductPage, DataShapePage, DesignPage, ShellDesignPage,
+                         # SectionsPage, SectionPage, ScreenDesignPage, ExportPage
+  styles/app.css         # LulaZel-derived shell: rail, paper, rust accent, pill stepper
+  styles/preview.css     # the generated artefact's own token-driven styles
+  lib/                   # store (localStorage + captures), hash router, progress, formatting
 ```
 
 The compiler is deliberately separate from the UI. `compileProject()` takes plain data and returns a plain object; you could run it in a worker, a CLI or a test with no DOM.
@@ -159,7 +187,7 @@ Same inputs → byte-identical package, forever. `devzign.json` in the export ca
 - **Not user research.** Personas and quotes are synthetic and labelled as such, in the product and in the export. The brief explicitly tells you to validate with three real interviews before locking a roadmap.
 - **Not a benchmark.** Targets are directional design goals, not measured averages.
 - **Not a replacement for taste.** It compiles a defensible starting system; choosing which parts to keep is still a human job.
-- **Not affiliated with Builder Methods or Design OS.** The workflow is inspired by the design-first school of building with agents. The implementation is independent: no prompts, no agent runtime, no model dependency.
+- **Not affiliated with Builder Methods, Design OS or LulaZel.** The five-phase flow and interaction model follow Design OS; the shell's colours, navigation and page structure follow LulaZel. The implementation is independent: no prompts, no agent runtime, no model dependency, no accounts.
 
 ---
 

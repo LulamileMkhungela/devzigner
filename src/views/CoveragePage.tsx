@@ -129,6 +129,9 @@ export function CoveragePage({ project }: { project: Project }) {
           row('Build New', 'the Rails + React starter conventions and agent setup', has('template/build-new/AGENTS.md') && has('template/build-new/.agents/setup'), ['template/build-new/AGENTS.md', 'template/build-new/.agents/setup']),
           row('agentcanon', 'skills in .agents/skills, instructions in AGENTS.md, symlinks for the rest', has('.agents/skills/agentcanon-repo/SKILL.md') && has('AGENTS.md') && has('scripts/link-agents.sh'), ['.agents/skills/agentcanon-repo/', 'AGENTS.md', 'scripts/link-agents.sh']),
           row('Toolkit guide', 'every tool, its steps and where it is installed', has('TOOLKIT.md'), ['TOOLKIT.md']),
+          row('Manuals and licences', 'the tools\' own documentation travels with the package', has('docs/design-os/requirements.md') && has('docs/design-os/LICENSE') && has('docs/agent-os/README.md') && has('docs/bm-skills/LICENSE') && has('docs/agentcanon/LICENSE'), ['docs/design-os/', 'docs/agent-os/', 'docs/bm-skills/', 'docs/agentcanon/']),
+          row('Agent OS v2 workflows', 'the workflows the docs page describes, vendored because v3 removed the compiler', countPrefix('docs/agent-os-v2/workflows/') >= 15, [`${countPrefix('docs/agent-os-v2/workflows/')} workflow files`]),
+          row('Requirements', 'what the package needs to run, and what is optional', has('requirements.md'), ['requirements.md']),
         ],
       },
       {
@@ -138,6 +141,26 @@ export function CoveragePage({ project }: { project: Project }) {
         rows: [
           row('Business rules', 'status journeys, invariants and role rules, derived from the data shape', has('business-logic.md') && has('server/src/rules.ts') && has('server/src/services.ts'), ['business-logic.md', 'server/src/rules.ts', 'server/src/services.ts']),
           row('HTTP API', 'framework-free routes that a test can call directly', has('server/API.md') && has('server/src/http.ts') && has('server/src/server.ts'), ['server/API.md', 'server/src/http.ts', 'server/src/server.ts']),
+          row('API contract', 'OpenAPI 3.1 with every entity, route and status journey', (() => {
+            const file = files.find((f) => f.path === 'openapi.json')
+            if (!file) return false
+            try {
+              const spec = JSON.parse(file.content) as { openapi?: string; paths?: Record<string, unknown> }
+              const paths = (spec.paths ?? {}) as Record<string, Record<string, unknown>>
+              const verbs = ['get', 'post']
+              return (
+                Boolean(spec.openapi?.startsWith('3.1')) &&
+                Object.keys(paths).length >= project.data.entities.length * 2 + 3 &&
+                project.data.entities.every(
+                  (entity) =>
+                    verbs.every((verb) => Boolean(paths[`/api/${entity.id}`]?.[verb])) &&
+                    ['get', 'patch', 'delete'].every((verb) => Boolean(paths[`/api/${entity.id}/{id}`]?.[verb])),
+                )
+              )
+            } catch {
+              return false
+            }
+          })(), ['openapi.json', 'api/README.md']),
           row('Validation', 'unknown fields, enums, dates, emails and foreign keys, with 422s that name the field', (() => {
             const validate = files.find((f) => f.path === 'server/src/validate.ts')
             return Boolean(validate && validate.content.includes('AppError(\'validation\'') && validate.content.includes('relationExists'))

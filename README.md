@@ -60,6 +60,12 @@ package, verbatim, under the `agentcanon` convention:
 
 Skills live once, in `.agents/skills/`; instructions live once, in `AGENTS.md`;
 `CLAUDE.md` and `.claude/skills` are symlinks created by `scripts/link-agents.sh`.
+The tooling's own documentation travels too — `docs/design-os/`, `docs/agent-os/`,
+`docs/agent-os-v2/`, `docs/bm-skills/`, `docs/agentcanon/`, licences included — and
+`requirements.md` states what the package needs to run and what is optional.
+`AUDIT.md` is the repository-by-repository review behind this table: what exists
+upstream, what was cloned into the package, and what was deliberately left out.
+
 `TOOLKIT.md` records each tool, its steps and where it is installed. The **Tools**
 page in the app lists the same eight with the steps parsed from the shipped
 `SKILL.md` files, so the page cannot drift from the text being shipped.
@@ -78,6 +84,8 @@ Node's own `http` module:
 | `server/src/services.ts` | the business layer, plus an append-only event log |
 | `server/src/http.ts` | routes, roles, status codes — callable from a test with no socket |
 | `server/src/tests/*.test.ts` | the state machine and the API behaviour, on `node --test` |
+| `openapi.json` | the same API as an OpenAPI 3.1 contract: every route, every schema, every status journey |
+| `api/README.md` | the route table, roles and error codes, written for a client author |
 | `src/data/http-adapter.ts` | the same `DataLayer` interface the mock implements, now over HTTP |
 
 Rules are derived from the compiled data shape, not written per export: the status

@@ -145,6 +145,23 @@ checks.push(
   ['product planning outputs exported', pkgHas('product/product-overview.md') && pkgHas('product/product-roadmap.md') && pkgHas('product/data-shape/data-shape.md') && pkgHas('product/design-system/colors.json') && pkgHas('product/design-system/typography.json') && pkgHas('product/shell/spec.md')],
   ['design-os commands installed verbatim', pkgPrefix('.claude/commands/design-os/') === 10 && pkg.find((f) => f.path === '.claude/commands/design-os/product-vision.md')!.content.startsWith('# Product Vision\n\nYou are helping the user define their product vision for Design OS') && pkg.find((f) => f.path === '.claude/commands/design-os/export-product.md')!.content.includes('product-plan/instructions/incremental/01-shell.md')],
   ['design-os skill vendored into the canon', pkg.find((f) => f.path === '.agents/skills/frontend-design/SKILL.md')!.content.startsWith('---\nname: frontend-design') && pkg.some((f) => f.path === '.agents/skills/project-design-system/SKILL.md')],
+  ['manuals and licences ship with the package', ['docs/design-os/requirements.md', 'docs/design-os/LICENSE', 'docs/agent-os/README.md', 'docs/agent-os/CHANGELOG.md', 'docs/agent-os/LICENSE', 'docs/bm-skills/README.md', 'docs/bm-skills/LICENSE', 'docs/agentcanon/LICENSE', 'requirements.md'].every((path) => pkgHas(path))],
+  ['agent-os v2 workflows are kept', pkgPrefix('docs/agent-os-v2/workflows/') >= 15 && pkg.find((f) => f.path === 'docs/agent-os-v2/README.md')!.content.includes('v3 does not compile')],
+  ['openapi describes every entity', (() => {
+    const file = pkg.find((f) => f.path === 'openapi.json')
+    if (!file) return false
+    const spec = JSON.parse(file.content) as { openapi: string; paths: Record<string, Record<string, unknown>>; components: { schemas: Record<string, unknown> } }
+    return (
+      spec.openapi.startsWith('3.1') &&
+      Object.keys(spec.paths).length >= project.data.entities.length * 2 + 3 &&
+      project.data.entities.every(
+        (e) =>
+          Boolean(spec.components.schemas[e.name]) &&
+          ['get', 'post'].every((verb) => Boolean(spec.paths[`/api/${e.id}`]?.[verb])) &&
+          ['get', 'patch', 'delete'].every((verb) => Boolean(spec.paths[`/api/${e.id}/{id}`]?.[verb])),
+      )
+    )
+  })()],
   ['prd-creator output is real', pkgHas('_build_plan/prd.md') && pkgPrefix('_build_plan/milestones/') === 3 && pkg.find((f) => f.path.startsWith('_build_plan/milestones/'))!.content.includes('milestone-log.md') && pkgHas('favicon.svg')],
   ['all eight free tools installed', ['prd-creator', 'skill-builder', 'design-system', 'favicon-creator', 'agentcanon-repo', 'agentcanon-manifest'].every((skill) => pkg.some((f) => f.path.startsWith('.agents/skills/' + skill + '/'))) && pkgHas('template/build-new/AGENTS.md') && pkgHas('.claude/commands/design-os/product-vision.md') && pkgHas('.claude/commands/agent-os/plan-product.md') && pkgHas('TOOLKIT.md')],
   ['agentcanon convention wired', pkg.find((f) => f.path === 'AGENTS.md')!.content.includes('## Rules') && pkg.find((f) => f.path === 'CLAUDE.md')!.content.includes('AGENTS.md') && pkg.find((f) => f.path === 'scripts/link-agents.sh')!.content.includes('ln -sfn ../.agents/skills .claude/skills') && !pkg.some((f) => f.path.startsWith('.claude/skills/'))],

@@ -140,6 +140,7 @@ verbatim from their repositories, so the steps below are the tools' own.
 | Favicon Creator | Agent skill | `.agents/skills/favicon-creator/` | `/coverage`, `/tools` |
 | Agent OS | Workflow | `agent-os/` + `.claude/commands/agent-os/` (5) | `/coverage` |
 | Design OS | Workflow | `product-plan/` + `.claude/commands/design-os/` (10) | `/coverage` |
+| Manuals | Documentation | `requirements.md`, `docs/` (40 files: Design OS, Agent OS v3, Agent OS v2 workflows, bm-skills, agentcanon, licences) | `render-check`, `npm test` |
 
 The **Tools** page reads the steps out of the shipped `SKILL.md` headings rather
 than a hand-written list, so a tool whose process changes changes the page.
@@ -154,6 +155,7 @@ than a hand-written list, so a tool whose process changes changes the page.
 | HTTP API | `server/src/http.ts`, `server/API.md` | `api.test.ts` drives it without a socket |
 | Repository and seeds | `server/src/repository.ts`, `server/src/seed.ts` | pagination + list tests |
 | Frontend adapter | `src/data/http-adapter.ts` | typechecks against `DataLayer` in `export-check` |
+| API contract | `openapi.json` (OpenAPI 3.1), `api/README.md` | `npm test` parses it and checks every entity has list/create/read/patch/delete plus its transition |
 
 `export-check` writes the generated server to disk, typechecks it, then runs its
 suite with `node --experimental-strip-types --test`. All 11 generated tests pass
@@ -198,7 +200,7 @@ npm run check          # all of the above, then the production build
 
 ```
 all views render
-# pass 10
+# pass 12
 export check passed
 walkthrough complete: idea → package with zero user input
 ok  Careline: shell + 6 sections built with vite + tailwind

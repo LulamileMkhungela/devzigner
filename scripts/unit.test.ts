@@ -134,3 +134,53 @@ test('every generated component file has a props contract', () => {
     assert.match(file.content, /export (function|const) [A-Z]/, `${file.path} exports no component`)
   }
 })
+
+test('openapi.json describes every entity and its status journey', () => {
+  const project = compileProject(input as never)
+  const file = buildPackage(project).find((f) => f.path === 'openapi.json')
+  assert.ok(file, 'openapi.json missing from the package')
+  const spec = JSON.parse(file!.content) as {
+    openapi: string
+    info: { title: string; version: string }
+    paths: Record<string, Record<string, { responses?: Record<string, unknown> }>>
+    components: { schemas: Record<string, unknown> }
+  }
+  assert.match(spec.openapi, /^3\.1\./)
+  assert.ok(spec.info.title.length > 0)
+  for (const entity of project.data.entities) {
+    assert.ok(spec.components.schemas[entity.name], `${entity.name} has no schema`)
+    assert.ok(spec.paths[`/api/${entity.id}`]?.get, `GET /api/${entity.id} missing`)
+    assert.ok(spec.paths[`/api/${entity.id}`]?.post, `POST /api/${entity.id} missing`)
+    const one = spec.paths[`/api/${entity.id}/{id}`]
+    assert.ok(one?.get && one.patch && one.delete, `/api/${entity.id}/{id} is incomplete`)
+    if (entity.statusField) {
+      const transition = spec.paths[`/api/${entity.id}/{id}/transition`]?.post
+      assert.ok(transition, `${entity.name} has no transition route`)
+    }
+  }
+  assert.ok(spec.paths['/api/health']?.get, 'no health route')
+})
+
+test('the manuals, licences and requirements travel with the package', () => {
+  const paths = new Set(buildPackage(compileProject(input as never)).map((f) => f.path))
+  for (const path of [
+    'requirements.md',
+    'docs/README.md',
+    'docs/design-os/requirements.md',
+    'docs/design-os/LICENSE',
+    'docs/agent-os/README.md',
+    'docs/agent-os/LICENSE',
+    'docs/agent-os-v2/README.md',
+    'docs/agent-os-v2/UPSTREAM-README.md',
+    'docs/bm-skills/LICENSE',
+    'docs/agentcanon/LICENSE',
+  ]) {
+    assert.ok(paths.has(path), `${path} missing from the package`)
+  }
+  requireWorkflows(paths)
+})
+
+function requireWorkflows(paths: Set<string>) {
+  const workflows = [...paths].filter((p) => p.startsWith('docs/agent-os-v2/workflows/'))
+  assert.equal(workflows.length, 15, 'the v2 workflow set is incomplete')
+}

@@ -5,6 +5,7 @@ import { Icon } from '../components/Icons'
 import { Link, navigate } from '../lib/router'
 import { TRACK } from './FlowsPage'
 import { buildSystemFiles } from '../export/systemFiles'
+import { apiRoutes } from '../export/openapi'
 import { useStore } from '../lib/store'
 
 export function SystemPage({ project }: { project: Project }) {
@@ -30,6 +31,7 @@ export function SystemPage({ project }: { project: Project }) {
   )
 
   const files = useMemo(() => buildSystemFiles(project), [project])
+  const routes = useMemo(() => apiRoutes(project), [project])
 
   return (
     <div className="lz-view">
@@ -211,6 +213,40 @@ export function SystemPage({ project }: { project: Project }) {
                 </div>
               ))}
             </div>
+          </Collapsible>
+
+          <Collapsible title="API" icon="Braces" meta={`${routes.length} endpoints · OpenAPI 3.1`} defaultOpen>
+            <p className="lz-muted" style={{ fontSize: 12.5 }}>
+              Generated from the same entities as the screens. The reference server lives in <code>server/</code>, the
+              machine-readable contract in <code>openapi.json</code>, and the UI reaches it through the same
+              <code> DataLayer</code> interface it already uses.
+            </p>
+            <div className="lz-sep" />
+            <div className="lz-table-wrap">
+              <table className="lz-table">
+                <thead>
+                  <tr>
+                    <th>Method</th>
+                    <th>Path</th>
+                    <th>Summary</th>
+                    <th>Who</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {routes.map((route) => (
+                    <tr key={`${route.method}-${route.path}`}>
+                      <td><code>{route.method}</code></td>
+                      <td><code>{route.path}</code></td>
+                      <td>{route.summary}</td>
+                      <td>{route.roles}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <p className="lz-muted" style={{ fontSize: 12, marginTop: 10 }}>
+              Status changes go through <code>/transition</code>; a PATCH returns 409 rather than writing one.
+            </p>
           </Collapsible>
         </div>
 

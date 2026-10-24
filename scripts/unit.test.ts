@@ -15,6 +15,7 @@ import { BLOCK_COMPONENT_NAMES } from '../src/engine/system'
 import { buildPackage } from '../src/export/package'
 import { TOOLS } from '../src/tools'
 import { FRAMEWORKS } from '../src/export/frameworks'
+import { migrateProject, migrateProjects } from '../src/lib/migrate'
 
 const input = { archetypeId: 'clinic', seed: 4242, now: 1_760_000_000_000 } as const
 
@@ -259,4 +260,31 @@ test('a framework component carries no data, only props', () => {
   assert.doesNotMatch(component!.content, /sample-data|fetch\(/, 'a component must not import data or fetch')
   assert.match(component!.content, /defineProps/, 'Vue components declare their props')
   assert.match(component!.content, /renderScreen\(/, 'Vue components render through the shared renderer')
+})
+
+test('a project saved by an older version is rebuilt, not trusted', () => {
+  // This is the shape that shipped before flows and the system record existed.
+  const legacy = {
+    id: 'legacy-1',
+    name: 'Old Careline',
+    idea: 'a clinic front desk',
+    seed: 4242,
+    archetypeId: 'clinic',
+    createdAt: 1_700_000_000_000,
+  }
+
+  const migrated = migrateProject(legacy)
+  assert.ok(migrated, 'a legacy record must migrate, not disappear')
+  assert.equal(migrated!.id, 'legacy-1')
+  assert.ok(Array.isArray(migrated!.flows), 'flows must exist after migration')
+  assert.ok(migrated!.sections.length > 0, 'sections must be recompiled')
+  assert.ok(migrated!.sections.every((section) => Array.isArray(section.screens)))
+  assert.ok(Array.isArray(migrated!.data.entities) && migrated!.data.entities.length > 0)
+  assert.ok(Array.isArray(migrated!.design.colors) && migrated!.design.colors.length > 0)
+  assert.ok(Array.isArray(migrated!.system.stack) && migrated!.system.stack.length > 0)
+
+  // Records that cannot be rebuilt are dropped, and junk never reaches a view.
+  assert.equal(migrateProject({ id: 'no-seed' }), null)
+  assert.equal(migrateProject('nope'), null)
+  assert.deepEqual(migrateProjects([null, 42, { id: 'x' }, legacy]).map((project) => project.id), ['legacy-1'])
 })

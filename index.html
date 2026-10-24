@@ -67,7 +67,10 @@
             '</code></p>' +
             '<p style="margin:0 0 16px;font-size:13px;color:#57534e">Try <code>/lula-devzign-standalone.html</code> — the same app as one file, no server needed.</p>' +
             '<button onclick="location.reload()" style="padding:8px 14px;border-radius:8px;border:1px solid #1c1917;' +
-            'background:#1c1917;color:#fafaf9;font-size:13px;font-weight:500;cursor:pointer">Reload</button>'
+            'background:#1c1917;color:#fafaf9;font-size:13px;font-weight:500;cursor:pointer">Reload</button> ' +
+            '<button onclick="try{localStorage.clear()}catch(e){};location.reload()" style="margin-left:8px;padding:8px 14px;' +
+            'border-radius:8px;border:1px solid #d6d3d1;background:#fff;color:#1c1917;font-size:13px;font-weight:500;' +
+            'cursor:pointer">Clear saved data and reload</button>'
           document.body.appendChild(box)
         }
 

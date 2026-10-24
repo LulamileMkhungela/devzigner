@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { DesignOverrides, Genome, ModuleKey, Project, RegistryComponent, Section, SystemOverrides, UserFlow, Version } from '../types'
 import { compileProject, defaultModuleSeeds, genomeFromSeed, remixSeed, type CompileOptions } from '../engine'
+import { migrateProjects } from './migrate'
 
 const STORAGE_KEY = 'lula.devzign.projects.v1'
 const THEME_KEY = 'lula.devzign.theme.v1'
@@ -113,11 +114,13 @@ export function screenIdsOf(section: Section): string[] {
 }
 
 export function allScreenIds(project: Project): string[] {
-  return project.sections.flatMap(screenIdsOf)
+  return (project.sections ?? []).flatMap(screenIdsOf)
 }
 
 function withCustomFlows(next: Project, previous: Project): Project {
-  const custom = previous.flows.filter((f) => f.custom)
+  // `previous` may come straight from storage, where older builds stored no
+  // flows at all — an unguarded `.filter` here is a blank page on first paint.
+  const custom = (previous.flows ?? []).filter((f) => f?.custom)
   return custom.length ? { ...next, flows: [...next.flows, ...custom] } : next
 }
 
@@ -144,10 +147,14 @@ function compileLikeProject(project: Project, patch: Partial<CompileOptions> = {
 
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>(() => {
-    const stored = readJson<Project[]>(STORAGE_KEY, [])
-    if (Array.isArray(stored) && stored.length) {
-      // Records compiled before flows/system existed are upgraded in place.
-      return stored.map((p) => (p.flows && p.system ? p : compileLikeProject(p)))
+    // Nothing from storage is trusted: a record from an older build is either
+    // complete, rebuilt from its own inputs, or dropped. A throw here would
+    // happen before React mounts, which reads as a blank page.
+    try {
+      const stored = migrateProjects(readJson<unknown>(STORAGE_KEY, []))
+      if (stored.length) return stored
+    } catch {
+      /* unreadable storage — fall through to a fresh compile */
     }
     return [compileProject(STARTER)]
   })

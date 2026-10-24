@@ -182,7 +182,7 @@ The Design OS planning outputs, in the order the commands produce them:
 4. \`design-system/{colors.json,typography.json}\` — /design-tokens
 5. \`shell/spec.md\` — /design-shell
 
-The typed, human-readable versions live at the root: \`product-brief.md\`, \`roadmap.md\`, \`data-model.md\`, \`design-system/\`. The slash commands are in \`commands/\`.
+The typed, human-readable versions live at the root: \`product-brief.md\`, \`roadmap.md\`, \`data-model.md\`, \`design-system/\`. The slash commands are in \`.claude/commands/design-os/\` and \`.claude/commands/agent-os/\`.
 `,
     },
   ]

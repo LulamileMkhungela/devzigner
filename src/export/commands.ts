@@ -2,13 +2,16 @@ import type { Project } from '../types'
 import type { PackageFile } from './package'
 
 /**
- * The Design OS command surface, plus the planning folder its
- * /product-vision, /product-roadmap, /data-shape, /design-tokens,
- * /design-shell and /shape-section commands write.
+ * The Design OS command surface, written for this package's paths.
  *
- * The app performs the same steps in its five phases; a team that wants the
- * slash-command workflow in Claude Code (or any agent that reads files) can
- * drop these in `.claude/commands/` and keep working the way Design OS does.
+ * Design OS ships its ten commands in `.claude/commands/design-os/`; the export
+ * does the same, adapted to `product/` and `sections/` as they exist here.
+ * The Agent OS commands are installed verbatim alongside them under
+ * `.claude/commands/agent-os/` (see agentos.ts).
+ *
+ * The app itself performs these steps in its five phases, so the commands are
+ * optional — they are for teams that want the slash-command workflow in Claude
+ * Code or any agent that reads files.
  */
 
 function bullet(items: string[]): string {
@@ -17,7 +20,7 @@ function bullet(items: string[]): string {
 
 function command(name: string, description: string, body: string): PackageFile {
   return {
-    path: `commands/${name}.md`,
+    path: `.claude/commands/design-os/${name}.md`,
     content: `---\nname: ${name}\ndescription: ${description}\n---\n\n${body}\n`,
   }
 }
@@ -135,45 +138,6 @@ Start with \`${first?.id ?? 'the first section'}\`.`,
 3. Commit it beside the code on a branch, and open the first milestone as a PR.
 
 Never hand-edit generated files. Change the source (tokens, registry, sections) and re-export.`,
-    ),
-    command(
-      'plan-product',
-      'Agent OS planning pass over mission, roadmap and stack',
-      `# /plan-product
-
-1. Read \`agent-os/product/{mission,roadmap,tech-stack}.md\`.
-2. Ask only what the compiled product cannot answer: stakeholders, constraints, compliance.
-3. Update those three files together; \`/shape-spec\` reads them for context.`,
-    ),
-    command(
-      'shape-spec',
-      'Shape a spec that persists beyond the conversation',
-      `# /shape-spec <feature>
-
-1. Read \`agent-os/product/\` and \`agent-os/standards/index.yml\`.
-2. Ask: what are we building, do we have visuals, similar code, product alignment, which standards apply.
-3. Write \`agent-os/specs/<YYYY-MM-DD-HHMM>-<slug>/{plan,shape,references,standards}.md\` + \`visuals/\`.
-4. Task 1 of the plan saves this documentation.`,
-    ),
-    command(
-      'inject-standards',
-      'Load the standards that apply to the current work',
-      `# /inject-standards
-
-1. Read \`agent-os/standards/index.yml\`.
-2. Choose the rules that apply to the files you are about to touch.
-3. Read them in full from \`agent-os/standards/<domain>/<name>.md\`.
-4. State which rules you are following before writing code.`,
-    ),
-    command(
-      'discover-standards',
-      'Capture a new tribal rule from the code',
-      `# /discover-standards <area>
-
-1. Read 5–10 representative files in the area.
-2. Look for choices that could have gone differently: naming, error handling, composition, data access.
-3. Write one file per rule under \`agent-os/standards/<domain>/\`: rule first, why second, an example.
-4. Add it to \`index.yml\` with a one-line description.`,
     ),
   ]
 }

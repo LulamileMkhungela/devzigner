@@ -56,10 +56,12 @@ The export is the same file tree Design OS hands a coding agent, and the standar
 | `/screenshot-design` | `sections/<id>/screenshot.svg` and `shell/screenshot.svg` — drawn from the compiled blocks, so never stale |
 | `/export-product` | the ZIP, plus `prompts/{one-shot,section}-prompt.md` and `instructions/{one-shot-instructions, incremental/01-shell, NN-section}.md` |
 | Planning outputs | `product/{product-overview,product-roadmap}.md`, `product/data-shape/`, `product/design-system/{colors,typography}.json`, `product/shell/spec.md` |
-| Slash commands | `commands/*.md` — the ten Design OS commands plus four Agent OS commands, ready for `.claude/commands/` |
+| Slash commands | `.claude/commands/design-os/*.md` (the ten Design OS commands) and `.claude/commands/agent-os/*.md` (the five Agent OS commands, verbatim upstream text) |
 | Agent OS `/plan-product` | `agent-os/product/{mission,roadmap,tech-stack}.md` |
 | Agent OS `/discover-standards` `/index-standards` | `agent-os/standards/{ui,data,quality,accessibility}/*.md` + `index.yml` with descriptions |
-| Agent OS `/shape-spec` | `agent-os/specs/<date>-<section>/{shape,plan,references,standards}.md` + `visuals/*.svg` |
+| Agent OS `/shape-spec` | `agent-os/specs/<date>-<section>/{shape,plan,references,standards}.md` + `visuals/*.svg`, Task 1 = save the documentation |
+| Agent OS `/inject-standards` | `agent-os/specs/*/standards.md` inlines the full rule bodies it cites |
+| Agent OS config | `agent-os/config.yml` (`version: 3.0`, `default_profile: default`) beside the standards folders |
 
 Generated components are **props-only** (no data imports, no routing), responsive at every breakpoint in the token file, and typechecked in CI: `npm run export-check` writes them to disk and runs `tsc` against them for three archetypes.
 
@@ -176,12 +178,23 @@ npm run render-check   # server-renders every view + proves the export contract
 npm run export-check   # writes generated components to disk and typechecks them
 npm run smoke          # mounts the app in jsdom and clicks through it, including real form input
 npm run qa             # compiles all 12 archetypes × 3 seeds, checks invariants
+npm run walkthrough    # runs the whole process in jsdom with zero user input: idea → package
+npm run example-app    # builds the exported package into a real Vite + Tailwind app
 npm run check          # all of the above, then the production build
 ```
 
 There is no backend, no database and no network call at runtime. Projects are stored in `localStorage` (with automatic pruning if the quota is reached). Clearing site data clears projects; use **Export → Download package** to keep anything you care about.
 
 The first load compiles the starter product (marketplace, seed `112233`) and captures its screens, so all five phases are complete before you touch anything. The **New product** dialog is optional: one line of description, or none at all.
+
+That claim is executed, not asserted. `npm run walkthrough` renders the app in jsdom, never
+types an idea and never answers a question, and then walks Product Planning → Data Shape →
+Design System → Section Design → Export, checking the package it lands on: the whole Design OS
+file contract, one component per screen, the Agent OS layer, and a screenshot per section.
+`npm run example-app` goes one step further and treats the package as an app: it copies the
+tokens, shell, sections and data shapes into a scratch Vite project, writes a page per section
+from the exported components and `sample-data.json`, then runs a real `vite build` with
+Tailwind. If the handoff could not be compiled, that build fails.
 
 ---
 

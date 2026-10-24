@@ -26,10 +26,10 @@ export async function downloadProjectZip(project: Project, versions: Version[] =
   const { default: JSZip } = await import('jszip')
   const files = buildPackage(project, versions)
   const zip = new JSZip()
-  const root = zip.folder(`${slugify(project.name)}-devzign`)!
+  const root = zip.folder('product-plan')!
   for (const file of files) root.file(file.path, file.content)
   const blob = await zip.generateAsync({ type: 'blob', compression: 'DEFLATE' })
-  download(`${slugify(project.name)}-devzign.zip`, blob, 'application/zip')
+  download(`${slugify(project.name)}-product-plan.zip`, blob, 'application/zip')
 }
 
 export function packageSummary(project: Project, versions: Version[] = []): { files: number; kb: number } {

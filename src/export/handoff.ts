@@ -351,29 +351,179 @@ function sectionTypes(project: Project, section: Section): string {
   return lines.join('\n')
 }
 
-function sectionTests(section: Section): string {
-  return `# ${section.name} — test instructions
+function sectionTests(project: Project, section: Section): string {
+  const formScreens = section.screens.filter((screen) => screen.blocks.some((b) => b.type === 'form'))
+  const listScreens = section.screens.filter((screen) => screen.blocks.some((b) => b.type === 'table' || b.type === 'list'))
+  const primary = section.screens[0]
+  const entity = project.data.entities.find((e) => section.entityIds.includes(e.id))
 
-Write these as failing tests first, then implement until they pass. Framework-agnostic: they describe what to assert, not which runner.
+  return `# Test Specs: ${section.name}
 
-## User flows
+These test specs are **framework-agnostic**. Adapt them to your testing setup (Jest, Vitest, Playwright, Cypress, React Testing Library, etc.).
 
-${section.tests.map((t) => `- ${t}`).join('\n')}
+## Overview
 
-## Screen behaviour
+${section.purpose}
+
+The section ships ${section.screens.length} screen${section.screens.length === 1 ? '' : 's'} (${section.screens.map((s) => `${s.name} \`${s.route}\``).join(', ')}) with one component per screen, built from the registry. Test the user-facing behaviour, not the implementation.
+
+---
+
+## User Flow Tests
+
+${section.tests
+  .map(
+    (test, index) => `### Flow ${index + 1}: ${test}
+
+**Scenario:** A user completes this step of the ${section.name.toLowerCase()} workflow.
+
+#### Success Path
+
+**Setup:**
+- The app is on \`${primary?.route ?? '/'}\` with the rows from \`sample-data.json\`
+- Signed in as a user with access to ${section.name.toLowerCase()}
+
+**Steps:**
+1. User opens \`${primary?.route ?? '/'}\`
+2. User sees the section heading and its primary record list
+3. User acts on the flow above (filter, open, edit or create as the screen allows)
+4. User confirms the action
+
+**Expected Results:**
+- [ ] The expected records are visible with real values, not placeholders
+- [ ] The action completes and the list reflects the change
+- [ ] A confirmation is visible (inline success or toast)
+- [ ] The URL still addresses the current view
+
+#### Failure Path: Empty result set
+
+**Steps:**
+1. User filters or searches so that no record matches
+
+**Expected Results:**
+- [ ] An empty state explains what happened rather than showing an empty table
+- [ ] A "clear filters" affordance is available and works
+`,
+  )
+  .join('\n---\n\n')}
+
+${formScreens.length
+  ? `### Flow ${section.tests.length + 1}: Create a ${entity?.name.toLowerCase() ?? 'record'}
+
+**Scenario:** A user adds a new record through the form.
+
+#### Success Path
+
+**Steps:**
+1. User opens \`${formScreens[0].route}\`
+2. User fills every required field
+3. User presses the submit button
+
+**Expected Results:**
+- [ ] The submit button is a real button inside a form
+- [ ] The new record appears in the list above without a reload
+- [ ] The form reports success rather than silently closing
+
+#### Failure Path: Validation Error
+
+**Steps:**
+1. User leaves a required field empty
+2. User presses submit
+
+**Expected Results:**
+- [ ] The field is marked invalid (\`aria-invalid\`) and shows a message
+- [ ] The form is not submitted and no record is created
+- [ ] The message is announced to assistive technology
+`
+  : ''}
+
+---
+
+## Empty State Tests
+
+### Primary Empty State
+
+**Scenario:** No ${entity?.plural?.toLowerCase() ?? 'records'} exist yet.
+
+**Setup:**
+- The collection is empty (\`rows={[]}\`)
+
+**Expected Results:**
+- [ ] The empty state heading and body are visible
+- [ ] The primary call to action is visible and functional
+- [ ] Nothing renders as a broken table with headers only
+
+### Related Records Empty State
+
+**Scenario:** A parent record exists but has no children yet.
+
+**Expected Results:**
+- [ ] The parent still renders its own data
+- [ ] The child area shows a "nothing here yet" message with a next step
+
+---
+
+## Component Interaction Tests
 
 ${section.screens
   .map(
-    (screen) =>
-      `### ${screen.name}\n\n- Renders with the sample records in \`sample-data.json\`.\n- Empty state: with \`rows={[]}\` the screen still explains what to do next.\n${screen.acceptance.map((a) => `- ${a}`).join('\n')}`,
+    (screen) => `### ${componentName(section, screen)}
+
+**Renders correctly:**
+- [ ] Displays \`${screen.name}\` with the rows from \`sample-data.json\`
+- [ ] Status values render as labelled badges, not bare strings
+
+**User interactions:**
+${screen.blocks
+  .flatMap((block) => {
+    if (block.type === 'filters') return ['- [ ] Typing in the search field filters rows as you type', '- [ ] Clicking a chip narrows the list and the active chip is marked']
+    if (block.type === 'table') return ['- [ ] Clicking a column header sorts, and the header reports the sort state', '- [ ] Clicking a row opens the record']
+    if (block.type === 'form') return ['- [ ] Each field has a bound label', '- [ ] Submitting an invalid form shows inline errors and keeps the values']
+    if (block.type === 'detail') return ['- [ ] Tabs switch the visible panel and the active tab is marked']
+    if (block.type === 'board') return ['- [ ] A card can be added to the first column']
+    return []
+  })
+  .join('\n')}
+- [ ] Every interactive element is reachable by keyboard with a visible focus ring
+`,
   )
-  .join('\n\n')}
+  .join('\n')}
 
-## Boundaries
+---
 
-- Every interactive element is a real control (input, button, select), never a styled div.
-- Keyboard: tab order follows the visual order; focus is always visible.
-- Responsive: 640 / 768 / 1024 / ${section.screens.length ? 1280 : 1280}px breakpoints hold without horizontal scroll.
+## Edge Cases
+
+- [ ] Long names truncate instead of breaking the layout
+- [ ] A single row and 100+ rows both render without layout shift
+- [ ] Filtering to zero then clearing restores the full list
+- [ ] Creating the first record transitions the empty state to a populated one
+
+---
+
+## Accessibility Checks
+
+- [ ] All interactive elements are keyboard accessible
+- [ ] Form fields have associated labels
+- [ ] Error messages are announced to screen readers
+- [ ] Focus returns sensibly after closing a drawer or dialog
+
+---
+
+## Sample Test Data
+
+Use \`sample-data.json\`, or the inline shape below:
+
+\`\`\`typescript
+// Populated state
+const mockRows = [
+  { id: "test-1", ${entity?.fields.slice(0, 3).map((f) => `${f.name}: ${JSON.stringify(f.example)}`).join(', ') ?? 'name: "Sample"'} },
+];
+
+// Empty state
+const mockEmpty: typeof mockRows = [];
+\`\`\`
+
+${listScreens.length ? `The list and table screens above are the ones to exercise first: \`${listScreens[0].route}\`.` : ''}
 `
 }
 
@@ -381,28 +531,59 @@ function sectionReadme(project: Project, section: Section): string {
   const flows = project.flows.filter((f) => f.steps.some((s) => s.sectionId === section.id))
   return `# ${section.name}
 
+## Overview
+
 ${section.purpose}
 
 **Priority.** ${section.priority}
 
+## User Flows
+
+${flows.length ? flows.map((f) => `### ${f.name}\n\n${f.persona} · ${f.steps.length} steps\n\n${f.steps.map((s, i) => `${i + 1}. **${s.title}** — ${s.detail}`).join('\n')}\n\n**Success:** ${f.success}`).join('\n\n') : 'No flow crosses this section yet.'}
+
+## Design Decisions
+
+${bullet(section.screens.flatMap((screen) => screen.acceptance.slice(0, 2).map((a) => `${screen.name}: ${a}`)).slice(0, 6))}
+
+- Blocks are composed from the registry; the ${section.screens.length} components are listed below.
+- Every colour, radius and space value comes from the tokens.
+
+## Data Shapes
+
+**Entities:** ${section.entityIds.map((id) => project.data.entities.find((e) => e.id === id)?.name ?? id).join(', ')}
+
+**From global entities:** ${section.entityIds
+    .map((id) => {
+      const entity = project.data.entities.find((e) => e.id === id)
+      return entity ? `${entity.name} (${entity.fields.length} fields)` : ''
+    })
+    .filter(Boolean)
+    .join(', ')}
+
+## Visual Reference
+
+See \`screenshot.svg\` for the target UI design — rendered from the compiled screen, not hand-drawn.
+
+## Components Provided
+
+${section.screens.map((screen) => `- \`${componentName(section, screen)}\` — ${screen.name} (${screen.kind})`).join('\n')}
+
 ## Screens
 
-${section.screens.map((s) => `- **${componentName(section, s)}** — ${s.name} \`${s.route}\` (${s.kind})`).join('\n')}
+${section.screens.map((s) => `- **${s.name}** \`${s.route}\``).join('\n')}
 
-## User flows that touch this section
+## Callback Props
 
-${flows.length ? flows.map((f) => `- ${f.name} — ${f.persona}`).join('\n') : '- None recorded.'}
+| Callback | Triggered When |
+| --- | --- |
+| \`onOpen\` | User clicks a row or card to open the record |
+| \`onCreate\` | User clicks the primary action |
+| \`onSearch\` | User types in the search field |
+| \`onSubmit\` | User submits the form with valid values |
 
-## Data
+## Placeholders and states
 
-${section.entityIds.map((id) => {
-  const e = project.data.entities.find((x) => x.id === id)
-  return e ? `- **${e.name}** — ${e.fields.length} fields, sample rows in \`sample-data.json\`` : ''
-}).join('\n')}
-
-## Components
-
-\`components/\` holds one file per screen. They accept \`rows\` and callbacks only; sample data lives in \`sample-data.json\`.
+Every component handles empty and populated data. Loading and error states are the page's responsibility — see \`tests.md\`.
 `
 }
 
@@ -587,15 +768,75 @@ function designSystemFiles(project: Project): PackageFile[] {
     },
     {
       path: 'design-system/fonts.md',
-      content: `# Fonts\n\n${design.typography
-        .map((t) => `## ${t.role}\n\n- Family: **${t.family}**\n- Stack: \`${t.stack}\`\n- Weights: ${t.weights.join(', ')}\n- Size: ${t.size} / ${t.lineHeight}, tracking ${t.tracking}\n- Usage: ${t.usage}`)
-        .join('\n\n')}\n\nLoad only the weights above. With Next.js:\n\n\`\`\`tsx\nimport { ${design.typography.map((t) => t.family.replace(/ /g, '_')).join(', ')} } from 'next/font/google'\n\`\`\`\n`,
+      content: `# Typography Configuration
+
+## Google Fonts Import
+
+Add to your HTML \`<head>\` or CSS:
+
+\`\`\`html
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?${design.typography.map((t) => `family=${t.family.replace(/ /g, '+')}:wght@${t.weights.join(';')}`).join('&')}&display=swap" rel="stylesheet">
+\`\`\`
+
+Self-host for production and drop the network dependency:
+
+\`\`\`bash
+npx @fontsource/${(design.typography[0]?.family ?? 'inter').toLowerCase().replace(/ /g, '-')}
+\`\`\`
+
+## Font Usage
+
+${design.typography
+  .map((t) => `- **${t.role}:** ${t.family} — ${t.weights.join(', ')} · ${t.size} / ${t.lineHeight}, tracking ${t.tracking} (\`${t.stack}\`)`)
+  .join('\n')}
+
+## Tokens
+
+\`\`\`css
+${design.typography.map((t) => `--font-${t.role}: ${t.stack};`).join('\n')}
+\`\`\`
+`,
     },
     {
       path: 'design-system/tailwind-colors.md',
-      content: `# Tailwind setup\n\n\`\`\`css\n@import "tailwindcss";\n@import "./tokens.css";\n@config "../tailwind.config.ts";\n\`\`\`\n\nComponents use arbitrary values that read the tokens directly, e.g. \`bg-[var(--primary)]\`, so the palette is never duplicated:\n\n${design.colors
-        .map((c) => `- \`${c.base}\` → \`var(--${c.id})\` (on-colour: \`var(--on-${c.id})\`)`)
-        .join('\n')}\n\n## Breakpoints\n\n${design.breakpoints.map((b) => `- \`${b.name}\`: ${b.px}px — \`sm:\`/\`md:\`/\`lg:\`/\`xl:\` utilities, also exported as \`--breakpoint-${b.name}\``).join('\n')}\n\nLayout contract: content column max ${design.layout.contentWidth}px, ${design.layout.density} density, ${design.layout.grid}. Every exported component is written mobile-first against these breakpoints.\n\n## Dark mode\n\nSemantic tokens are re-declared under \`[data-theme="dark"]\` in \`tokens.css\`. Use the semantic names, never a ramp step, in components.\n`,
+      content: `# Tailwind Color Configuration
+
+## Color Choices
+
+${design.colors
+  .map((colour) => `- **${colour.role}:** \`${colour.base}\` — ${colour.rationale}`)
+  .join('\n')}
+
+## Setup
+
+\`\`\`css
+@import "tailwindcss";
+@import "./tokens.css";
+\`\`\`
+
+Components use arbitrary values that read the tokens directly, so the palette is never duplicated.
+
+## Usage Examples
+
+| Element | Classes |
+| --- | --- |
+| Primary button | \`bg-[var(--primary)] text-[var(--on-primary)] rounded-[var(--radius-sm)] px-3 py-2\` |
+| Secondary badge | \`bg-[var(--surface-2)] text-[var(--ink-muted)] rounded-full px-2 py-1\` |
+| Neutral text | \`text-[var(--ink)]\`; muted: \`text-[var(--ink-muted)]\` |
+| Card | \`bg-[var(--surface)] border border-[var(--border)] rounded-[var(--radius-md)]\` |
+
+## Breakpoints
+
+${design.breakpoints.map((b) => `- \`${b.name}\`: ${b.px}px — \`sm:\`/\`md:\`/\`lg:\`/\`xl:\` utilities, also exported as \`--breakpoint-${b.name}\``).join('\n')}
+
+Layout contract: content column max ${design.layout.contentWidth}px, ${design.layout.density} density, ${design.layout.grid}. Every exported component is written mobile-first against these breakpoints.
+
+## Dark mode
+
+Semantic tokens are re-declared under \`[data-theme="dark"]\` in \`tokens.css\`. Use the semantic names, never a ramp step, in components.
+`,
     },
     {
       path: 'design-system/README.md',
@@ -608,193 +849,399 @@ function dataShapeFiles(project: Project): PackageFile[] {
   return [
     {
       path: 'data-shapes/README.md',
-      content: `# UI data contracts\n\nEvery component takes data as props. These are the shapes they expect.\n\n${project.data.entities
-        .map((e) => `## ${e.name}\n\n${e.description}\n\n${e.fields.map((f) => `- \`${f.name}\`: ${f.type}${f.options?.length ? ` (${f.options.join(' | ')})` : ''}`).join('\n')}`)
-        .join('\n\n')}\n\nThe mock adapter in \`src/data/mock-adapter.ts\` returns these shapes with seeded rows; the real adapter must return the same.\n`,
+      content: `# UI Data Shapes\n\nThese types define the shape of data that the UI components expect to receive as props. They represent the **frontend contract** — what the components need to render correctly.\n\nHow you model, store, and fetch this data on the backend is an implementation decision. You may combine, split, or extend these types to fit your architecture.\n\n## Entities\n\n${project.data.entities
+        .map((e) => `- **${e.name}** — ${e.description} (used in: ${project.sections.filter((s) => s.entityIds.includes(e.id)).map((s) => s.name).join(', ') || 'shared'})`)
+        .join('\n')}\n\n## Per-Section Types\n\nEach section includes its own \`types.ts\` with the full interface definitions:\n\n${project.sections.map((s) => `- \`sections/${s.id}/types.ts\``).join('\n')}\n\n## Combined Reference\n\nSee \`overview.ts\` for all entity types aggregated in one file.\n`,
     },
     {
       path: 'data-shapes/overview.ts',
-      content: `// Combined UI data contracts.\n\n${project.data.entities.map((e) => `export interface ${e.name} ${entityType(e)}`).join('\n\n')}\n\nexport type EntityMap = {\n${project.data.entities.map((e) => `  ${camel(e.name)}: ${e.name}`).join('\n')}\n}\n`,
+      content: `// =============================================================================\n// UI Data Shapes — Combined Reference\n//\n// These types define the data that UI components expect to receive as props.\n// They are a frontend contract, not a database schema. How you model, store,\n// and fetch this data is an implementation decision.\n// =============================================================================\n\n${project.data.entities.map((e) => `// -----------------------------------------------------------------------------\n// ${e.name}\n// -----------------------------------------------------------------------------\n\nexport interface ${e.name} ${entityType(e)}`).join('\n\n')}\n\nexport type EntityMap = {\n${project.data.entities.map((e) => `  ${camel(e.name)}: ${e.name}`).join('\n')}\n}\n`,
     },
   ]
 }
 
+const HANDOFF_PREAMBLE = `---
+
+## About This Handoff
+
+**What you're receiving:**
+- Finished UI designs (React components with full styling)
+- Product requirements and user flow specifications
+- Design system tokens (colors, typography)
+- Sample data showing the shape of data components expect
+- Test specs focused on user-facing behavior
+
+**Your job:**
+- Integrate these components into your application
+- Wire up callback props to your routing and business logic
+- Replace sample data with real data from your backend
+- Implement loading, error, and empty states
+
+The components are props-based — they accept data and fire callbacks. How you architect the backend, data layer, and business logic is up to you.
+
+---`
+
+function milestonePreamble(index: number, total: number): string {
+  return `> **Provide alongside:** \`product-overview.md\`
+> **Prerequisites:** ${index === 1 ? 'None' : `Milestone ${index - 1} complete`}
+> **Milestone:** ${index} of ${total}`
+}
+
+function productOverview(project: Project): string {
+  const primary = project.design.colors.find((c) => c.role === 'primary') ?? project.design.colors[0]
+  const secondary = project.design.colors.find((c) => c.role === 'accent') ?? project.design.colors[1]
+  const neutral = project.design.colors.find((c) => c.role === 'neutral') ?? project.design.colors[2]
+  return `# ${project.name} — Product Overview
+
+## Summary
+
+${project.brief.tagline}
+
+${project.brief.summary}
+
+## Planned Sections
+
+${project.sections.map((section, i) => `${i + 1}. **${section.name}** — ${section.purpose}`).join('\n')}
+
+## Product Entities
+
+${project.data.entities.map((entity) => `- **${entity.name}** — ${entity.description}`).join('\n')}
+
+## Design System
+
+**Colors:**
+- Primary: ${primary?.base ?? 'Not defined'}
+- Secondary: ${secondary?.base ?? 'Not defined'}
+- Neutral: ${neutral?.base ?? 'Not defined'}
+
+**Typography:**
+${project.design.typography.map((t) => `- ${t.role}: ${t.family}`).join('\n')}
+
+## Implementation Sequence
+
+Build this product in milestones:
+
+1. **Shell** — Set up design tokens and application shell
+${project.sections.map((section, i) => `${i + 2}. **${section.name}** — ${section.purpose}`).join('\n')}
+
+Each milestone has a dedicated instruction document in \`instructions/incremental/\`.
+`
+}
+
 function promptsAndInstructions(project: Project): PackageFile[] {
-  const milestones = project.sections.map((s, i) => `${String(i + 2).padStart(2, '0')}-${s.id}`)
   const files: PackageFile[] = []
+  const total = project.sections.length + 1
+  const first = project.sections[0]
 
   files.push({
     path: 'prompts/one-shot-prompt.md',
-    content: `# One-shot implementation prompt
+    content: `# One-Shot Implementation Prompt
 
-Copy everything below into your coding agent.
+I need you to implement a complete web application based on detailed UI designs and product specifications I'm providing.
+
+## Instructions
+
+Please carefully read and analyze the following files:
+
+1. **@product-plan/product-overview.md** — Product summary with sections and entity overview
+2. **@product-plan/instructions/one-shot-instructions.md** — Complete implementation instructions for all milestones
+
+After reading these, also review:
+- **@product-plan/design-system/** — Color and typography tokens
+- **@product-plan/data-shapes/** — UI data contracts (the shapes of data the components expect)
+- **@product-plan/shell/** — Application shell components
+- **@product-plan/sections/** — All section components, types, sample data, and test specs
+
+## Before You Begin
+
+Review all the provided files, then ask me clarifying questions about:
+
+1. **My tech stack** — What framework, language, and tools I'm using, and any existing codebase conventions
+2. **Authentication & users** — How users should sign up, log in, and what permissions exist
+3. **Product requirements** — Anything in the specs or user flows that needs clarification
+4. **Anything else** — Whatever you need to know before implementing
+
+Lastly, ask me if I have any additional notes for this implementation.
+
+Once I answer your questions, create a comprehensive implementation plan before coding.
 
 ---
 
-You are implementing **${project.name}**, a ${project.archetypeLabel.toLowerCase()} product.
+### This package in one line
 
-Read these files before writing code, in this order:
-
-1. \`product-overview.md\` — what the product is and why
-2. \`instructions/one-shot-instructions.md\` — every milestone in order
-3. \`design-system/tokens.css\` and \`design-system/tailwind-colors.md\` — the only source of colour, type and spacing
-4. \`shell/components/\` — the shell is already designed; wire it, do not rebuild it
-5. \`data-shapes/overview.ts\` and \`src/data/repository.ts\` — the contracts components expect
-6. \`sections/*/components/\` — finished components, props-based
-7. \`sections/*/tests.md\` — write these tests first
-
-Rules:
-
-- Use the exported components as they are. They are styled and responsive; rebuild nothing.
-- Never hardcode a colour, radius, spacing value or font. Use the tokens.
-- Every input is a real input; every interactive element is a button or a link.
-- Empty, loading and error states are part of the work, not a follow-up.
-- Ask clarifying questions about auth, tenancy and backend before starting.
-
-Definition of done: every section's tests pass, the shell renders at ${project.design.breakpoints.map((b) => `${b.px}px`).join(' / ')}, and no component imports sample data.
+**${project.name}** is a ${project.archetypeLabel.toLowerCase()} product with ${project.sections.length} sections, ${project.sections.reduce((n, s) => n + s.screens.length, 0)} designed screens and ${project.data.entities.length} entities. Start with the shell milestone, then follow the sections in order.
 `,
   })
 
   files.push({
     path: 'prompts/section-prompt.md',
-    content: `# Section implementation prompt (template)
+    content: `# Section Implementation Prompt
 
-Fill the variables, then paste into your coding agent.
+## Define Section Variables
+
+- **SECTION_NAME** = [Human-readable name, e.g., "${first?.name ?? 'Invoices'}"]
+- **SECTION_ID** = [Folder name in sections/, e.g., "${first?.id ?? 'invoices'}"]
+- **NN** = [Milestone number, e.g., "02" or "03" — sections start at 02 since 01 is Shell]
 
 ---
 
-Implement the **{{SECTION_NAME}}** section of **${project.name}}**.
+I need you to implement the **SECTION_NAME** section of my application.
 
-- Section id: \`{{SECTION_ID}}\`
-- Milestone: \`{{NN}}\`
-- Instruction file: \`instructions/incremental/{{NN}}-{{SECTION_ID}}.md\`
-- Components: \`sections/{{SECTION_ID}}/components/\`
-- Tests to write first: \`sections/{{SECTION_ID}}/tests.md\`
+## Instructions
 
-Context: \`product-overview.md\` and \`design-system/tokens.css\` are required reading.
+Please carefully read and analyze the following files:
 
-Constraints:
+1. **@product-plan/product-overview.md** — Product summary for overall context
+2. **@product-plan/instructions/incremental/NN-SECTION_ID.md** — Specific instructions for this section
 
-- Wire the exported components; do not restyle them.
-- Use \`sample-data.json\` for the first pass, then the repository interface for real data.
-- Cover empty, loading and error states.
-- Report which acceptance criteria you verified and how.
+Also review the section assets:
+- **@product-plan/sections/SECTION_ID/README.md** — Feature overview and design intent
+- **@product-plan/sections/SECTION_ID/tests.md** — UI behavior test specs
+- **@product-plan/sections/SECTION_ID/components/** — React components to integrate
+- **@product-plan/sections/SECTION_ID/types.ts** — TypeScript interfaces
+- **@product-plan/sections/SECTION_ID/sample-data.json** — Test data
 
-Ask me anything that blocks you before writing code.
-`,
-  })
+## Before You Begin
 
-  files.push({
-    path: 'instructions/one-shot-instructions.md',
-    content: `# One-shot implementation instructions
+Review all the provided files, then ask me clarifying questions about:
 
-Implement the whole product in one pass, milestone by milestone. Run the tests after each milestone.
+1. **Integration** — How this section connects to existing features and any APIs already built
+2. **Product requirements** — Anything in the specs or user flows that needs clarification
+3. **Anything else** — Whatever you need to know before implementing
 
-## Milestone 01 — Shell and tokens
+Lastly, ask me if I have any additional notes for this implementation.
 
-${bullet([
-  'Install Tailwind v4 and import design-system/tokens.css.',
-  'Wire the fonts in design-system/fonts.md.',
-  'Drop shell/components into the app, then mount AppShell around routes.',
-  'Verify: navigation, account menu, keyboard focus and the 640/768/1024/1280 breakpoints.',
-])}
-
-${project.sections
-  .map(
-    (section, i) => `## Milestone ${String(i + 2).padStart(2, '0')} — ${section.name}
-
-${section.purpose}
-
-${bullet([
-  `Build from sections/${section.id}/components (${section.screens.map((s) => componentName(section, s)).join(', ')}).`,
-  `Data: ${section.entityIds.map((id) => project.data.entities.find((e) => e.id === id)?.name ?? id).join(', ')}.`,
-  `Write the tests in sections/${section.id}/tests.md first.`,
-  `Requirements: ${section.requirements.length} (${section.requirements.filter((r) => r.priority === 'must').length} must).`,
-])}
-`,
-  )
-  .join('\n')}
-
-## Final pass
-
-- Replace the mock adapter with the real one; the UI must not change.
-- Confirm every screen has empty, loading and error states.
-- Re-read audit.md and close any warning.
+Once I answer your questions, proceed with implementation.
 `,
   })
 
   files.push({
     path: 'instructions/incremental/01-shell.md',
-    content: `# Milestone 01 — Shell and tokens
+    content: `# Milestone 1: Shell
 
-## Files
+${milestonePreamble(1, total)}
 
-- \`design-system/tokens.css\`
-- \`design-system/fonts.md\`
-- \`shell/components/{AppShell,MainNav,UserMenu}.tsx\`
-- \`src/data/repository.ts\` (contracts) and \`src/data/mock-adapter.ts\` (temporary data)
+${HANDOFF_PREAMBLE}
 
-## Steps
+## Goal
 
-1. Import tokens.css at the app root and set \`data-theme\` for dark mode.
-2. Load the fonts listed in fonts.md, weights only.
-3. Mount \`<AppShell current={...} user={...}>{children}</AppShell>\`.
-4. Route the navigation labels to real pages (${project.system.shell.nav.map((n) => n.label).join(', ')}).
-5. Keep the mock adapter behind \`DataLayer\` so section work never touches fixtures.
+Set up the design tokens and application shell — the persistent chrome that wraps all sections.
 
-## Done when
+## What to Implement
 
-- Shell renders at every breakpoint without horizontal scroll.
-- Focus is visible on every control.
-- No component imports sample data.
+### 1. Design Tokens
+
+Configure your styling system with these tokens:
+
+- See \`design-system/tokens.css\` for CSS custom properties (light and dark)
+- See \`design-system/tokens.dtcg.json\` for the W3C DTCG version (Figma, Tokens Studio, Style Dictionary)
+- See \`design-system/tailwind-colors.md\` for Tailwind configuration and breakpoints
+- See \`design-system/fonts.md\` for font loading
+
+### 2. Application Shell
+
+Copy the shell components from \`shell/components/\` to your project:
+
+- \`AppShell.tsx\` — main layout wrapper
+- \`MainNav.tsx\` — navigation component
+- \`UserMenu.tsx\` — user menu with avatar
+
+**Wire Up Navigation:**
+
+${bullet(project.system.shell.nav.map((n) => `\`${n.label}\` → its route`))}
+
+**User Menu:**
+
+The user menu expects:
+- User name
+- Avatar URL (optional)
+- Logout callback
+
+## Files to Reference
+
+- \`design-system/\` — Design tokens
+- \`shell/README.md\` — Shell design intent
+- \`shell/components/\` — Shell React components
+- \`shell/screenshot.svg\` — Shell visual reference
+
+## Done When
+
+- [ ] Design tokens are configured
+- [ ] Shell renders with navigation
+- [ ] Navigation links to the correct routes
+- [ ] User menu shows user info
+- [ ] Responsive at ${project.design.breakpoints.map((b) => `${b.px}px`).join(', ')}
 `,
   })
 
   project.sections.forEach((section, i) => {
+    const index = i + 2
+    const flows = project.flows.filter((f) => f.steps.some((s) => s.sectionId === section.id))
     files.push({
-      path: `instructions/incremental/${String(i + 2).padStart(2, '0')}-${section.id}.md`,
-      content: `# Milestone ${String(i + 2).padStart(2, '0')} — ${section.name}
+      path: `instructions/incremental/${String(index).padStart(2, '0')}-${section.id}.md`,
+      content: `# Milestone ${index}: ${section.name}
 
-**Priority.** ${section.priority}
+${milestonePreamble(index, total)}
 
-${section.purpose}
+${HANDOFF_PREAMBLE}
 
-## Components
+## Goal
 
-${section.screens.map((s) => `- \`${componentName(section, s)}\` — ${s.name} (\`${s.route}\`)`).join('\n')}
+Implement the ${section.name} feature — ${section.purpose}
 
-## Data
+## Overview
 
+${section.purpose} Users reach it at ${section.screens.map((s) => `\`${s.route}\``).join(', ')}.
+
+**Key Functionality:**
+${bullet(
+  section.requirements.filter((r) => r.priority !== 'could').slice(0, 6).map((r) => r.text),
+)}
+
+## Components Provided
+
+Copy the section components from \`sections/${section.id}/components/\`:
+
+${bullet(section.screens.map((screen) => `\`${componentName(section, screen)}\` — ${screen.name} (${screen.kind})`))}
+
+## Props Reference
+
+The components expect these data shapes (see \`types.ts\` for full definitions):
+
+**Data props:**
+
+\`\`\`typescript
 ${section.entityIds
   .map((id) => {
-    const e = project.data.entities.find((x) => x.id === id)
-    return e ? `- **${e.name}** — \`${e.fields.length}\` fields; sample rows in \`sections/${section.id}/sample-data.json\`` : ''
+    const entity = project.data.entities.find((e) => e.id === id)
+    return entity ? `interface ${entity.name} {\n${['id: string', ...entity.fields.slice(0, 8).map((f) => `  ${f.name}${f.required ? '' : '?'}: ${f.type === 'status' && f.options?.length ? f.options.map((o) => `'${o}'`).join(' | ') : 'string | number | boolean'}`)].join('\n')}\n}` : ''
   })
-  .join('\n')}
+  .join('\n\n')}
+\`\`\`
+
+**Callback props:**
+
+| Callback | Triggered When |
+| --- | --- |
+| \`onOpen\` | User clicks a row or card to open the record |
+| \`onCreate\` | User clicks the primary action |
+| \`onSearch\` | User types in the search field |
+| \`onSubmit\` | User submits the form with valid values |
+
+## Expected User Flows
+
+${flows.length
+  ? flows.map((flow, f) => `### Flow ${f + 1}: ${flow.name}
+
+${flow.steps.map((step, si) => `${si + 1}. ${step.title} — ${step.detail}`).join('\n')}
+
+**Outcome:** ${flow.success}`).join('\n\n')
+  : `### Flow 1: Review the section\n\n1. User opens \`${section.screens[0]?.route ?? '/'}\`\n2. User scans the list and filters it\n3. **Outcome:** the relevant records are visible`}
+
+## Empty States
+
+The components include empty state designs. Make sure to handle:
+
+- **No data yet:** show the empty state when the primary list/collection is empty
+- **No related records:** handle cases where associated records don't exist
+- **First-time experience:** guide users to create their first item with clear CTAs
+
+## Testing
+
+See \`sections/${section.id}/tests.md\` for UI behavior test specs covering:
+- User flow success and failure paths
+- Empty state rendering
+- Component interactions and edge cases
 
 ## Requirements
 
 ${bullet(section.requirements.map((r) => `(${r.priority}) ${r.text}`))}
 
-## Tests
-
-${bullet(section.tests)}
-
-## Out of scope
+## Out of Scope
 
 ${bullet(section.outOfScope)}
 
-## Done when
+## Files to Reference
 
-- Every requirement above is implemented or explicitly deferred in writing.
-- The section's tests pass, including empty and error states.
+- \`sections/${section.id}/README.md\` — Feature overview and design intent
+- \`sections/${section.id}/tests.md\` — UI behavior test specs
+- \`sections/${section.id}/components/\` — React components
+- \`sections/${section.id}/types.ts\` — TypeScript interfaces
+- \`sections/${section.id}/sample-data.json\` — Test data
+- \`sections/${section.id}/screenshot.svg\` — Visual reference
+
+## Done When
+
+- [ ] Components render with real data
+- [ ] Empty states display properly when no records exist
+- [ ] All callback props are wired to working functionality
+- [ ] User can complete all expected flows end-to-end
+- [ ] Matches the visual design (see screenshot)
+- [ ] Responsive on mobile
 `,
     })
   })
 
   files.push({
-    path: `milestones.txt`,
-    content: ['01-shell', ...milestones].join('\n') + '\n',
+    path: 'instructions/one-shot-instructions.md',
+    content: `# ${project.name} — Complete Implementation Instructions
+
+${HANDOFF_PREAMBLE}
+
+## Testing
+
+Each section includes a \`tests.md\` file with UI behavior test specs. These are **framework-agnostic** — adapt them to your testing setup.
+
+**For each section:**
+1. Read \`sections/[section-id]/tests.md\`
+2. Write tests for key user flows (success and failure paths)
+3. Implement the feature to make tests pass
+4. Refactor while keeping tests green
+
+---
+
+${productOverview(project)}
+
+---
+
+# Milestone 1: Shell
+
+${bullet([
+  'Configure design tokens from `design-system/tokens.css`',
+  'Copy `shell/components/{AppShell,MainNav,UserMenu}.tsx`',
+  `Wire navigation: ${project.system.shell.nav.map((n) => n.label).join(', ')}`,
+  'Wire the user menu to your auth layer',
+])}
+
+---
+
+${project.sections
+  .map(
+    (section, i) => `# Milestone ${i + 2}: ${section.name}
+
+${section.purpose}
+
+${bullet(section.requirements.filter((r) => r.priority !== 'could').slice(0, 4).map((r) => r.text))}
+
+Components: ${section.screens.map((s) => `\`${componentName(section, s)}\``).join(', ')}.
+Tests: \`sections/${section.id}/tests.md\`.
+Visual: \`sections/${section.id}/screenshot.svg\`.`,
+  )
+  .join('\n\n---\n\n')}
+
+---
+
+## Final Pass
+
+- Replace the mock adapter with the real one; the UI must not change.
+- Confirm every screen has empty, loading and error states.
+- Re-read \`audit.md\` and close any warning.
+`,
+  })
+
+  files.push({
+    path: 'milestones.txt',
+    content: ['01-shell', ...project.sections.map((s, i) => `${String(i + 2).padStart(2, '0')}-${s.id}`)].join('\n') + '\n',
   })
 
   return files
@@ -938,35 +1385,7 @@ export function buildHandoff(project: Project): PackageFile[] {
   const files: PackageFile[] = []
   files.push(gitWorkflow(project))
 
-  files.push({
-    path: 'product-overview.md',
-    content: `# ${project.name}
-
-${project.brief.tagline}
-
-${project.brief.summary}
-
-## Value proposition
-
-${project.brief.elevator}
-
-## Problems
-
-${project.brief.problems.map((p) => `### ${p.title}\n\n${p.detail}\n\nCost of inaction: ${p.cost}`).join('\n\n')}
-
-## Features
-
-${bullet(project.sections.map((s) => `${s.name} — ${s.purpose}`))}
-
-## Roadmap
-
-${project.roadmap.phases.map((p) => `### ${p.name} (${p.horizon})\n\n${p.goal}\n\n${bullet(p.outcomes)}`).join('\n\n')}
-
-## Who it is for
-
-${project.brief.personas.map((p) => `**${p.name}** — ${p.role}. Goal: ${p.goal}. Pain: ${p.pain}.`).join('\n\n')}
-`,
-  })
+  files.push({ path: 'product-overview.md', content: productOverview(project) })
 
   files.push(...promptsAndInstructions(project))
   files.push(...designSystemFiles(project))
@@ -983,7 +1402,7 @@ ${project.brief.personas.map((p) => `**${p.name}** — ${p.role}. Goal: ${p.goal
         content: screenScreenshot(project, section, section.screens[0]),
       })
     }
-    files.push({ path: `sections/${section.id}/tests.md`, content: sectionTests(section) })
+    files.push({ path: `sections/${section.id}/tests.md`, content: sectionTests(project, section) })
     files.push({ path: `sections/${section.id}/types.ts`, content: sectionTypes(project, section) })
     files.push({
       path: `sections/${section.id}/sample-data.json`,

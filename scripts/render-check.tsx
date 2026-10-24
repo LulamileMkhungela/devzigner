@@ -143,7 +143,16 @@ checks.push(
   ['agent-os standards indexed', pkgHas('agent-os/standards/index.yml') && pkgPrefix('agent-os/standards/') >= 8],
   ['agent-os specs with visuals', pkgPrefix('agent-os/specs/') >= project.sections.length * 4],
   ['product planning outputs exported', pkgHas('product/product-overview.md') && pkgHas('product/product-roadmap.md') && pkgHas('product/data-shape/data-shape.md') && pkgHas('product/design-system/colors.json') && pkgHas('product/design-system/typography.json') && pkgHas('product/shell/spec.md')],
-  ['design-os + agent-os commands exported', pkgPrefix('commands/') >= 14],
+  ['design-os commands installed', pkgPrefix('.claude/commands/design-os/') === 10],
+  ['agent-os commands installed verbatim', pkgPrefix('.claude/commands/agent-os/') === 5 && pkg.find((f) => f.path === '.claude/commands/agent-os/shape-spec.md')!.content.includes('agent-os/specs/{YYYY-MM-DD-HHMM-feature-slug}')],
+  ['agent-os index uses folder → file → description', (() => {
+    const index = pkg.find((f) => f.path === 'agent-os/standards/index.yml')!.content
+    return /^ui:\n  components-from-registry:\n    description: /m.test(index) && index.includes('global:') && index.includes('    description: ')
+  })()],
+  ['agent-os spec plan saves documentation first', pkg.filter((f) => /agent-os\/specs\/.+\/plan\.md$/.test(f.path)).every((f) => f.content.includes('## Task 1: Save Spec Documentation'))],
+  ['agent-os shape follows the shaping questions', pkg.filter((f) => /agent-os\/specs\/.+\/shape\.md$/.test(f.path)).every((f) => f.content.includes('## Scope') && f.content.includes('## Decisions') && f.content.includes('## Standards Applied'))],
+  ['handoff instructions carry the preamble', pkg.find((f) => f.path === 'instructions/incremental/01-shell.md')!.content.includes('## About This Handoff') && pkg.find((f) => f.path === 'instructions/one-shot-instructions.md')!.content.includes('## About This Handoff')],
+  ['section tests follow the design-os spec format', pkg.filter((f) => /sections\/.+\/tests\.md$/.test(f.path)).every((f) => f.content.includes('## User Flow Tests') && f.content.includes('## Empty State Tests') && f.content.includes('## Accessibility Checks'))],
   ['planning JSON is valid', (() => {
     try {
       const colors = JSON.parse(pkg.find((f) => f.path === 'product/design-system/colors.json')!.content)

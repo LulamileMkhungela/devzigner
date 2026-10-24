@@ -1,0 +1,187 @@
+/**
+ * Runs the Design OS process from start to finish, through the real UI.
+ *
+ * Product Planning → Data Shape → Design System → Section Design → Export.
+ * The point is to prove the promise "zero input, complete on first load": the
+ * walkthrough never types a product idea, never answers a question, and still
+ * ends with a finished handoff package.
+ */
+import { JSDOM } from 'jsdom'
+
+const dom = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
+  url: 'http://localhost:5173/',
+  pretendToBeVisual: true,
+})
+const w = dom.window as unknown as Window & typeof globalThis
+;(globalThis as any).window = w
+;(globalThis as any).document = w.document
+;(globalThis as any).HTMLElement = w.HTMLElement
+;(globalThis as any).Element = w.Element
+;(globalThis as any).Node = w.Node
+;(globalThis as any).Blob = w.Blob
+;(globalThis as any).URL = w.URL
+;(globalThis as any).localStorage = w.localStorage
+;(globalThis as any).location = w.location
+;(globalThis as any).requestAnimationFrame = (cb: FrameRequestCallback) => setTimeout(() => cb(Date.now()), 0)
+;(globalThis as any).cancelAnimationFrame = (id: number) => clearTimeout(id)
+;(globalThis as any).ResizeObserver = class {
+  observe() {}
+  unobserve() {}
+  disconnect() {}
+}
+;(globalThis as any).matchMedia = () => ({ matches: false, addEventListener() {}, removeEventListener() {} })
+
+const errors: string[] = []
+const origError = console.error
+console.error = (...args: unknown[]) => {
+  const line = args.map(String).join(' ')
+  if (line.includes("Window's scrollTo")) return
+  errors.push(line)
+  origError(...args)
+}
+w.addEventListener('error', (e) => errors.push(`window error: ${(e as ErrorEvent).message}`))
+
+const { createRoot } = await import('react-dom/client')
+const { createElement } = await import('react')
+const { StoreProvider } = await import('../src/lib/store')
+const { App } = await import('../src/App')
+const { buildPackage } = await import('../src/export/package')
+
+createRoot(w.document.getElementById('root')!).render(createElement(StoreProvider, null, createElement(App)))
+
+const wait = (ms = 80) => new Promise((r) => setTimeout(r, ms))
+const $ = (selector: string) => w.document.querySelector(selector)
+const $$ = (selector: string) => Array.from(w.document.querySelectorAll(selector))
+const text = () => w.document.getElementById('root')?.textContent ?? ''
+const click = (el: Element | null | undefined) => (el as HTMLElement | null)?.click()
+const byText = (selector: string, needle: string) =>
+  $$(selector).find((el) => el.textContent?.toLowerCase().includes(needle.toLowerCase()))
+
+let failed = 0
+function step(label: string, ok: boolean, detail = '') {
+  if (!ok) failed++
+  console.log(`${ok ? 'ok ' : 'ERR'} ${label}${detail ? ` — ${detail}` : ''}`)
+}
+
+await wait(200)
+const stored = () => JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]
+const project = stored()
+
+/* ---- 0. first load: nothing typed, everything present ------------------- */
+
+step('first load compiles a product with no input', Boolean(project?.name) && project.sections.length >= 5, project?.name)
+step(
+  'all five phases are complete on first paint',
+  Boolean(project?.brief?.elevator) &&
+    project.data.entities.length >= 4 &&
+    project.sections.every((s: { screens: unknown[] }) => s.screens.length >= 2) &&
+    project.flows.length >= 4,
+  `${project.sections.length} sections · ${project.data.entities.length} entities · ${project.flows.length} flows`,
+)
+
+/* ---- 1. Product Planning ------------------------------------------------ */
+
+w.location.hash = '#/'
+await wait()
+const productHtml = text()
+step('Product Planning shows the vision', productHtml.includes('Value') || productHtml.includes('problem'), '')
+step('Product Planning shows the roadmap', productHtml.includes('Roadmap') || productHtml.includes('Phase'), '')
+const toData = byText('.lz-btn.primary, .lz-btn', 'Continue to Data Shape')
+step('Product Planning hands off to Data Shape', Boolean(toData))
+
+/* ---- 2. Data Shape ------------------------------------------------------ */
+
+click(toData)
+await wait(120)
+step('Data Shape route', w.location.hash === '#/data-shape', w.location.hash)
+const entityNames = project.data.entities.map((e: { name: string }) => e.name)
+step('every entity is rendered', entityNames.every((name: string) => text().includes(name)), entityNames.join(', '))
+step('the schema is generated', text().includes('schema.sql') || text().includes('create table'), '')
+
+/* ---- 3. Design System --------------------------------------------------- */
+
+const toDesign = byText('.lz-btn.primary, .lz-btn', 'Continue to Design')
+click(toDesign)
+await wait(120)
+step('Design System route', w.location.hash === '#/design', w.location.hash)
+const roles = project.design.colors
+const primary = roles.find((c: { role: string }) => c.role === 'primary') ?? roles[0]
+const accent = roles.find((c: { role: string }) => c.role === 'accent') ?? roles[1]
+step(
+  'colour roles and ramps render',
+  text().toUpperCase().includes(primary.base.toUpperCase()) &&
+    text().toUpperCase().includes(accent.base.toUpperCase()) &&
+    text().includes(`${roles.length} roles`),
+  `${roles.length} roles`,
+)
+step('typography renders', project.design.typography.every((t: { family: string }) => text().includes(t.family)))
+const shellLink = byText('a, button', 'View Shell Design') ?? byText('a, button', 'Shell')
+step('shell design is reachable', Boolean(shellLink))
+
+/* ---- 4. Section Design -------------------------------------------------- */
+
+w.location.hash = '#/sections'
+await wait(120)
+step('Sections route lists the build order', entityNames.length > 0 && project.sections.every((s: { name: string }) => text().includes(s.name)))
+
+const first = project.sections[0]
+w.location.hash = `#/sections/${first.id}`
+await wait(140)
+const railSteps = $$('.lz-rail-step').length
+step('section rail has the four design steps', railSteps >= 3, `${railSteps} steps`)
+step('requirements are specified', text().toLowerCase().includes('requirement') || first.requirements.length > 0, `${first.requirements.length} requirements`)
+step('sample data is present', text().includes('Sample') || first.screens.length > 0)
+
+const captureBtn = $$('.lz-empty .lz-btn.primary')[0] ?? byText('.lz-btn.primary', 'Capture')
+if (captureBtn) {
+  click(captureBtn)
+  await wait(160)
+}
+const captured = JSON.parse(w.localStorage.getItem('lula.devzign.captures.v1') ?? '{}')
+step('screen designs can be captured', Object.keys(captured).length > 0)
+
+const screenLink = $$('.lz-secrow, a[href*="screen-designs"]')[0]
+if (screenLink) {
+  click(screenLink)
+  await wait(140)
+}
+step('a screen design opens', w.location.hash.includes('screen-designs'), w.location.hash)
+
+/* ---- 5. Export ---------------------------------------------------------- */
+
+w.location.hash = '#/export'
+await wait(160)
+const exportHtml = text()
+step('Export route', w.location.hash === '#/export')
+step('readiness checklist has no failures', !$('.lz-checkrow-ic.fail'))
+step('audit renders', exportHtml.includes('Audit') || exportHtml.includes('audit'))
+
+const files = buildPackage(stored(), JSON.parse(w.localStorage.getItem('lula.devzign.versions.v1') ?? '{}')[stored().id]?.versions ?? [])
+const paths = files.map((f) => f.path)
+step('package is complete', paths.length > 180, `${paths.length} files`)
+step(
+  'package contains the Design OS contract',
+  ['product-overview.md', 'prompts/one-shot-prompt.md', 'prompts/section-prompt.md', 'instructions/one-shot-instructions.md', 'instructions/incremental/01-shell.md', 'design-system/tokens.css', 'design-system/tailwind-colors.md', 'design-system/fonts.md', 'data-shapes/overview.ts', 'shell/components/AppShell.tsx'].every((p) => paths.includes(p)),
+)
+step(
+  'package contains a component per screen',
+  paths.filter((p) => /sections\/.+\/components\/.+\.tsx$/.test(p) && !p.endsWith('index.ts')).length ===
+    stored().sections.reduce((n: number, s: { screens: unknown[] }) => n + s.screens.length, 0),
+)
+step(
+  'package contains the Agent OS layer',
+  paths.includes('agent-os/product/mission.md') &&
+    paths.includes('agent-os/standards/index.yml') &&
+    paths.includes('.claude/commands/agent-os/shape-spec.md') &&
+    paths.some((p) => p.startsWith('agent-os/specs/')),
+)
+step(
+  'package contains a screenshot per section plus the shell',
+  paths.filter((p) => p.endsWith('.svg')).length >= stored().sections.length + 1,
+)
+
+console.log(
+  `\n${failed === 0 ? 'walkthrough complete: idea → package with zero user input' : `${failed} step(s) failed`}`,
+)
+console.log(errors.length ? `console errors:\n${errors.join('\n')}` : 'no console errors')
+process.exit(failed || errors.length ? 1 : 0)

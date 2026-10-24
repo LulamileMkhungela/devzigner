@@ -158,7 +158,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     }
     return [compileProject(STARTER)]
   })
-  const [theme, setThemeState] = useState<Theme>(() => (readJson<string>(THEME_KEY, 'light') === 'dark' ? 'dark' : 'light'))
+  const [theme, setThemeState] = useState<Theme>(() => (readJson<string>(THEME_KEY, 'dark') === 'light' ? 'light' : 'dark'))
   const [activeId, setActiveId] = useState<string>(() => readJson<string>(ACTIVE_KEY, ''))
   const [captures, setCaptures] = useState<CaptureMap>(() => {
     const stored = readJson<CaptureMap>(CAPTURE_KEY, {})

@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { useStore } from './lib/store'
 import { Link, navigate, useRoute } from './lib/router'
 import { PHASES, completedPhases, phaseIndex, sectionStats } from './lib/progress'
-import { ARCHETYPES, GENOME_PRESETS } from './engine'
 import { downloadProjectZip } from './lib/download'
 import { Icon } from './components/Icons'
 import { Toast, useOutsideClose } from './components/ui'
@@ -34,16 +33,16 @@ const TRACK_NAV = [
 
 export function App() {
   const { path, fullscreen } = useRoute()
-  const { projects, active, captures, theme, toggleTheme, create, setActive, regenerate, reset, notify, versions } = useStore()
+  const { active, captures, theme, toggleTheme, regenerate, reset, notify, versions } = useStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
-  const [newOpen, setNewOpen] = useState(false)
   const [sectionsOpen, setSectionsOpen] = useState(true)
 
   const done = useMemo(() => completedPhases(active, captures), [active, captures])
   const stats = useMemo(() => sectionStats(active, captures), [active, captures])
   const currentPhase = path[0] === 'data-shape' || path[0] === 'design' || path[0] === 'shell' ? (path[0] === 'shell' ? 'design' : path[0]) : path[0] ?? 'product'
   const trackActive = TRACK_NAV.some((n) => n.path === path[0])
+  const doneCount = PHASES.filter((phase) => done[phase.id]).length
 
   useEffect(() => {
     document.body.classList.toggle('lz-nav-open', navOpen)
@@ -172,35 +171,26 @@ export function App() {
             )}
           </div>
 
-          <div className="lz-nav-group">
-            <button className="lz-nav-item" type="button" onClick={() => setNewOpen(true)}>
-              <Icon name="Plus" size={17} />
-              <span className="lz-nav-label-text">New product</span>
-            </button>
-          </div>
         </nav>
 
         <div className="lz-side-foot">
           <div className="lz-avatar" aria-hidden="true">{active.name.slice(0, 1).toUpperCase()}</div>
           <div className="lz-account">
             <div className="lz-account-name" title={active.name}>{active.name}</div>
-            <div className="lz-account-email">{active.archetypeLabel} · {projects.length} compiled</div>
+            <div className="lz-account-email">{active.archetypeLabel} · {doneCount}/5 phases</div>
           </div>
           <button
             className="lz-dots"
             type="button"
             aria-haspopup="menu"
             aria-expanded={menuOpen}
-            aria-label="Product menu"
+            aria-label="Actions"
             onClick={() => setMenuOpen((v) => !v)}
           >
             •••
           </button>
           {menuOpen && (
             <div className="lz-menu" role="menu" ref={menuRef}>
-              <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); setNewOpen(true) }}>
-                New product…
-              </button>
               <button type="button" role="menuitem" onClick={() => { setMenuOpen(false); navigate('export') }}>
                 Export package
               </button>
@@ -211,11 +201,6 @@ export function App() {
                 Use {theme === 'dark' ? 'light' : 'dark'} theme
               </button>
               <hr />
-              {projects.filter((p) => p.id !== active.id).slice(0, 5).map((p) => (
-                <button key={p.id} type="button" role="menuitem" onClick={() => { setActive(p.id); navigate(''); setMenuOpen(false) }}>
-                  Switch to {p.name}
-                </button>
-              ))}
               <button
                 type="button"
                 role="menuitem"
@@ -245,83 +230,8 @@ export function App() {
         <div key={path.join('/') || 'product'}>{page()}</div>
       </main>
 
-      {newOpen && <NewProductModal onClose={() => setNewOpen(false)} onCreate={(opts) => { create(opts); setNewOpen(false); navigate(''); notify('Product compiled') }} />}
       <Toast />
     </div>
   )
 }
 
-function NewProductModal({
-  onClose,
-  onCreate,
-}: {
-  onClose: () => void
-  onCreate: (opts: { idea: string; archetypeId: string; genome?: (typeof GENOME_PRESETS)[number]['genome'] }) => void
-}) {
-  const [idea, setIdea] = useState('')
-  const [archetypeId, setArchetypeId] = useState(ARCHETYPES[0]?.id ?? 'marketplace')
-  const [preset, setPreset] = useState(GENOME_PRESETS[0].id)
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onClose()
-    }
-    window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
-
-  return (
-    <div className="lz-modal" role="dialog" aria-modal="true" aria-label="New product" onMouseDown={(e) => e.target === e.currentTarget && onClose()}>
-      <div className="lz-modal-card">
-        <div className="lz-modal-h">
-          <h2>New product</h2>
-          <button className="lz-modal-x" onClick={onClose} aria-label="Close">
-            <Icon name="X" size={14} />
-          </button>
-        </div>
-        <p className="lz-muted" style={{ fontSize: 13, marginBottom: 16 }}>
-          One line is enough — the compiler supplies the rest. Leave it blank and the archetype pack writes the product for you.
-        </p>
-
-        <label className="lz-field">
-          <span>What is it? (optional)</span>
-          <textarea
-            className="lz-input"
-            rows={3}
-            value={idea}
-            placeholder="A booking tool for mobile dog groomers…"
-            onChange={(e) => setIdea(e.target.value)}
-          />
-        </label>
-
-        <label className="lz-field">
-          <span>Archetype pack</span>
-          <select className="lz-input" value={archetypeId} onChange={(e) => setArchetypeId(e.target.value)}>
-            {ARCHETYPES.map((a) => (
-              <option key={a.id} value={a.id}>{a.label}</option>
-            ))}
-          </select>
-        </label>
-
-        <label className="lz-field">
-          <span>Genome preset</span>
-          <select className="lz-input" value={preset} onChange={(e) => setPreset(e.target.value)}>
-            {GENOME_PRESETS.map((p) => (
-              <option key={p.id} value={p.id}>{p.label}</option>
-            ))}
-          </select>
-        </label>
-
-        <div className="lz-modal-foot">
-          <button className="lz-btn" onClick={onClose}>Cancel</button>
-          <button
-            className="lz-btn primary"
-            onClick={() => onCreate({ idea, archetypeId, genome: GENOME_PRESETS.find((p) => p.id === preset)?.genome })}
-          >
-            <Icon name="Zap" size={14} /> Compile product
-          </button>
-        </div>
-      </div>
-    </div>
-  )
-}

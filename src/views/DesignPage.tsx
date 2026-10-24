@@ -1,4 +1,5 @@
 import type { Project } from '../types'
+import { StepGuide } from '../components/StepGuide'
 import { Collapsible, NextPhase, PhaseHeader, useFileDownload } from '../components/ui'
 import { Icon } from '../components/Icons'
 import { Link } from '../lib/router'
@@ -16,6 +17,7 @@ export function DesignPage({ project }: { project: Project }) {
 
   return (
     <div className="lz-view">
+      <StepGuide phase="design" />
       <PhaseHeader
         project={project}
         current="design"

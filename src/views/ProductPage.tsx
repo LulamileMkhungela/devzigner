@@ -1,3 +1,4 @@
+import { StepGuide } from '../components/StepGuide'
 import { useState } from 'react'
 import type { Project } from '../types'
 import { useStore } from '../lib/store'
@@ -43,6 +44,8 @@ export function ProductPage({ project }: { project: Project }) {
           </>
         }
       />
+
+      <StepGuide phase="product" />
 
       <div className="lz-stack">
         <div className="lz-cols-4">

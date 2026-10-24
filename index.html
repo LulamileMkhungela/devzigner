@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#fafaf9" />
+    <meta name="theme-color" content="#0a0a0a" />
     <meta
       name="description"
       content="Lula DevZign — five phases from an idea to a build-ready product package. Brief, data shape, design system, sections, screens and export, compiled locally. No prompts, no API keys, no blank pages."
@@ -14,9 +14,9 @@
   <body>
     <div id="root"></div>
     <noscript>
-      <div style="font-family: system-ui, sans-serif; max-width: 640px; margin: 12vh auto; padding: 24px; border: 1px solid #e7e5e4; border-radius: 12px">
+      <div style="font-family: system-ui, sans-serif; max-width: 640px; margin: 12vh auto; padding: 24px; border: 1px solid #262626; border-radius: 12px">
         <h1 style="font-size: 18px; margin: 0 0 8px">Lula DevZign needs JavaScript</h1>
-        <p style="margin: 0; font-size: 14px; color: #57534e">
+        <p style="margin: 0; font-size: 14px; color: #a3a3a3">
           The workspace compiles the product in the browser. Enable JavaScript, or open
           <code>/lula-devzign-standalone.html</code>, which carries the whole app in one file.
         </p>
@@ -50,26 +50,26 @@
           box.setAttribute('role', 'alert')
           box.style.cssText =
             'font-family:system-ui,-apple-system,sans-serif;max-width:720px;margin:12vh auto;padding:24px;' +
-            'border:1px solid #e7e5e4;border-radius:12px;background:#fff;color:#1c1917;line-height:1.55'
+            'border:1px solid #262626;border-radius:12px;background:#141414;color:#fafafa;line-height:1.55'
           box.innerHTML =
             '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#a8a29e">Lula DevZign</p>' +
             '<h1 style="margin:6px 0 8px;font-size:20px;font-weight:600">The app did not start</h1>' +
-            '<p style="margin:0 0 12px;font-size:14px;color:#57534e">This page is not blank on purpose: the entry point never mounted. ' +
+            '<p style="margin:0 0 12px;font-size:14px;color:#a3a3a3">This page is not blank on purpose: the entry point never mounted. ' +
             'That usually means a proxy dropped the module, or a script failed before React existed.</p>' +
             (lines.length
-              ? '<pre style="margin:0 0 14px;padding:12px;border-radius:8px;background:#fafaf9;border:1px solid #e7e5e4;' +
+              ? '<pre style="margin:0 0 14px;padding:12px;border-radius:8px;background:#0f0f0f;border:1px solid #262626;' +
                 'font-family:ui-monospace,monospace;font-size:12px;white-space:pre-wrap">' +
                 lines.map(escapeHtml).join('\n') +
                 '</pre>'
               : '') +
-            '<p style="margin:0 0 8px;font-size:13px;color:#57534e">URL: <code>' +
+            '<p style="margin:0 0 8px;font-size:13px;color:#a3a3a3">URL: <code>' +
             escapeHtml(location.href) +
             '</code></p>' +
-            '<p style="margin:0 0 16px;font-size:13px;color:#57534e">Try <code>/lula-devzign-standalone.html</code> — the same app as one file, no server needed.</p>' +
-            '<button onclick="location.reload()" style="padding:8px 14px;border-radius:8px;border:1px solid #1c1917;' +
-            'background:#1c1917;color:#fafaf9;font-size:13px;font-weight:500;cursor:pointer">Reload</button> ' +
+            '<p style="margin:0 0 16px;font-size:13px;color:#a3a3a3">Try <code>/lula-devzign-standalone.html</code> — the same app as one file, no server needed.</p>' +
+            '<button onclick="location.reload()" style="padding:8px 14px;border-radius:8px;border:1px solid #ff5c1a;' +
+            'background:#ff5c1a;color:#0a0a0a;font-size:13px;font-weight:500;cursor:pointer">Reload</button> ' +
             '<button onclick="try{localStorage.clear()}catch(e){};location.reload()" style="margin-left:8px;padding:8px 14px;' +
-            'border-radius:8px;border:1px solid #d6d3d1;background:#fff;color:#1c1917;font-size:13px;font-weight:500;' +
+            'border-radius:8px;border:1px solid #3a3a3a;background:#141414;color:#fafafa;font-size:13px;font-weight:500;' +
             'cursor:pointer">Clear saved data and reload</button>'
           document.body.appendChild(box)
         }

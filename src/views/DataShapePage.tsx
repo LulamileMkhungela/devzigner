@@ -1,3 +1,4 @@
+import { StepGuide } from '../components/StepGuide'
 import { useState } from 'react'
 import type { Entity, Project } from '../types'
 import { Collapsible, NextPhase, PhaseHeader, useFileDownload } from '../components/ui'
@@ -11,6 +12,7 @@ export function DataShapePage({ project }: { project: Project }) {
 
   return (
     <div className="lz-view">
+      <StepGuide phase="data-shape" />
       <PhaseHeader
         project={project}
         current="data-shape"

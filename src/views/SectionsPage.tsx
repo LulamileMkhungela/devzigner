@@ -1,4 +1,5 @@
 import type { Project } from '../types'
+import { StepGuide } from '../components/StepGuide'
 import { useStore } from '../lib/store'
 import { NextPhase, PhaseHeader, ProgressDots, WarningBanner } from '../components/ui'
 import { Icon } from '../components/Icons'
@@ -12,6 +13,7 @@ export function SectionsPage({ project }: { project: Project }) {
 
   return (
     <div className="lz-view">
+      <StepGuide phase="sections" />
       <PhaseHeader
         project={project}
         current="sections"

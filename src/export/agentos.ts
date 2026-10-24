@@ -519,13 +519,13 @@ function skills(project: Project): PackageFile[] {
   return [
     {
       // Design OS's own skill, vendored byte for byte.
-      path: '.claude/skills/frontend-design/SKILL.md',
+      path: '.agents/skills/frontend-design/SKILL.md',
       content: DESIGN_OS_SKILL,
     },
     {
       // The project-specific continuation of it: the compiled tokens, registry
       // and breakpoints this product actually ships.
-      path: '.claude/skills/project-design-system/SKILL.md',
+      path: '.agents/skills/project-design-system/SKILL.md',
       content: `---
 name: project-design-system
 description: Compose ${project.name} screens from the generated design system and registry. Use when building or reviewing any UI.

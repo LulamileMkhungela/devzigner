@@ -63,9 +63,17 @@ function step(label: string, ok: boolean, detail = '') {
   console.log(`${ok ? 'ok ' : 'ERR'} ${label}${detail ? ` — ${detail}` : ''}`)
 }
 
-await wait(200)
 const stored = () => JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]
-const project = stored()
+async function waitFor<T>(read: () => T | undefined, timeout = 8000): Promise<T | undefined> {
+  const started = Date.now()
+  while (Date.now() - started < timeout) {
+    const value = read()
+    if (value) return value
+    await wait(50)
+  }
+  return undefined
+}
+const project = (await waitFor(stored)) ?? stored()
 
 /* ---- 0. first load: nothing typed, everything present ------------------- */
 
@@ -176,8 +184,27 @@ step(
     paths.some((p) => p.startsWith('agent-os/specs/')),
 )
 step(
+  'every free tool is in the package',
+  ['TOOLKIT.md', 'AGENTS.md', 'scripts/link-agents.sh', '.agents/skills/prd-creator/SKILL.md', '.agents/skills/skill-builder/SKILL.md', '.agents/skills/design-system/SKILL.md', '.agents/skills/favicon-creator/SKILL.md', '.agents/skills/agentcanon-repo/SKILL.md', 'template/build-new/AGENTS.md'].every((p) => paths.includes(p)),
+)
+step(
+  'the package carries a tested backend',
+  ['business-logic.md', 'server/API.md', 'server/src/rules.ts', 'server/src/services.ts', 'server/src/http.ts', 'server/src/tests/rules.test.ts', 'server/src/tests/api.test.ts', 'src/data/http-adapter.ts'].every((p) => paths.includes(p)),
+)
+step(
   'package contains a screenshot per section plus the shell',
   paths.filter((p) => p.endsWith('.svg')).length >= stored().sections.length + 1,
+)
+
+/* ---- 6. Tools ------------------------------------------------------------ */
+
+w.location.hash = '#/tools'
+await wait(160)
+const toolsHtml = text()
+step('Tools route', w.location.hash === '#/tools')
+step(
+  'all eight free tools are listed with steps',
+  ['PRD Creator', 'Skill Builder', 'Design System', 'Build New', 'agentcanon', 'Favicon Creator', 'Agent OS', 'Design OS'].every((name) => toolsHtml.includes(name)),
 )
 
 console.log(

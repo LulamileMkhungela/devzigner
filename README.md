@@ -24,11 +24,11 @@ The app is a five-phase product workspace. Each phase is a page, and each page i
 | **Screen design** | `/sections/:id/screen-designs/:name` | The rendered screen at 30 / 60 / 100 %, a live percentage readout, edge grips that resize from the centre, a light/dark switch and a fullscreen address. |
 | **Export** | `/export` | Readiness checklist, the package card, what's included, Option A / Option B usage, the full audit and every file in the ZIP. |
 
-Navigation is LulaZel's: a sticky 268 px rail with the five phases, collapsible section list and a product menu; a pill stepper across the top of every phase page; warm paper, rust accent, Inter, 14 px cards. The flow inside those slots is Design OS's, closely: phase stepper with completion ticks, numbered step rails, collapsible cards, dashed empty states with the command that fills them, a dismissible warning banner when earlier phases are incomplete, progress dots per section, resizable screen previews, and an export checklist with two usage paths.
+The skin is Design OS's own: warm stone neutrals (stone-50 ground, white cards, 1px stone-200 rules, stone-900 primary buttons), DM Sans for text and IBM Plex Mono for code, 8px radii, a sticky header carrying the phase nav and a single centred content column. The flow is Design OS's too: phase stepper with completion ticks, numbered step rails, collapsible cards, dashed empty states with the command that fills them, a dismissible warning banner when earlier phases are incomplete, progress dots per section, resizable screen previews, and an export checklist with two usage paths.
 
 ### The prototype track
 
-Under the workspace phases sits a second track — **Flows → System → Prototype → Wiki** with a token editor beside it. It is the "Bye Figma" half of the product: the place where the design system stops being a document and starts being the thing the prototype is built from.
+Under the workspace phases sits a second track — **Tools → Flows → System → Prototype → Wiki → Coverage** with a token editor beside it. It is where the design system stops being a document and starts being the thing the prototype is built from, and where the eight Builder Methods tools are installed and verified.
 
 | Page | What it does |
 | --- | --- |
@@ -37,9 +37,62 @@ Under the workspace phases sits a second track — **Flows → System → Protot
 | **Prototype** (`/prototype`) | A working AppShell with real routes and seeded records, assembled only from registry components — every block renders through a named component (`data-component`). Type to filter, sort a table, submit a form with validation, create a record, navigate the shell, and switch between the four compiled breakpoints (the `sm` view is the mobile layout). |
 | **Token editor** (`/editor`) | Inline editing linked to the tokens: primary and accent hue, radius, spacing, shell and card style. Every change re-runs the compiler — ramps, contrast, semantic aliases, screens, audit — so nothing downstream can drift. |
 | **Wiki** (`/wiki`) | The prototype wiki: product, flows, data layer, design system, components, shell, screens, stack, audit and handoff, plus branches and snapshots. Restore rebuilds the product deterministically. |
-| **Coverage** (`/coverage`) | The parity audit. Every row rebuilds the export package and checks the artefact is really in it — Design OS's ten commands, the export contract, Agent OS's standards/specs, and each Figma complaint with its countermeasure. Nothing here is asserted in prose. |
+| **Coverage** (`/coverage`) | The parity audit. Every row rebuilds the export package and checks the artefact is really in it — Design OS's ten commands, the export contract, Agent OS's standards/specs, all eight free tools, the backend and its tests. Nothing here is asserted in prose. |
+| **Tools** (`/tools`) | The eight free tools from buildermethods.com/tools, each with the steps it actually runs and the path it is installed at. The skill text is shipped verbatim. |
 
 The export grows to match: `src/data/types.ts`, `src/data/repository.ts` and `src/data/mock-adapter.ts` (a dummy data layer the UI can only reach through an interface), `src/components/app-shell.tsx`, `system/{stack,registry,app-shell,data-layer}` and a `wiki/` folder with a changelog. Branches are real snapshots in the browser; the exported folder is ready to commit, one worktree per exploration.
+
+### The eight free tools, installed
+
+The Builder Methods toolkit is not linked from a menu — it is installed in the
+package, verbatim, under the `agentcanon` convention:
+
+| Tool | Kind | Installed at |
+| --- | --- | --- |
+| **PRD Creator** | agent skill | `.agents/skills/prd-creator/` |
+| **Skill Builder** | agent skill | `.agents/skills/skill-builder/` |
+| **Design System** | agent skill | `.agents/skills/design-system/` (50 reference files) |
+| **Build New** | template | `template/build-new/` |
+| **agentcanon** | convention | `.agents/skills/agentcanon-{repo,manifest}/`, `AGENTS.md`, `scripts/link-agents.sh` |
+| **Favicon Creator** | agent skill | `.agents/skills/favicon-creator/` |
+| **Agent OS** | workflow | `agent-os/` + `.claude/commands/agent-os/` (5 commands) |
+| **Design OS** | workflow | `product-plan/` + `.claude/commands/design-os/` (10 commands) |
+
+Skills live once, in `.agents/skills/`; instructions live once, in `AGENTS.md`;
+`CLAUDE.md` and `.claude/skills` are symlinks created by `scripts/link-agents.sh`.
+`TOOLKIT.md` records each tool, its steps and where it is installed. The **Tools**
+page in the app lists the same eight with the steps parsed from the shipped
+`SKILL.md` files, so the page cannot drift from the text being shipped.
+
+### The backend is part of the handoff
+
+A design handoff that stops at the UI leaves the expensive half to the agent. The
+package therefore includes a working backend — dependency-free TypeScript on
+Node's own `http` module:
+
+| Path | What it is |
+| --- | --- |
+| `business-logic.md` | the rules, per entity: status journeys, terminal states, required fields, invariants |
+| `server/src/rules.ts` | the status machine (`canTransition`, `isTerminal`, `invariants`) |
+| `server/src/validate.ts` | field validation: required, types, enums, dates, emails, foreign keys |
+| `server/src/services.ts` | the business layer, plus an append-only event log |
+| `server/src/http.ts` | routes, roles, status codes — callable from a test with no socket |
+| `server/src/tests/*.test.ts` | the state machine and the API behaviour, on `node --test` |
+| `src/data/http-adapter.ts` | the same `DataLayer` interface the mock implements, now over HTTP |
+
+Rules are derived from the compiled data shape, not written per export: the status
+order comes from the entity options, required fields from the fields, foreign keys
+from the relationships, and money/percent/rating bounds from the field types. Two
+rules are worth calling out because they are where most generated backends give up:
+
+- **A status is a journey.** `PATCH` refuses to change it and points at
+  `POST /api/:entity/:id/transition`, which allows one step forward or a terminal
+  status — never backwards, never skipping.
+- **A rejected write names the field.** Validation returns a 422 with
+  `{ field, message }` per issue, so the form can render it inline.
+
+`npm run export-check` does not just typecheck this code: it writes the server to
+disk and runs its test suite with Node's own runner, for two archetypes.
 
 ### Design OS and Agent OS, artefact by artefact
 
@@ -69,7 +122,7 @@ Generated components are **props-only** (no data imports, no routing), responsiv
 
 | Complaint | Countermeasure |
 | --- | --- |
-| Variables that only exist inside one tool | `design-system/tokens.dtcg.json` — W3C DTCG `$value`/`$type` primitives, readable by Figma, Tokens Studio and Style Dictionary |
+| Variables that only exist inside one tool | `design-system/tokens.dtcg.json` — W3C DTCG `$value`/`$type` primitives, readable by any tokens tool |
 | Layouts that only exist at one width | Four breakpoints compiled as tokens, audited (`Responsive contract`), used by every exported component; nav collapses, tables scroll inside their card |
 | Autolayout that guesses margins | The compiler emits the shell, content width, density, grid and spacing scale; components consume `--space-*`, never ad-hoc margins |
 | Hundreds of hand-crafted component states | States come from variant axes on registry components; screens are composed from the registry, never drawn once-off |
@@ -229,7 +282,7 @@ src/
   engine/system.ts       # stack, component registry, AppShell, data layer
   export/systemFiles.ts  # generated src/data/*, app-shell.tsx, system/*, wiki/*
   views/CoveragePage.tsx # parity audit, verified against the built package
-  styles/app.css         # LulaZel-derived shell: rail, paper, rust accent, pill stepper
+  styles/app.css         # Design OS skin: stone palette, DM Sans, header nav, cards
   styles/preview.css     # the generated artefact's own token-driven styles
   lib/                   # store (projects, captures, token edits, versions), router,
                          # progress, wiki, formatting
@@ -258,7 +311,7 @@ Same inputs → byte-identical package, forever. `devzign.json` in the export ca
 - **Not user research.** Personas and quotes are synthetic and labelled as such, in the product and in the export. The brief explicitly tells you to validate with three real interviews before locking a roadmap.
 - **Not a benchmark.** Targets are directional design goals, not measured averages.
 - **Not a replacement for taste.** It compiles a defensible starting system; choosing which parts to keep is still a human job.
-- **Not affiliated with Builder Methods, Design OS or LulaZel.** The five-phase flow and interaction model follow Design OS; the shell's colours, navigation and page structure follow LulaZel. The implementation is independent: no prompts, no agent runtime, no model dependency, no accounts.
+- **Not affiliated with Builder Methods.** The five-phase flow, the skin and the exported contract follow Design OS; the standards and spec layer follows Agent OS; the agent skills are installed from the Builder Methods free tools. The implementation is independent: no model dependency, no accounts, no keys.
 
 ---
 

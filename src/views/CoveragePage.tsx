@@ -112,13 +112,55 @@ export function CoveragePage({ project }: { project: Project }) {
           row('Specs', 'shape, plan, references and standards per section', countPrefix('agent-os/specs/') >= project.sections.length * 4, [`${countPrefix('agent-os/specs/')} files`]),
           row('Spec plan starts with Task 1', 'plan.md saves the spec documentation first, as Agent OS requires', [...paths].filter((p) => p.includes('agent-os/specs/') && p.endsWith('/plan.md')).every((p) => files.find((f) => f.path === p)!.content.includes('## Task 1: Save Spec Documentation')), ['agent-os/specs/<date>-<section>/plan.md']),
           row('Spec visuals', 'the screens each spec refers to', [...paths].some((p) => /agent-os\/specs\/.+\/visuals\/.+\.svg$/.test(p)), ['agent-os/specs/<date>-<section>/visuals/*.svg']),
-          row('Design skill', 'Design OS’s own frontend-design skill, plus this product’s compiled version', has('.claude/skills/frontend-design/SKILL.md') && has('.claude/skills/project-design-system/SKILL.md'), ['.claude/skills/frontend-design/SKILL.md', '.claude/skills/project-design-system/SKILL.md']),
+          row('Design skill', 'Design OS’s own frontend-design skill, plus this product’s compiled version', has('.agents/skills/frontend-design/SKILL.md') && has('.agents/skills/project-design-system/SKILL.md'), ['.agents/skills/frontend-design/SKILL.md', '.agents/skills/project-design-system/SKILL.md']),
         ],
       },
       {
-        id: 'manifesto',
-        title: 'The Figma complaints, answered',
-        note: 'Each rejected practice has a countermeasure in the compiler, the prototype and the export.',
+        id: 'tools',
+        title: 'The eight free tools, installed',
+        note: 'buildermethods.com/tools ships eight tools. All eight are in the package, with the real skill text.',
+        rows: [
+          row('Design OS', 'ten commands, verbatim, plus the artefacts they produce', countPrefix('.claude/commands/design-os/') === 10 && has('product-overview.md') && hasPrefix('sections/'), ['.claude/commands/design-os/ (10)', 'product-overview.md']),
+          row('Agent OS', 'five commands, verbatim, plus product docs and standards', countPrefix('.claude/commands/agent-os/') === 5 && has('agent-os/config.yml') && has('agent-os/standards/index.yml'), ['.claude/commands/agent-os/ (5)', 'agent-os/config.yml']),
+          row('PRD Creator', 'the skill, plus the PRD and milestone prompts it produces', countPrefix('.agents/skills/prd-creator/') >= 10 && has('_build_plan/prd.md') && countPrefix('_build_plan/milestones/') === 3, [`.agents/skills/prd-creator/ (${countPrefix('.agents/skills/prd-creator/')} files)`, '_build_plan/prd.md', '_build_plan/milestones/<n>/prompt.md']),
+          row('Skill Builder', 'the skill that designs, writes and verifies new skills', countPrefix('.agents/skills/skill-builder/') >= 8, [`.agents/skills/skill-builder/ (${countPrefix('.agents/skills/skill-builder/')} files)`]),
+          row('Design System', 'the skill that scaffolds a design system and its docs page', countPrefix('.agents/skills/design-system/') >= 40, [`.agents/skills/design-system/ (${countPrefix('.agents/skills/design-system/')} files)`]),
+          row('Favicon Creator', 'the skill that generates the icon set, plus the deterministic stand-in icon', has('.agents/skills/favicon-creator/SKILL.md') && has('favicon.svg'), ['.agents/skills/favicon-creator/SKILL.md', 'favicon.svg']),
+          row('Build New', 'the Rails + React starter conventions and agent setup', has('template/build-new/AGENTS.md') && has('template/build-new/.agents/setup'), ['template/build-new/AGENTS.md', 'template/build-new/.agents/setup']),
+          row('agentcanon', 'skills in .agents/skills, instructions in AGENTS.md, symlinks for the rest', has('.agents/skills/agentcanon-repo/SKILL.md') && has('AGENTS.md') && has('scripts/link-agents.sh'), ['.agents/skills/agentcanon-repo/', 'AGENTS.md', 'scripts/link-agents.sh']),
+          row('Toolkit guide', 'every tool, its steps and where it is installed', has('TOOLKIT.md'), ['TOOLKIT.md']),
+        ],
+      },
+      {
+        id: 'backend',
+        title: 'Business logic, API and tests',
+        note: 'The handoff does not stop at the UI: rules, endpoints and the tests that prove them run on Node alone.',
+        rows: [
+          row('Business rules', 'status journeys, invariants and role rules, derived from the data shape', has('business-logic.md') && has('server/src/rules.ts') && has('server/src/services.ts'), ['business-logic.md', 'server/src/rules.ts', 'server/src/services.ts']),
+          row('HTTP API', 'framework-free routes that a test can call directly', has('server/API.md') && has('server/src/http.ts') && has('server/src/server.ts'), ['server/API.md', 'server/src/http.ts', 'server/src/server.ts']),
+          row('Validation', 'unknown fields, enums, dates, emails and foreign keys, with 422s that name the field', (() => {
+            const validate = files.find((f) => f.path === 'server/src/validate.ts')
+            return Boolean(validate && validate.content.includes('AppError(\'validation\'') && validate.content.includes('relationExists'))
+          })(), ['server/src/validate.ts']),
+          row('Unit tests', 'the state machine, the invariants and the API behaviour', has('server/src/tests/rules.test.ts') && has('server/src/tests/api.test.ts'), ['server/src/tests/rules.test.ts', 'server/src/tests/api.test.ts']),
+          row('Seeded data layer', 'the API starts from the sections sample data', has('server/src/seed.ts') && has('src/data/mock-adapter.ts'), ['server/src/seed.ts', 'src/data/mock-adapter.ts']),
+          row('Real frontend adapter', 'the same DataLayer interface, now over HTTP', has('src/data/http-adapter.ts') && has('src/data/repository.ts'), ['src/data/http-adapter.ts', 'src/data/repository.ts']),
+          row('No server dependencies', 'Node http, Node test runner, TypeScript stripped at run time', (() => {
+            const pkg = files.find((f) => f.path === 'server/package.json')
+            if (!pkg) return false
+            try {
+              const json = JSON.parse(pkg.content) as { dependencies?: unknown; scripts?: Record<string, string> }
+              return !json.dependencies && Boolean(json.scripts?.test?.includes('--experimental-strip-types'))
+            } catch {
+              return false
+            }
+          })(), ['server/package.json']),
+        ],
+      },
+      {
+        id: 'quality',
+        title: 'Quality that is computed, not asserted',
+        note: 'Each row reads the artefacts rather than describing them.',
         rows: [
           row(
             'W3C DTCG tokens',

@@ -37,7 +37,7 @@ export function useCopy() {
 }
 
 /* -------------------------------------------------------------------------
-   collapsible card — the LulaZel fold, used for every section of a page
+   collapsible card — the Design OS fold, used for every section of a page
    ------------------------------------------------------------------------- */
 
 export function Collapsible({

@@ -20,8 +20,10 @@ import { PrototypePage } from './views/PrototypePage'
 import { EditorPage } from './views/EditorPage'
 import { WikiPage } from './views/WikiPage'
 import { CoveragePage } from './views/CoveragePage'
+import { ToolsPage } from './views/ToolsPage'
 
 const TRACK_NAV = [
+  { path: 'tools', label: 'Tools', icon: 'Sparkles' },
   { path: 'flows', label: 'Flows', icon: 'Route' },
   { path: 'system', label: 'System', icon: 'Layers' },
   { path: 'prototype', label: 'Prototype', icon: 'Play' },
@@ -69,6 +71,7 @@ export function App() {
     if (path[0] === 'editor') return <EditorPage project={active} />
     if (path[0] === 'wiki') return <WikiPage project={active} />
     if (path[0] === 'coverage') return <CoveragePage project={active} />
+    if (path[0] === 'tools') return <ToolsPage project={active} />
     if (path[0] === 'sections') {
       if (!path[1]) return <SectionsPage project={active} />
       if (!section) {

@@ -1,42 +1,55 @@
 /* ==========================================================================
    Lula DevZign — application shell.
 
-   Skin, navigation and page structure are lifted from LulaZel's dashboard
-   (lulazel/assets/dashboard.css): warm paper ground, a 268px sticky rail, a
-   narrow serifless type scale, rust accent, pill stepper across the top of the
-   page and a card-on-paper content column. The interaction model inside those
-   slots is the Design OS five-phase flow.
+   The skin is Design OS's own: warm stone neutrals, white cards on stone-50,
+   a 1px stone-200 rule between surfaces, DM Sans for text, IBM Plex Mono for
+   code, 8px radii, and near-black primary buttons. The chrome is a sticky
+   header with the phase nav in it, and content sits in a single centred
+   column — the layout Design OS uses, not a dashboard rail.
    ========================================================================== */
 
 @font-face {
-  font-family: Inter;
+  font-family: 'DM Sans';
   font-style: normal;
   font-weight: 400;
   font-display: swap;
-  src: url('/fonts/inter-latin-400-normal.woff2') format('woff2');
+  src: url('/fonts/dm-sans-latin-400-normal.woff2') format('woff2');
 }
 @font-face {
-  font-family: Inter;
+  font-family: 'DM Sans';
   font-style: normal;
   font-weight: 500;
   font-display: swap;
-  src: url('/fonts/inter-latin-500-normal.woff2') format('woff2');
+  src: url('/fonts/dm-sans-latin-500-normal.woff2') format('woff2');
 }
 @font-face {
-  font-family: Inter;
+  font-family: 'DM Sans';
   font-style: normal;
   font-weight: 600;
   font-display: swap;
-  src: url('/fonts/inter-latin-600-normal.woff2') format('woff2');
+  src: url('/fonts/dm-sans-latin-600-normal.woff2') format('woff2');
 }
 @font-face {
-  font-family: Inter;
+  font-family: 'DM Sans';
   font-style: normal;
   font-weight: 700;
   font-display: swap;
-  src: url('/fonts/inter-latin-700-normal.woff2') format('woff2');
+  src: url('/fonts/dm-sans-latin-700-normal.woff2') format('woff2');
 }
-
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2');
+}
 * {
   box-sizing: border-box;
 }
@@ -49,20 +62,20 @@ body,
 
 body {
   margin: 0;
-  background: #faf8f4;
-  color: #1b1a18;
-  font: 400 14px/1.5 Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  background: #fafaf9;
+  color: #1c1917;
+  font: 400 14px/1.5 'DM Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
 }
 
 html[data-app-theme='dark'] body {
-  background: #0d1017;
+  background: #1c1917;
 }
 
 ::selection {
-  background: #fbedE6;
-  color: #1b1a18;
+  background: #e7e5e4;
+  color: #1c1917;
 }
 
 a {
@@ -97,10 +110,10 @@ img {
 code,
 kbd,
 pre {
-  font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
 }
 :focus-visible {
-  outline: 2px solid #c4471b;
+  outline: 2px solid #78716c;
   outline-offset: 2px;
 }
 
@@ -109,21 +122,21 @@ pre {
    -------------------------------------------------------------------------- */
 
 .lz-app {
-  --bg: #faf8f4;
-  --side: #f7f5f0;
+  --bg: #fafaf9;
+  --side: #ffffff;
   --card: #ffffff;
-  --card-soft: #fcfbf9;
-  --line: #e8e4dc;
-  --line-soft: #f0ece5;
-  --line-strong: #dcd7cd;
-  --ink: #1b1a18;
-  --ink-2: #3b3934;
-  --muted: #6e6a62;
-  --faint: #9b968c;
-  --accent: #c4471b;
-  --accent-hover: #ad3d16;
-  --accent-tint: #fbedE6;
-  --accent-line: #e9c4b0;
+  --card-soft: #fafaf9;
+  --line: #e7e5e4;
+  --line-soft: #f5f5f4;
+  --line-strong: #d6d3d1;
+  --ink: #1c1917;
+  --ink-2: #44403c;
+  --muted: #57534e;
+  --faint: #a8a29e;
+  --accent: #1c1917;
+  --accent-hover: #292524;
+  --accent-tint: #f5f5f4;
+  --accent-line: #d6d3d1;
   --blue-bg: #dfe8f7;
   --blue-ink: #3e5e93;
   --green-bg: #e9f1e4;
@@ -136,12 +149,12 @@ pre {
   --amber-ink: #8a5a12;
   --amber-line: #ecd9a8;
   --dis: #b9c6e8;
-  --shadow: 0 1px 2px rgba(28, 26, 22, 0.05);
-  --shadow-lg: 0 12px 40px -24px rgba(28, 26, 22, 0.35);
-  --font: Inter, ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
-  --mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  display: grid;
-  grid-template-columns: 268px minmax(0, 1fr);
+  --shadow: 0 1px 2px rgba(28, 25, 23, 0.05);
+  --shadow-lg: 0 12px 40px -24px rgba(28, 25, 23, 0.35);
+  --font: 'DM Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  display: flex;
+  flex-direction: column;
   min-height: 100vh;
   background: var(--bg);
   color: var(--ink);
@@ -149,21 +162,21 @@ pre {
 }
 
 .lz-app[data-theme='dark'] {
-  --bg: #0d1017;
-  --side: #0a0d13;
-  --card: #141a24;
-  --card-soft: #121821;
-  --line: #232c3a;
-  --line-soft: #1b232f;
-  --line-strong: #334052;
-  --ink: #f2eee5;
-  --ink-2: #cfcbc2;
-  --muted: #a0a7b8;
-  --faint: #7b8395;
-  --accent: #ff8b3d;
-  --accent-hover: #ffb54a;
-  --accent-tint: rgba(255, 139, 61, 0.14);
-  --accent-line: #5c3a24;
+  --bg: #1c1917;
+  --side: #292524;
+  --card: #292524;
+  --card-soft: #231f1d;
+  --line: #44403c;
+  --line-soft: #332f2c;
+  --line-strong: #57534e;
+  --ink: #fafaf9;
+  --ink-2: #e7e5e4;
+  --muted: #a8a29e;
+  --faint: #78716c;
+  --accent: #e7e5e4;
+  --accent-hover: #fafaf9;
+  --accent-tint: rgba(231, 229, 228, 0.12);
+  --accent-line: #57534e;
   --blue-bg: #1b2740;
   --blue-ink: #a8c2ee;
   --green-bg: #17291a;
@@ -197,12 +210,15 @@ pre {
 .lz-side {
   position: sticky;
   top: 0;
-  height: 100vh;
   display: flex;
-  flex-direction: column;
-  background: var(--side);
-  border-right: 1px solid var(--line);
-  padding: 20px 14px 14px;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px 14px;
+  height: auto;
+  background: color-mix(in srgb, var(--side) 88%, transparent);
+  backdrop-filter: blur(10px);
+  border-bottom: 1px solid var(--line);
+  padding: 10px 20px;
   z-index: 30;
 }
 
@@ -210,19 +226,19 @@ pre {
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 2px 8px 22px;
+  padding: 0 8px 0 0;
 }
 .lz-brand-dot {
   width: 20px;
   height: 20px;
   border-radius: 50%;
   flex: 0 0 auto;
-  background: radial-gradient(circle at 30% 25%, #f7a56f, #d1541f 62%, #a83c12);
-  box-shadow: 0 0 0 3px rgba(196, 71, 27, 0.08);
+  background: #1c1917;
+  box-shadow: 0 0 0 3px rgba(28, 25, 23, 0.08);
 }
 .lz-brand-name {
-  font: 700 16.5px/1 var(--font);
-  letter-spacing: -0.015em;
+  font: 600 15px/1 var(--font);
+  letter-spacing: -0.01em;
 }
 .lz-mode-chip {
   margin-left: auto;
@@ -238,28 +254,26 @@ pre {
 }
 
 .lz-nav {
-  flex: 1;
+  flex: 1 1 520px;
   display: flex;
-  flex-direction: column;
-  gap: 2px;
-  overflow-y: auto;
+  flex-direction: row;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 2px 4px;
+  overflow: visible;
 }
 .lz-nav-label {
-  font: 600 10.5px/1 var(--font);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--faint);
-  padding: 0 11px;
-  margin: 4px 0 8px;
+  display: none;
 }
 .lz-nav-item {
-  display: flex;
+  display: inline-flex;
+  flex: 0 0 auto;
   align-items: center;
-  gap: 10px;
-  width: 100%;
-  padding: 8px 11px;
+  gap: 7px;
+  width: auto;
+  padding: 6px 10px;
   border: 1px solid transparent;
-  border-radius: 9px;
+  border-radius: 7px;
   background: transparent;
   color: var(--ink-2);
   text-decoration: none;
@@ -366,10 +380,12 @@ pre {
   display: flex;
   align-items: center;
   gap: 10px;
-  padding: 14px 6px 2px;
+  padding: 0 0 0 10px;
   position: relative;
-  border-top: 1px solid var(--line-soft);
-  margin-top: 10px;
+  border-top: 0;
+  border-left: 1px solid var(--line);
+  margin-top: 0;
+  margin-left: auto;
 }
 .lz-avatar {
   width: 32px;
@@ -457,7 +473,7 @@ pre {
    -------------------------------------------------------------------------- */
 
 .lz-main {
-  padding: 26px 30px 40px;
+  padding: 36px 24px 72px;
   min-width: 0;
   display: flex;
   flex-direction: column;
@@ -466,7 +482,7 @@ pre {
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 1180px;
+  max-width: 1060px;
   margin-inline: auto;
   min-width: 0;
   flex: 1;
@@ -654,15 +670,15 @@ pre {
   border-color: var(--accent-hover);
 }
 .lz-app[data-theme='dark'] .lz-btn.primary {
-  color: #1a1206;
+  color: #1c1917;
 }
 .lz-btn.quiet {
-  background: #f3f0e9;
+  background: #f5f5f4;
   border-color: transparent;
   color: var(--ink-2);
 }
 .lz-app[data-theme='dark'] .lz-btn.quiet {
-  background: #171f2a;
+  background: #332f2c;
   color: var(--ink-2);
 }
 .lz-btn.small {
@@ -1012,7 +1028,7 @@ pre {
 }
 
 /* --------------------------------------------------------------------------
-   numbered step rail (Design OS StepIndicator, LulaZel dressing)
+   numbered step rail (Design OS StepIndicator, Design OS dressing)
    -------------------------------------------------------------------------- */
 
 .lz-rail {
@@ -1975,4 +1991,103 @@ input[type='range'] {
   .lz-proto-device {
     width: 100%;
   }
+}
+
+/* --------------------------------------------------------------------------
+   header-context corrections: what used to be a sidebar list is now a bar
+   -------------------------------------------------------------------------- */
+
+.lz-side .lz-nav-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  width: auto;
+  padding: 0;
+}
+.lz-side .lz-nav-sub a,
+.lz-side .lz-nav-sub button {
+  width: auto;
+  padding: 5px 8px;
+}
+.lz-side .lz-nav-sub a:hover,
+.lz-side .lz-nav-sub button:hover {
+  background: #f5f5f4;
+}
+.lz-side .lz-avatar {
+  background: #1c1917;
+}
+
+@media (max-width: 900px) {
+  .lz-side {
+    padding: 8px 12px;
+  }
+  .lz-nav {
+    flex-basis: 100%;
+    order: 3;
+  }
+  .lz-main {
+    padding: 22px 14px 56px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   toolkit page
+   -------------------------------------------------------------------------- */
+
+.lz-icon-tile {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: #f5f5f4;
+  border: 1px solid var(--line);
+  color: var(--ink);
+  flex: 0 0 auto;
+}
+.lz-app[data-theme='dark'] .lz-icon-tile {
+  background: #332f2c;
+}
+.lz-code-line {
+  display: block;
+  font-family: var(--mono);
+  font-size: 12px;
+  background: #f5f5f4;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  overflow-x: auto;
+}
+.lz-app[data-theme='dark'] .lz-code-line {
+  background: #231f1d;
+}
+.lz-toolsteps {
+  list-style: none;
+  margin: 14px 0 4px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lz-toolsteps li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.lz-toolsteps-n {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: #f5f5f4;
+  border: 1px solid var(--line);
+  font: 500 10.5px/1 var(--font);
+  color: var(--muted);
+}
+.lz-app[data-theme='dark'] .lz-toolsteps-n {
+  background: #332f2c;
 }

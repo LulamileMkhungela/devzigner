@@ -1,4 +1,4 @@
-# Parity report — Design OS, Agent OS, and the Figma complaints
+# Parity report — Design OS, Agent OS, the free tools, and the backend
 
 This is the coverage audit for **Lula DevZign**. Every row is verifiable two ways:
 
@@ -13,14 +13,16 @@ A representative product (clinic, seed 4242) exports:
 
 | | |
 | --- | --- |
-| Files | **248** |
-| Size | ~**1.0 MB** of text |
+| Files | **331** |
+| Size | ~**1.4 MB** of text |
 | Sections / screens | 7 / 18 |
 | Generated components | 22 `.tsx`, all typechecked |
 | Screenshots (SVG) | 26 |
 | Tests specs | 7 (`sections/*/tests.md`) |
 | Instructions | 9 (`instructions/one-shot-instructions.md` + `01-shell` + one per section) |
 | Agent OS files | 69 (specs, standards, product docs, skills) |
+| Free-tool files | 78 under `.agents/skills/`, 4 under `template/build-new/` |
+| Backend files | 15 (`server/`), 11 executable tests |
 | Slash commands | 15 (10 Design OS, 5 Agent OS, verbatim) |
 | Audit checks | 24 |
 
@@ -123,7 +125,41 @@ ok  Careline: shell + 6 sections built with vite + tailwind
 
 ---
 
-## 4. The Figma complaints, answered
+## 4. The free tools, all eight
+
+Every tool on buildermethods.com/tools is installed. The skill files are vendored
+verbatim from their repositories, so the steps below are the tools' own.
+
+| Tool | Kind | Installed at | Evidence |
+| --- | --- | --- | --- |
+| PRD Creator | Agent skill | `.agents/skills/prd-creator/` (13 files) | `/coverage`, `/tools` |
+| Skill Builder | Agent skill | `.agents/skills/skill-builder/` (9 files) | `/coverage`, `/tools` |
+| Design System | Agent skill | `.agents/skills/design-system/` (50 files) | `/coverage`, `/tools` |
+| Build New | Template | `template/build-new/` (AGENTS.md, `.agents/setup`, docs) | `/coverage`, `/tools` |
+| agentcanon | Convention | `.agents/skills/agentcanon-{repo,manifest}/`, `AGENTS.md`, `scripts/link-agents.sh` | `render-check` asserts `.claude/skills` holds no real skill |
+| Favicon Creator | Agent skill | `.agents/skills/favicon-creator/` | `/coverage`, `/tools` |
+| Agent OS | Workflow | `agent-os/` + `.claude/commands/agent-os/` (5) | `/coverage` |
+| Design OS | Workflow | `product-plan/` + `.claude/commands/design-os/` (10) | `/coverage` |
+
+The **Tools** page reads the steps out of the shipped `SKILL.md` headings rather
+than a hand-written list, so a tool whose process changes changes the page.
+
+## 5. The backend and its tests
+
+| Piece | Where | Proof |
+| --- | --- | --- |
+| Business rules | `business-logic.md`, `server/src/rules.ts` | `server/src/tests/rules.test.ts` |
+| Validation, enums, foreign keys | `server/src/validate.ts` | the 422 test in `api.test.ts` |
+| Business layer + event log | `server/src/services.ts` | the transition + events tests |
+| HTTP API | `server/src/http.ts`, `server/API.md` | `api.test.ts` drives it without a socket |
+| Repository and seeds | `server/src/repository.ts`, `server/src/seed.ts` | pagination + list tests |
+| Frontend adapter | `src/data/http-adapter.ts` | typechecks against `DataLayer` in `export-check` |
+
+`export-check` writes the generated server to disk, typechecks it, then runs its
+suite with `node --experimental-strip-types --test`. All 11 generated tests pass
+for two archetypes on every `npm run check`.
+
+## 6. Quality, computed
 
 | Complaint | Countermeasure | Where to check |
 | --- | --- | --- |
@@ -135,7 +171,7 @@ ok  Careline: shell + 6 sections built with vite + tailwind
 | A page assembled from bespoke UI | Every block renders through a named registry component; the mapping is exported and tested | `engine/system.ts`, `render-check` |
 | Design knowledge lost in a chat | Wiki + Agent OS layer shipped beside the code, versioned by snapshots/branches; worktree workflow documented | `wiki/`, `agent-os/`, `git-workflow.md` |
 | Needing a model, a key, or data to start | The whole package is a pure function of seed + archetype + genome | `devzign.json`, `npm run qa` (36 runs, 0 failures) |
-| Needing "Figma Draw" | There is no freeform canvas by design: the editable surface is the token editor and the flow builder, and everything downstream recompiles | `/editor`, `/flows` |
+| No freeform canvas | By design: the editable surface is the token editor and the flow builder, and everything downstream recompiles | `/editor`, `/flows` |
 
 ### What is *not* claimed
 
@@ -150,6 +186,7 @@ ok  Careline: shell + 6 sections built with vite + tailwind
 ```bash
 npm run render-check   # SSR every view; verifies the export contract file by file
 npm run export-check   # writes generated components to disk and typechecks them (3 archetypes)
+npm run test           # unit tests: determinism, data integrity, tools, backend contract
 npm run walkthrough    # jsdom: the five phases, start to finish, with no user input
 npm run example-app    # builds the exported package as a real Vite + Tailwind app
 npm run smoke          # jsdom: routes, dialogs, token edits, real form input, breakpoints
@@ -161,6 +198,7 @@ npm run check          # all of the above, then the production build
 
 ```
 all views render
+# pass 10
 export check passed
 walkthrough complete: idea → package with zero user input
 ok  Careline: shell + 6 sections built with vite + tailwind

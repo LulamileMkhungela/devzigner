@@ -111,6 +111,53 @@ for (const [index, testCase] of cases.entries()) {
   )
 }
 
+/* --------------------------------------------------------------------------
+   The backend: typecheck the generated server, then run its own test suite.
+   Both run for real — a generated rule that does not hold fails this script.
+   -------------------------------------------------------------------------- */
+
+for (const testCase of cases.slice(0, 2)) {
+  const project = compileProject(testCase)
+  const files = buildPackage(project, [])
+  const serverFiles = files.filter((file) => file.path.startsWith('server/'))
+  const serverDir = join(root, '.scratch', `backend-${testCase.archetypeId}`)
+  rmSync(serverDir, { recursive: true, force: true })
+
+  for (const file of serverFiles) {
+    const target = join(serverDir, file.path.replace(/^server\//, ''))
+    mkdirSync(dirname(target), { recursive: true })
+    writeFileSync(target, file.content)
+  }
+
+  check(`${testCase.archetypeId} · backend is generated (${serverFiles.length} files)`, serverFiles.length >= 14)
+
+  try {
+    execFileSync(join(root, 'node_modules', '.bin', 'tsc'), ['-p', join(serverDir, 'tsconfig.json')], {
+      cwd: root,
+      stdio: 'pipe',
+      encoding: 'utf8',
+    })
+    check(`${testCase.archetypeId} · backend typechecks`, true)
+  } catch (error) {
+    const output = String((error as { stdout?: string }).stdout ?? (error as Error).message)
+    check(`${testCase.archetypeId} · backend typechecks`, false, output.split('\n').slice(0, 5).join(' | '))
+  }
+
+  try {
+    const output = execFileSync(
+      'node',
+      ['--experimental-strip-types', '--test', 'src/tests/rules.test.ts', 'src/tests/api.test.ts'],
+      { cwd: serverDir, stdio: 'pipe', encoding: 'utf8' },
+    )
+    const pass = Number((String(output).match(/# pass (\d+)/) ?? [])[1] ?? 0)
+    check(`${testCase.archetypeId} · backend tests pass (${pass})`, pass >= 14)
+  } catch (error) {
+    const output = String((error as { stdout?: string }).stdout ?? (error as Error).message)
+    check(`${testCase.archetypeId} · backend tests pass`, false, output.split('\n').slice(-4).join(' | '))
+  }
+}
+
+rmSync(join(root, '.scratch'), { recursive: true, force: true })
 rmSync(scratch, { recursive: true, force: true })
 console.log(failures ? `\n${failures} export check(s) failed` : '\nexport check passed')
 process.exit(failures ? 1 : 0)

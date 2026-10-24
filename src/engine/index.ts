@@ -56,6 +56,8 @@ export interface CompileOptions {
   overrides?: DesignOverrides
   systemOverrides?: SystemOverrides
   createdAt?: number
+  /** Pin the clock so a package can be rebuilt byte for byte. */
+  now?: number
 }
 
 export function compileProject(opts: CompileOptions = {}): Project {
@@ -87,7 +89,7 @@ export function compileProject(opts: CompileOptions = {}): Project {
   )
   const audit = compileAudit(brief, data, design, sections)
 
-  const now = Date.now()
+  const now = opts.now ?? Date.now()
   const input: CompileInput = {
     idea,
     seed,

@@ -43,6 +43,8 @@ The export grows to match: `src/data/types.ts`, `src/data/repository.ts` and `sr
 
 ### Design OS and Agent OS, artefact by artefact
 
+The full audit, with the file for every claim and the deliberate differences, is in [PARITY.md](./PARITY.md). The short version:
+
 The export is the same file tree Design OS hands a coding agent, and the standards layer Agent OS expects:
 
 | Design OS | Here |

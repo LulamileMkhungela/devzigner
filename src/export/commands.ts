@@ -1,145 +1,30 @@
 import type { Project } from '../types'
 import type { PackageFile } from './package'
+import { DESIGN_OS_COMMANDS } from './vendor/designOsCommands'
 
 /**
- * The Design OS command surface, written for this package's paths.
+ * The Design OS command surface, installed exactly as upstream ships it.
  *
- * Design OS ships its ten commands in `.claude/commands/design-os/`; the export
- * does the same, adapted to `product/` and `sections/` as they exist here.
- * The Agent OS commands are installed verbatim alongside them under
- * `.claude/commands/agent-os/` (see agentos.ts).
+ * Design OS's ten commands live in `.claude/commands/design-os/`; the export
+ * writes the same ten files with the same names and the same text, vendored in
+ * `vendor/designOsCommands.ts`. They are not adapted to this package: an agent
+ * running `/product-vision` gets the real Design OS conversation, and it reads
+ * the artefacts this export already wrote (`product/`, `sections/`).
  *
- * The app itself performs these steps in its five phases, so the commands are
- * optional — they are for teams that want the slash-command workflow in Claude
- * Code or any agent that reads files.
+ * The app's five phases are the no-agent path to the same artefacts; the
+ * commands are for teams that want the slash-command workflow in Claude Code.
+ * The five Agent OS commands sit beside them under `.claude/commands/agent-os/`
+ * (see agentos.ts).
  */
-
 function bullet(items: string[]): string {
   return items.map((i) => `- ${i}`).join('\n')
 }
 
-function command(name: string, description: string, body: string): PackageFile {
-  return {
-    path: `.claude/commands/design-os/${name}.md`,
-    content: `---\nname: ${name}\ndescription: ${description}\n---\n\n${body}\n`,
-  }
-}
-
-export function buildCommands(project: Project): PackageFile[] {
-  const first = project.sections[0]
-  return [
-    command(
-      'product-vision',
-      'Restate the product vision from the compiled brief and confirm or edit it',
-      `# /product-vision
-
-Read \`product/product-overview.md\` and \`product-brief.md\`.
-
-1. Summarise the problem, who it is for, the value proposition and the non-goals in five bullets.
-2. Ask exactly one question per bullet where the compiled brief is thin.
-3. Write the accepted answers back to \`product/product-overview.md\`.
-
-Do not invent research. Personas in this package are labelled illustrative.`,
-    ),
-    command(
-      'product-roadmap',
-      'Review and adjust the phased roadmap',
-      `# /product-roadmap
-
-Read \`product/product-roadmap.md\` and \`roadmap.md\`.
-
-1. Walk the phases in order: ${project.roadmap.phases.map((p) => `${p.name} (${p.horizon})`).join(' → ')}.
-2. For each phase, confirm the outcomes are observable and the mapped sections are right.
-3. Write the result to \`product/product-roadmap.md\`.
-
-Keep the sequencing note at the top; it explains why this order and not another.`,
-    ),
-    command(
-      'data-shape',
-      'Confirm the entities, fields and relationships',
-      `# /data-shape
-
-Read \`product/data-shape/data-shape.md\`, \`data-model.md\` and \`schema.sql\`.
-
-1. Check every entity has a primary field (${project.data.entities.map((e) => e.primaryField).slice(0, 3).join(', ')}…), a status field where it has a lifecycle, and a foreign key for every relation.
-2. Flag fields that are computed rather than stored.
-3. Write the agreed shape to \`product/data-shape/data-shape.md\`. Do not renumber ids: they are referenced by sections and screens.`,
-    ),
-    command(
-      'design-tokens',
-      'Stop before building: agree the tokens',
-      `# /design-tokens
-
-Read \`design-system/tokens.css\`, \`design-system/tokens.dtcg.json\` and \`product/design-system/colors.json\`.
-
-1. Present the palette (${project.design.colors.length} families × 11 stops), the three type roles and the spacing scale.
-2. Ask which values you want changed — hue, radius, density — not which hex.
-3. Apply the change in the token file only, then re-export. No component may be edited to change the look.`,
-    ),
-    command(
-      'design-shell',
-      'Review the application shell before section work',
-      `# /design-shell
-
-Read \`product/shell/spec.md\`, \`shell/README.md\`, \`shell/components/AppShell.tsx\` and \`shell/screenshot.svg\`.
-
-1. Confirm the frame (${project.design.layout.shell}), navigation labels (${project.system.shell.nav.map((n) => n.label).join(', ')}) and content width (${project.design.layout.contentWidth}px).
-2. Confirm the shell is layout-only: no data fetching, no auth.
-3. Write any change to \`product/shell/spec.md\` and the component together.`,
-    ),
-    command(
-      'shape-section',
-      'Shape one section into a spec an agent can execute',
-      `# /shape-section <section>
-
-1. Read \`sections/<section>/README.md\` and \`agent-os/specs/<date>-<section>/shape.md\`.
-2. Answer the shaping questions from the compiled product: what, visuals, references, product alignment, standards.
-3. Confirm the out-of-scope list before adding scope.
-4. Update \`agent-os/specs/<date>-<section>/shape.md\`.
-
-Start with \`${first?.id ?? 'the first section'}\`.`,
-    ),
-    command(
-      'sample-data',
-      'Refresh the rows the UI runs on',
-      `# /sample-data <section>
-
-1. Read \`sections/<section>/sample-data.json\`.
-2. Check every screen has enough rows to show a real state — not just the happy path — and at least one row that triggers the empty state when filtered.
-3. Keep values plausible for the domain; no lorem ipsum.
-4. Write back to the same file and to \`src/data/mock-adapter.ts\`.`,
-    ),
-    command(
-      'design-screen',
-      'Design one screen from registry components only',
-      `# /design-screen <section>/<screen>
-
-1. Read the screen spec in \`screens.md\` and the component in \`sections/<section>/components/\`.
-2. Compose it only from \`system/registry\`; if a pattern is missing, add it to the registry first.
-3. Every input is a real input. Every empty state explains the next step.
-4. Verify at ${project.design.breakpoints.map((b) => `${b.px}px`).join(', ')}.`,
-    ),
-    command(
-      'screenshot-design',
-      'Capture and check the visual',
-      `# /screenshot-design <section>
-
-1. Open the prototype at the screen's route and capture it at 1280×800.
-2. Compare with \`sections/<section>/screenshot.svg\` — the shipped image is rendered from the compiled blocks, so a difference means the component drifted from the spec.
-3. Replace the screenshot only when the spec changed.`,
-    ),
-    command(
-      'export-product',
-      'Assemble the handoff package',
-      `# /export-product
-
-1. Run the audit in the app; every check must be \`pass\` or explained.
-2. Download the package. It includes specs, schema, tokens, prompts, milestones, components, tests and the standards layer.
-3. Commit it beside the code on a branch, and open the first milestone as a PR.
-
-Never hand-edit generated files. Change the source (tokens, registry, sections) and re-export.`,
-    ),
-  ]
+export function buildCommands(_project: Project): PackageFile[] {
+  return DESIGN_OS_COMMANDS.map((command) => ({
+    path: `.claude/commands/design-os/${command.name}.md`,
+    content: command.content,
+  }))
 }
 
 export function buildPlanning(project: Project): PackageFile[] {

@@ -2,6 +2,7 @@ import type { Project } from '../types'
 import type { PackageFile } from './package'
 import { screenScreenshot } from './screenshots'
 import { AGENT_OS_COMMANDS } from './vendor/agentOsCommands'
+import { DESIGN_OS_SKILL } from './vendor/designOsCommands'
 
 /**
  * Agent OS parity — cloned from github.com/buildermethods/agent-os (MIT).
@@ -517,13 +518,20 @@ function skills(project: Project): PackageFile[] {
   const design = project.design
   return [
     {
-      path: 'agent-os/skills/frontend-design/SKILL.md',
+      // Design OS's own skill, vendored byte for byte.
+      path: '.claude/skills/frontend-design/SKILL.md',
+      content: DESIGN_OS_SKILL,
+    },
+    {
+      // The project-specific continuation of it: the compiled tokens, registry
+      // and breakpoints this product actually ships.
+      path: '.claude/skills/project-design-system/SKILL.md',
       content: `---
-name: frontend-design
+name: project-design-system
 description: Compose ${project.name} screens from the generated design system and registry. Use when building or reviewing any UI.
 ---
 
-# Frontend design skill
+# ${project.name} design system skill
 
 ## Tokens
 

@@ -112,7 +112,7 @@ export function CoveragePage({ project }: { project: Project }) {
           row('Specs', 'shape, plan, references and standards per section', countPrefix('agent-os/specs/') >= project.sections.length * 4, [`${countPrefix('agent-os/specs/')} files`]),
           row('Spec plan starts with Task 1', 'plan.md saves the spec documentation first, as Agent OS requires', [...paths].filter((p) => p.includes('agent-os/specs/') && p.endsWith('/plan.md')).every((p) => files.find((f) => f.path === p)!.content.includes('## Task 1: Save Spec Documentation')), ['agent-os/specs/<date>-<section>/plan.md']),
           row('Spec visuals', 'the screens each spec refers to', [...paths].some((p) => /agent-os\/specs\/.+\/visuals\/.+\.svg$/.test(p)), ['agent-os/specs/<date>-<section>/visuals/*.svg']),
-          row('Design skill', 'the rules an agent reads before touching UI', has('agent-os/skills/frontend-design/SKILL.md'), ['agent-os/skills/frontend-design/SKILL.md']),
+          row('Design skill', 'Design OS’s own frontend-design skill, plus this product’s compiled version', has('.claude/skills/frontend-design/SKILL.md') && has('.claude/skills/project-design-system/SKILL.md'), ['.claude/skills/frontend-design/SKILL.md', '.claude/skills/project-design-system/SKILL.md']),
         ],
       },
       {

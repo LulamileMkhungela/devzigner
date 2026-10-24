@@ -143,7 +143,8 @@ checks.push(
   ['agent-os standards indexed', pkgHas('agent-os/standards/index.yml') && pkgPrefix('agent-os/standards/') >= 8],
   ['agent-os specs with visuals', pkgPrefix('agent-os/specs/') >= project.sections.length * 4],
   ['product planning outputs exported', pkgHas('product/product-overview.md') && pkgHas('product/product-roadmap.md') && pkgHas('product/data-shape/data-shape.md') && pkgHas('product/design-system/colors.json') && pkgHas('product/design-system/typography.json') && pkgHas('product/shell/spec.md')],
-  ['design-os commands installed', pkgPrefix('.claude/commands/design-os/') === 10],
+  ['design-os commands installed verbatim', pkgPrefix('.claude/commands/design-os/') === 10 && pkg.find((f) => f.path === '.claude/commands/design-os/product-vision.md')!.content.startsWith('# Product Vision\n\nYou are helping the user define their product vision for Design OS') && pkg.find((f) => f.path === '.claude/commands/design-os/export-product.md')!.content.includes('product-plan/instructions/incremental/01-shell.md')],
+  ['design-os skill vendored', pkg.find((f) => f.path === '.claude/skills/frontend-design/SKILL.md')!.content.startsWith('---\nname: frontend-design') && pkg.some((f) => f.path === '.claude/skills/project-design-system/SKILL.md')],
   ['agent-os commands installed verbatim', pkgPrefix('.claude/commands/agent-os/') === 5 && pkg.find((f) => f.path === '.claude/commands/agent-os/shape-spec.md')!.content.includes('agent-os/specs/{YYYY-MM-DD-HHMM-feature-slug}')],
   ['agent-os index uses folder → file → description', (() => {
     const index = pkg.find((f) => f.path === 'agent-os/standards/index.yml')!.content

@@ -66,7 +66,8 @@ Design OS is a set of slash commands plus an export contract. Both are reproduce
 | `sections/<id>/components/*.tsx` | ✅ | Props-only, responsive, typechecked |
 | `sections/<id>/screenshot` | ✅ `.svg` | One per section |
 | `product/` planning folder | ✅ | `product-overview`, `product-roadmap`, `data-shape/`, `design-system/*.json`, `shell/spec.md` |
-| Slash commands | ✅ | `.claude/commands/design-os/*.md` — the ten Design OS commands, named and placed as upstream |
+| Slash commands | ✅ | `.claude/commands/design-os/*.md` — the ten Design OS commands, vendored verbatim (`vendor/designOsCommands.ts`) |
+| `.claude/skills/frontend-design/SKILL.md` | ✅ | Design OS's own skill, verbatim; the compiled per-product one sits beside it at `.claude/skills/project-design-system/SKILL.md` |
 | `.claude/commands/agent-os/*.md` | ✅ | The five Agent OS commands, copied verbatim from `buildermethods/agent-os` |
 
 **Deliberate difference:** screenshots are SVG, drawn deterministically from the
@@ -86,7 +87,7 @@ headless browser; a PNG would add a build dependency for no extra information.
 | `/shape-spec` → `specs/<date>-<slug>/{plan,shape,references,standards}.md` + `visuals/` | ✅ per section, with the screens' SVGs; Task 1 saves the documentation |
 | Commands | ✅ `.claude/commands/agent-os/{discover-standards,index-standards,inject-standards,plan-product,shape-spec}.md` |
 | Config | ✅ `agent-os/config.yml` — `version: 3.0`, `default_profile: default` |
-| Skills | ✅ `agent-os/skills/frontend-design/SKILL.md` |
+| Skills | ✅ `.claude/skills/frontend-design/SKILL.md` (Design OS, verbatim) + `.claude/skills/project-design-system/SKILL.md` (compiled) |
 
 The standards are not generic advice: they are derived from the compiled system
 (the real token names, the real breakpoints, the real entity count), and each one

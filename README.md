@@ -242,6 +242,7 @@ npm run qa             # compiles all 12 archetypes × 3 seeds, checks invariant
 npm run walkthrough    # runs the whole process in jsdom with zero user input: idea → package
 npm run example-app    # builds the exported package into a real Vite + Tailwind app
 npm run check          # all of the above, then the production build
+npm run standalone     # one self-contained HTML file — script, styles and fonts inlined
 ```
 
 There is no backend, no database and no network call at runtime. Projects are stored in `localStorage` (with automatic pruning if the quota is reached). Clearing site data clears projects; use **Export → Download package** to keep anything you care about.

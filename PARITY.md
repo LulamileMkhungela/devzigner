@@ -194,6 +194,7 @@ npm run example-app    # builds the exported package as a real Vite + Tailwind a
 npm run smoke          # jsdom: routes, dialogs, token edits, real form input, breakpoints
 npm run qa             # 12 archetypes × 3 seeds: invariants + audit score
 npm run check          # all of the above, then the production build
+npm run standalone     # one self-contained HTML file — script, styles and fonts inlined
 ```
 
 `npm run check` currently ends with:

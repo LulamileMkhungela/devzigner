@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html lang="en">
+  
+<!-- Mirrored from https://buildermethods.com/checkout?product=bmp&price=1&seats=5 by HTTrack Website Copier/3.x [XR&CO], Sat, 24 Oct 2026 20:49:36 GMT -->
+<!-- Added by HTTrack --><meta http-equiv="content-type" content="text/html;charset=utf-8" /><!-- /Added by HTTrack -->
+<head>
+    <meta name="viewport" content="width=device-width,initial-scale=1">
+    <meta name="color-scheme" content="light dark">
+    <meta name="theme-color" content="#FCF8F2">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="theme-preference" content="system">
+    <meta name="csrf-param" content="authenticity_token" />
+<meta name="csrf-token" content="ygheqrDHainDMZHAxNz3s6XyBknK_0J1ql_elsqVmDq6wEcyteckIr366cWg5OI__i18WahkqxWrGdW7ItibOw" />
+    
+
+    <link rel="preload" href="vite/assets/CalSansVF-D8AHHMq9.woff2" as="font" type="font/woff2" crossorigin="true">
+    <link rel="stylesheet" href="vite/assets/design-system-B0kF4gVi.css" id="design-system-styles" />
+
+    <script>
+      // Resolve theme from (1) signed-in user's saved preference, (2) falling
+      // back to the OS color-scheme. Applied before first paint to avoid FOUC.
+      // When preference === 'system', live-updates as the OS preference changes.
+      (function () {
+        var root = document.documentElement;
+        var meta = document.querySelector('meta[name="theme-preference"]');
+        var pref = (meta && meta.getAttribute('content')) || 'system';
+        var mq = window.matchMedia('(prefers-color-scheme: dark)');
+        function apply() {
+          var current = (document.querySelector('meta[name="theme-preference"]')?.getAttribute('content')) || 'system';
+          var dark = current === 'dark' || (current === 'system' && mq.matches);
+          root.classList.toggle('dark', dark);
+        }
+        apply();
+        mq.addEventListener('change', apply);
+        // Expose so the React shell can re-apply after saving a new preference.
+        window.__applyThemePreference = apply;
+      })();
+    </script>
+
+    
+
+
+    <link rel="icon" href="favicon/favicon.ico" sizes="32x32">
+    <link rel="icon" href="favicon/icon.svg" type="image/svg+xml">
+    <link rel="icon" href="favicon/icon-192.png" type="image/png" sizes="192x192">
+    <link rel="apple-touch-icon" href="favicon/apple-touch-icon.png">
+
+    
+    
+    <script src="vite/assets/inertia-G6gbIapi.js" crossorigin="anonymous" type="module"></script>
+
+    <title inertia>Checkout</title>
+
+
+      <script defer data-domain="buildermethods.com" src="https://plausible.io/js/script.tagged-events.js"></script>
+  </head>
+
+  <body>
+    <link rel="preload" as="image" href="images/logos/builder-methods.svg"/><link rel="preload" as="image" href="images/logos/builder-methods-light.svg"/><div id="app" data-page="{&quot;component&quot;:&quot;checkout/Checkout&quot;,&quot;props&quot;:{&quot;errors&quot;:{},&quot;current_user&quot;:null,&quot;impersonation&quot;:null,&quot;past_due_accounts&quot;:[],&quot;flash&quot;:{&quot;notice&quot;:null,&quot;alert&quot;:null},&quot;recaptcha_site_key&quot;:&quot;6LeF3mYrAAAAAN0NiJ6SdP5oQoxncQQI0fnXv557&quot;,&quot;prefill_email&quot;:null,&quot;identified&quot;:false,&quot;current_promotion&quot;:null,&quot;product&quot;:{&quot;name&quot;:&quot;Builder Methods Pro&quot;,&quot;slug&quot;:&quot;bmp&quot;,&quot;processor_product_id&quot;:&quot;prod_T1cuZH17cBrNP9&quot;},&quot;price&quot;:{&quot;slug&quot;:&quot;1&quot;,&quot;amount_cents&quot;:29900,&quot;recurring_interval&quot;:&quot;year&quot;,&quot;trial_days&quot;:0,&quot;supports_seats&quot;:true,&quot;one_time&quot;:false},&quot;seats&quot;:5,&quot;coupon_param&quot;:&quot;&quot;,&quot;authenticated&quot;:null,&quot;existing_payment_methods&quot;:[],&quot;stripe_publishable_key&quot;:&quot;pk_live_51RyGzvD1N1r2mdkkHdU8xt0GnuOzgoe1eUitV0obcKYN1U4oVU0H9y5ZYP9XJnEWibmujol52oils6pNaV5FD1zL00RjIIigbv&quot;,&quot;live_session&quot;:null,&quot;ticket&quot;:null,&quot;via_workshop&quot;:null},&quot;url&quot;:&quot;/checkout?product=bmp&amp;price=1&amp;seats=5&quot;,&quot;version&quot;:&quot;c8ccb4d8f604249b7d45a633fbffcb5256de9793&quot;,&quot;encryptHistory&quot;:true,&quot;clearHistory&quot;:false}"><main class="min-h-svh bg-surface px-6 py-12"><div class="mx-auto w-full max-w-5xl space-y-8"><a aria-label="Builder Methods" class="flex w-fit items-center gap-2 no-underline" href="index.html"><img src="images/logos/builder-methods.svg" alt="Builder Methods" class="h-7 w-auto dark:hidden"/><img src="images/logos/builder-methods-light.svg" alt="Builder Methods" class="hidden h-7 w-auto dark:inline-block"/></a><div class="grid items-start gap-6 lg:grid-cols-[minmax(0,1fr)_20rem]"><div class="overflow-hidden rounded-card border border-hairline bg-page"><div class="border-b border-hairline bg-hairline/60 px-6 py-4"><div role="list" aria-label="Checkout progress" class="flex items-center justify-between gap-3"><div role="listitem" aria-current="step" aria-label="1. Register" class="flex min-w-0 items-center gap-3"><span class="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors bg-display text-page">1</span><span class="truncate text-sm font-medium inline text-display">Register</span></div><span aria-hidden="true" class="hidden h-0 flex-1 border-t border-dashed border-muted/50 sm:block"></span><div role="listitem" aria-label="2. Payment details" class="flex min-w-0 items-center gap-3"><span class="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors bg-page text-muted">2</span><span class="truncate text-sm font-medium hidden sm:inline text-muted">Payment details</span></div><span aria-hidden="true" class="hidden h-0 flex-1 border-t border-dashed border-muted/50 sm:block"></span><div role="listitem" aria-label="3. Dive in…" class="flex min-w-0 items-center gap-3"><span class="inline-flex size-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold transition-colors bg-page text-muted">3</span><span class="truncate text-sm font-medium hidden sm:inline text-muted">Dive in…</span></div></div></div><div class="p-6"><h1 class="sr-only">Checkout</h1><form class="space-y-5" aria-busy="false"><div class="form-field"><label for="register-email" class="form-label">Email address</label><input id="register-email" class="form-control" aria-invalid="false" type="email" required="" autoComplete="email" placeholder="name@domain.com" value=""/></div><div class="form-field"><label for="register-password" class="form-label">Create a password</label><input id="register-password" class="form-control" aria-invalid="false" type="password" required="" autoComplete="new-password" placeholder="Create a password" value=""/></div><div class="flex flex-wrap items-center gap-4"><button type="submit" class="btn btn-primary">Register &amp; continue <svg width="16" height="16" stroke-width="1.5" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" color="currentColor" aria-hidden="true"><path d="M9 6L15 12L9 18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"></path></svg></button><button type="button" class="textlink text-sm">Already registered? Login</button></div></form></div></div><aside class="h-fit lg:sticky lg:top-6"><div class="overflow-hidden rounded-card border border-hairline bg-page"><div class="border-b border-hairline bg-hairline/60 px-6 py-4"><h3 class="py-1 text-sm text-muted">Purchase Details</h3></div><div class="p-6"><div class="space-y-5"><dl class="space-y-4"><div class="flex items-center justify-between gap-4"><dt class="text-sm text-muted">Product</dt><dd class="text-sm"><span class="font-medium">Builder Methods Pro</span></dd></div><div aria-hidden="true" class="border-t border-hairline"></div><div class="flex items-center justify-between gap-4"><dt class="text-sm text-muted">Number of seats</dt><dd class="text-sm"><input type="number" min="1" max="100" class="form-control max-w-24 text-right" aria-label="Number of seats" value="5"/></dd></div><div aria-hidden="true" class="border-t border-hairline"></div><div class="flex items-center justify-between gap-4"><dt class="text-sm text-muted">Price</dt><dd class="text-sm"><span class="font-medium">$1,495<!-- -->/year</span></dd></div><div aria-hidden="true" class="border-t border-hairline"></div><div class="flex items-center justify-between gap-4"><dt class="text-sm text-muted">Renews</dt><dd class="text-sm"><span>October 24, 2027</span></dd></div></dl><small class="block text-muted">Disable auto-renewal anytime.</small></div></div></div></aside></div></div></main></div>
+  <script>(function(){function c(){var b=a.contentDocument||(a.contentWindow&&a.contentWindow.document);if(b){var d=b.createElement('script');d.innerHTML="window.__CF$cv$params={r:'a4fbd8d6cf85e08f',t:'MTc5Mjg3NDk1NQ=='};var a=document.createElement('script');a.src='cdn-cgi/challenge-platform/h/b/scripts/jsd/d2d3316b729e/maind41d.js';document.getElementsByTagName('head')[0].appendChild(a);";b.getElementsByTagName('head')[0].appendChild(d)}}if(document.body){var a=document.createElement('iframe');a.height=1;a.width=1;a.style.position='absolute';a.style.top=0;a.style.left=0;a.style.border='none';a.style.visibility='hidden';document.body.appendChild(a);if('loading'!==document.readyState)c();else if(window.addEventListener)document.addEventListener('DOMContentLoaded',c);else{var e=document.onreadystatechange||function(){};document.onreadystatechange=function(b){e(b);'loading'!==document.readyState&&(document.onreadystatechange=e,c())}}}})();</script></body>
+
+<!-- Mirrored from https://buildermethods.com/checkout?product=bmp&price=1&seats=5 by HTTrack Website Copier/3.x [XR&CO], Sat, 24 Oct 2026 20:49:36 GMT -->
+</html>

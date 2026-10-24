@@ -12,7 +12,7 @@ import react from '@vitejs/plugin-react'
 import { mkdir, readFile, readdir, rm, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 
-const OUT = 'preview/.standalone'
+const OUT = 'node_modules/.standalone'
 const TARGET = 'public/lula-devzign-standalone.html'
 
 await rm(OUT, { recursive: true, force: true })

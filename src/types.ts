@@ -259,6 +259,7 @@ export interface DesignSystem {
   darkSemantic: Record<string, string>
   typography: TypographyRole[]
   scale: { name: string; px: number; usage: string }[]
+  breakpoints: { name: string; px: number }[]
   radii: Record<string, number>
   spacing: { name: string; px: number }[]
   shadows: Record<string, string>

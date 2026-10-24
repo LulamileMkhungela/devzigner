@@ -131,6 +131,14 @@ export function compileAudit(brief: Brief, data: DataModel, design: DesignSystem
       1,
     ),
     check(
+      'responsive',
+      'System',
+      'Responsive contract',
+      `${design.breakpoints.map((b) => `${b.name} ${b.px}px`).join(' · ')} with a ${design.layout.contentWidth}px content column and ${design.layout.density} density.`,
+      design.breakpoints.length >= 4 && design.layout.grid.includes('columns') ? 'pass' : 'warn',
+      1,
+    ),
+    check(
       'motion-budget',
       'System',
       'Motion budget',

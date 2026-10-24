@@ -14,7 +14,8 @@ const INCLUDED = [
   { icon: 'Palette', title: 'Design system', detail: 'Colour, type, scale, radii, spacing, motion, tokens.css and tokens.json.' },
   { icon: 'LayoutList', title: 'Section specs', detail: 'A markdown spec per section: jobs, requirements, tests, out of scope.' },
   { icon: 'LayoutDashboard', title: 'Screen designs', detail: 'Every screen as a block-by-block spec with states and acceptance.' },
-  { icon: 'ShieldCheck', title: 'Audit & agent brief', detail: 'The 22-check audit plus an implementation brief written for a coding agent.' },
+  { icon: 'ShieldCheck', title: 'Audit & agent brief', detail: 'The 24-check audit plus one-shot prompts, milestone instructions and Agent OS standards.' },
+  { icon: 'Boxes', title: 'Copy-paste components', detail: 'Props-based, responsive React per screen, with tests.md and screenshots. Typechecked before export.' },
 ]
 
 export function ExportPage({ project }: { project: Project }) {

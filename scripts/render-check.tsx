@@ -17,6 +17,7 @@ import { SystemPage } from '../src/views/SystemPage'
 import { PrototypePage } from '../src/views/PrototypePage'
 import { EditorPage } from '../src/views/EditorPage'
 import { WikiPage } from '../src/views/WikiPage'
+import { CoveragePage } from '../src/views/CoveragePage'
 
 const store: Record<string, string> = {}
 ;(globalThis as any).localStorage = {
@@ -63,6 +64,7 @@ const views: [string, () => string][] = [
   ['prototype', () => wrap(<PrototypePage project={project} />)],
   ['editor', () => wrap(<EditorPage project={project} />)],
   ['wiki', () => wrap(<WikiPage project={project} />)],
+  ['coverage', () => wrap(<CoveragePage project={project} />)],
 ]
 
 let failed = 0
@@ -114,6 +116,37 @@ const custom = compileProject({
 checks.push(['stack override applied', custom.system.stack.find((s) => s.layer === 'Data')?.choice === 'Raw SQL'])
 checks.push(['custom component registered', custom.system.components.some((c) => c.name === 'DisputeBanner')])
 checks.push(['custom component reaches the package', buildPackage(custom).some((f) => f.path === 'system/registry.json' && f.content.includes('DisputeBanner'))])
+// Design OS + Agent OS parity, proven from the package rather than asserted
+const pkg = buildPackage(project)
+const pkgPaths = new Set(pkg.map((f) => f.path))
+const pkgHas = (path: string) => pkgPaths.has(path)
+const pkgPrefix = (prefix: string) => [...pkgPaths].filter((p) => p.startsWith(prefix)).length
+checks.push(
+  ['one-shot and section prompts exported', pkgHas('prompts/one-shot-prompt.md') && pkgHas('prompts/section-prompt.md')],
+  ['one-shot + incremental instructions exported', pkgHas('instructions/one-shot-instructions.md') && pkgHas('instructions/incremental/01-shell.md') && pkgPrefix('instructions/incremental/') === project.sections.length + 1],
+  ['props-based components exported per screen', pkgPrefix('sections/') > 0 && pkg.filter((f) => /sections\/.+\/components\/.+\.tsx$/.test(f.path) && !f.path.endsWith('index.ts')).length === project.sections.reduce((n, s) => n + s.screens.length, 0)],
+  ['per-section tests, types and sample data exported', pkg.filter((f) => /sections\/.+\/tests\.md$/.test(f.path)).length === project.sections.length && pkg.filter((f) => /sections\/.+\/types\.ts$/.test(f.path)).length === project.sections.length && pkg.filter((f) => f.path.endsWith('sample-data.json')).length === project.sections.length],
+  ['shell components exported', pkgHas('shell/components/AppShell.tsx') && pkgHas('shell/components/MainNav.tsx') && pkgHas('shell/components/UserMenu.tsx') && pkgHas('shell/components/index.ts')],
+  ['screenshots exported', pkgPrefix('sections/') > 0 && [...pkgPaths].filter((p) => p.endsWith('.svg')).length >= project.sections.length + 1],
+  ['product overview exported', pkgHas('product-overview.md')],
+  ['DTCG tokens are typed primitives', (() => {
+    const file = pkg.find((f) => f.path === 'design-system/tokens.dtcg.json')
+    if (!file) return false
+    const json = JSON.parse(file.content) as Record<string, unknown>
+    const groups = Object.entries(json).filter(([key]) => key !== '$schema' && key !== '$description')
+    return groups.length >= 4 && groups.every(([, group]) => typeof group === 'object' && group !== null && Object.values(group as Record<string, unknown>).every((token) => typeof token === 'object' && token !== null && ('$value' in (token as object)) && ('$type' in (token as object))))
+  })()],
+  ['breakpoints are tokens and audited', project.design.breakpoints.length >= 4 && project.audit.checks.some((c) => c.id === 'responsive' && c.status === 'pass')],
+  ['breakpoint tokens documented for Tailwind', pkg.find((f) => f.path === 'design-system/tailwind-colors.md')!.content.includes('--breakpoint')],
+  ['agent-os product docs exported', pkgHas('agent-os/product/mission.md') && pkgHas('agent-os/product/roadmap.md') && pkgHas('agent-os/product/tech-stack.md')],
+  ['agent-os standards indexed', pkgHas('agent-os/standards/index.yml') && pkgPrefix('agent-os/standards/') >= 8],
+  ['agent-os specs with visuals', pkgPrefix('agent-os/specs/') >= project.sections.length * 4],
+  ['coverage page verifies every artefact', (() => {
+    const html = wrap(<CoveragePage project={project} />)
+    return !html.includes('lz-checkrow-ic warn') && html.includes('artefacts verified')
+  })()],
+)
+
 for (const [label, ok] of checks) {
   if (!ok) failed++
   console.log(`${ok ? 'ok ' : 'ERR'} ${label}`)

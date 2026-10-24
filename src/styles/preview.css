@@ -1316,3 +1316,406 @@
 .pv.mobile .pv-card {
   padding: 12px;
 }
+
+/* ---------------------------------------------------------------------------
+   Interactive prototype controls
+   Every preview control is a real element, so the prototype can actually be
+   used: type, filter, sort, open, create and navigate. Styling stays inside
+   the design tokens, exactly like the screens themselves.
+   --------------------------------------------------------------------------- */
+
+.pv button,
+.pv input,
+.pv select,
+.pv textarea {
+  font-family: inherit;
+  color: inherit;
+}
+
+.pv-nav,
+.pv-listrow {
+  appearance: none;
+  background: none;
+  border: 0;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+}
+
+.pv-nav {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 9px;
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+  font-size: 12px;
+}
+
+.pv-nav:hover {
+  background: var(--surface-2);
+  color: var(--ink);
+}
+
+.pv-nav.active {
+  background: var(--primary-soft, var(--surface-2));
+  color: var(--primary);
+  font-weight: 500;
+}
+
+.pv-nav .badge {
+  margin-left: auto;
+  font-size: 9px;
+  background: var(--surface-2);
+  border-radius: 20px;
+  padding: 1px 5px;
+  color: var(--ink-muted);
+}
+
+.pv-nav.active .badge {
+  background: var(--primary);
+  color: var(--on-primary);
+}
+
+.pv-listrow {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.pv-listrow:hover {
+  background: var(--surface-2);
+}
+
+.pv-table tbody tr.pv-row {
+  cursor: pointer;
+}
+
+.pv-table tbody tr.pv-row:hover {
+  background: var(--surface-2);
+}
+
+.pv-sort {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 0;
+  background: none;
+  padding: 0;
+  cursor: pointer;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+}
+
+.pv-sort .caret {
+  font-size: 7px;
+  color: var(--primary);
+}
+
+.pv-emptytd {
+  text-align: center;
+  padding: 24px 12px;
+  color: var(--ink-muted);
+  font-size: 11.5px;
+}
+
+.pv-emptytd .pv-btn {
+  margin-left: 8px;
+}
+
+.pv-empty {
+  margin: 0;
+  padding: 22px 12px;
+  text-align: center;
+  font-size: 11.5px;
+  color: var(--ink-muted);
+}
+
+.pv-filters {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+}
+
+.pv-chip {
+  cursor: pointer;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: 20px;
+  padding: 4px 9px;
+  font-size: 10.5px;
+  color: var(--ink-muted);
+}
+
+.pv-chip:hover {
+  border-color: var(--border-strong);
+}
+
+.pv-chip.active {
+  background: var(--primary);
+  border-color: var(--primary);
+  color: var(--on-primary);
+}
+
+.pv-searchbox {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin-left: auto;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  color: var(--ink-faint);
+  min-width: 150px;
+}
+
+.pv-searchbox input {
+  border: 0;
+  background: none;
+  outline: none;
+  font-size: 10.5px;
+  width: 100%;
+  color: var(--ink);
+}
+
+.pv-search {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 5px 8px;
+  min-width: 190px;
+  color: var(--ink-faint);
+}
+
+.pv-search input {
+  border: 0;
+  background: none;
+  outline: none;
+  font-size: 10.5px;
+  width: 100%;
+  color: var(--ink);
+}
+
+.pv-search:focus-within,
+.pv-searchbox:focus-within {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.pv-iconbtn,
+.pv-avatar {
+  cursor: pointer;
+  appearance: none;
+}
+
+.pv-avatar {
+  border: 0;
+}
+
+.pv-iconbtn {
+  display: inline-grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-sm);
+  color: var(--ink-muted);
+}
+
+.pv-iconbtn:hover {
+  color: var(--ink);
+  background: var(--border);
+}
+
+.pv-avatar {
+  border-radius: 50%;
+  color: var(--ink);
+  font-size: 9.5px;
+  font-weight: 600;
+}
+
+.pv-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.pv-field.wide {
+  grid-column: 1 / -1;
+}
+
+.pv-field input,
+.pv-field select,
+.pv-field textarea {
+  border: 1px solid var(--border-strong);
+  background: var(--surface);
+  border-radius: var(--radius-sm);
+  padding: 7px 9px;
+  font-size: 11.5px;
+  color: var(--ink);
+  outline: none;
+  width: 100%;
+}
+
+.pv-field textarea {
+  resize: vertical;
+  min-height: 64px;
+}
+
+.pv-field input:focus,
+.pv-field select:focus,
+.pv-field textarea:focus {
+  border-color: var(--primary);
+  box-shadow: var(--shadow-focus);
+}
+
+.pv-field input[aria-invalid='true'],
+.pv-field select[aria-invalid='true'],
+.pv-field textarea[aria-invalid='true'] {
+  border-color: var(--bad, #c0392b);
+}
+
+.pv-error {
+  font-size: 10px;
+  color: var(--bad, #c0392b);
+}
+
+.pv-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 11.5px;
+  color: var(--ink-muted);
+}
+
+.pv-switch input {
+  width: 14px;
+  height: 14px;
+  accent-color: var(--primary);
+}
+
+.pv-formfoot {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 4px;
+  grid-column: 1 / -1;
+}
+
+.pv-hint {
+  margin-left: auto;
+  font-size: 9.5px;
+  color: var(--ink-faint);
+}
+
+.pv-success {
+  padding: 18px;
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+}
+
+.pv-success b {
+  font-size: 12.5px;
+  color: var(--good, #1f7a4d);
+}
+
+.pv-success p {
+  margin: 0 0 6px;
+  font-size: 11px;
+  color: var(--ink-muted);
+  max-width: 46ch;
+}
+
+.pv-overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(15, 17, 21, 0.35);
+  display: flex;
+  justify-content: flex-end;
+  z-index: 40;
+}
+
+.pv-sheet {
+  width: min(360px, 100%);
+  height: 100%;
+  overflow: auto;
+  background: var(--bg);
+  border-left: 1px solid var(--border);
+  box-shadow: var(--shadow-lg);
+  padding: 12px;
+}
+
+.pv-sheet .pv-form {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 9px;
+  margin-top: 8px;
+}
+
+.pv-toast {
+  position: absolute;
+  left: 50%;
+  bottom: 14px;
+  transform: translateX(-50%);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--ink);
+  color: var(--bg);
+  border-radius: 999px;
+  padding: 7px 12px;
+  font-size: 11px;
+  box-shadow: var(--shadow-md);
+  z-index: 50;
+  max-width: 90%;
+}
+
+.pv-toast button {
+  border: 0;
+  background: none;
+  color: inherit;
+  opacity: 0.7;
+  cursor: pointer;
+  display: inline-grid;
+  place-items: center;
+}
+
+.pv-drawer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 210px;
+  background: var(--surface);
+  border-right: 1px solid var(--border);
+  padding: 12px 8px;
+  z-index: 30;
+  box-shadow: var(--shadow-md);
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.pv.mobile .pv-main {
+  width: 100%;
+}
+
+.pv .pv-main,
+.pv .pv-body {
+  position: relative;
+}
+
+.pv {
+  position: relative;
+}

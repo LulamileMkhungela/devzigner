@@ -259,6 +259,12 @@ export function compileDesign(
     { name: 'caption', px: 11, usage: 'Labels, overlines, status' },
   ]
 
+  const breakpoints = [
+    { name: 'sm', px: 640 },
+    { name: 'md', px: 768 },
+    { name: 'lg', px: 1024 },
+    { name: 'xl', px: designContentWidth(px) },
+  ]
   const radiusBase =
     typeof overrides.radius === 'number'
       ? Math.max(0, Math.min(20, Math.round(overrides.radius)))
@@ -313,7 +319,7 @@ export function compileDesign(
   const { light: semantic, dark: darkSemantic } = buildSemantic(primary, accent, neutral, success, warning, danger, info, px)
   const densityLabel = densityFor(px.density)
 
-  const tokensCss = buildTokensCss(semantic, darkSemantic, typography, radii, spacing, shadows, motion, primary, accent, neutral)
+  const tokensCss = buildTokensCss(semantic, darkSemantic, typography, radii, spacing, shadows, motion, primary, accent, neutral, breakpoints)
   const tailwindTheme = buildTailwind(semantic, typography, radii, primary, accent, neutral)
   const tokensJson = JSON.stringify(
     {
@@ -332,6 +338,7 @@ export function compileDesign(
       spacing,
       shadow: shadows,
       motion,
+      breakpoints,
       layout: { shell, nav: layoutNav, cardStyle, density: densityLabel },
     },
     null,
@@ -350,6 +357,7 @@ export function compileDesign(
     darkSemantic,
     typography,
     scale,
+    breakpoints,
     radii,
     spacing,
     shadows,
@@ -378,6 +386,10 @@ export function compileDesign(
     tailwindTheme,
     tokensJson,
   }
+}
+
+function designContentWidth(px: Genome): number {
+  return px.density > 66 ? 1120 : 1280
 }
 
 function densityFor(density: number): 'airy' | 'balanced' | 'compact' {
@@ -475,6 +487,7 @@ function buildTokensCss(
   primary: ColorRole,
   accent: ColorRole,
   neutral: ColorRole,
+  breakpoints: { name: string; px: number }[],
 ): string {
   const light = Object.entries(semantic)
   const dark = Object.entries(darkSemantic)
@@ -502,6 +515,8 @@ function buildTokensCss(
   for (const [k, v] of Object.entries(shadows)) lines.push(`  --shadow-${k}: ${v};`)
   lines.push('', '  /* Motion */')
   for (const m of motion) lines.push(`  --duration-${m.name}: ${m.duration};`)
+  lines.push('', '  /* Breakpoints (documentation tokens — media queries cannot read custom properties) */')
+  for (const b of breakpoints) lines.push(`  --breakpoint-${b.name}: ${b.px}px;`)
   lines.push('}', '', '[data-theme="dark"] {')
   for (const [k, v] of dark) lines.push(`  ${k}: ${v};`)
   lines.push('}', '')

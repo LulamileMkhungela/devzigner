@@ -9,8 +9,9 @@
     "preview": "vite preview --host 0.0.0.0",
     "qa": "tsx scripts/qa.ts",
     "render-check": "tsx --tsconfig tsconfig.scripts.json scripts/render-check.tsx",
-    "check": "npm run render-check && npm run smoke && npm run qa && npm run build",
-    "smoke": "tsx --tsconfig tsconfig.scripts.json scripts/smoke.tsx"
+    "check": "npm run render-check && npm run export-check && npm run smoke && npm run qa && npm run build",
+    "smoke": "tsx --tsconfig tsconfig.scripts.json scripts/smoke.tsx",
+    "export-check": "tsx --tsconfig tsconfig.scripts.json scripts/export-check.ts"
   },
   "dependencies": {
     "jszip": "^3.10.1",

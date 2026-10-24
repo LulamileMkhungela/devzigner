@@ -10,6 +10,7 @@ export const TRACK = [
   { id: 'system', label: 'System', path: 'system' },
   { id: 'prototype', label: 'Prototype', path: 'prototype' },
   { id: 'wiki', label: 'Wiki', path: 'wiki' },
+  { id: 'coverage', label: 'Coverage', path: 'coverage' },
 ]
 
 const STEP_ICON: Record<FlowStep['kind'], string> = {

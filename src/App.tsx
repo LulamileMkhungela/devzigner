@@ -19,6 +19,7 @@ import { SystemPage } from './views/SystemPage'
 import { PrototypePage } from './views/PrototypePage'
 import { EditorPage } from './views/EditorPage'
 import { WikiPage } from './views/WikiPage'
+import { CoveragePage } from './views/CoveragePage'
 
 const TRACK_NAV = [
   { path: 'flows', label: 'Flows', icon: 'Route' },
@@ -26,6 +27,7 @@ const TRACK_NAV = [
   { path: 'prototype', label: 'Prototype', icon: 'Play' },
   { path: 'editor', label: 'Token editor', icon: 'Sliders' },
   { path: 'wiki', label: 'Wiki', icon: 'BookOpen' },
+  { path: 'coverage', label: 'Coverage', icon: 'ShieldCheck' },
 ] as const
 
 export function App() {
@@ -66,6 +68,7 @@ export function App() {
     if (path[0] === 'prototype') return <PrototypePage project={active} />
     if (path[0] === 'editor') return <EditorPage project={active} />
     if (path[0] === 'wiki') return <WikiPage project={active} />
+    if (path[0] === 'coverage') return <CoveragePage project={active} />
     if (path[0] === 'sections') {
       if (!path[1]) return <SectionsPage project={active} />
       if (!section) {

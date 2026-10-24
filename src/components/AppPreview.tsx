@@ -1,5 +1,6 @@
+import { useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
-import type { Block, DesignSystem, Entity, Project, Screen } from '../types'
+import type { Block, DesignSystem, Entity, Project, SampleRow, Screen } from '../types'
 import { formatField, humanize } from '../lib/format'
 import { Icon } from './Icons'
 
@@ -44,6 +45,62 @@ function statusBadge(value: string) {
 
 function entityOf(project: Project, id: string): Entity | undefined {
   return project.data.entities.find((e) => e.id === id)
+}
+
+/**
+ * Interactive state for the prototype. Every control in a preview mutates this,
+ * so the prototype behaves like a working app rather than a picture of one.
+ */
+interface ProtoCtl {
+  query: string
+  setQuery: (value: string) => void
+  chip: string
+  setChip: (value: string) => void
+  sort: { key: string; dir: 1 | -1 } | null
+  toggleSort: (key: string) => void
+  values: Record<string, string>
+  setValue: (key: string, value: string) => void
+  errors: Record<string, string>
+  submit: (entity?: Entity, fields?: string[]) => void
+  reset: () => void
+  submitted: boolean
+  tab: number
+  setTab: (index: number) => void
+  extraRows: Record<string, SampleRow[]>
+  addRow: (entityId: string, row: SampleRow) => void
+  addedCards: { title: string; meta: string; tag: string }[]
+  addCard: () => void
+  toast: string | null
+  say: (message: string) => void
+  nav: string
+  navigate: (label: string) => void
+  openDrawer: () => void
+  drawer: boolean
+  closeDrawer: () => void
+  mobileNav: boolean
+  toggleMobileNav: () => void
+}
+
+function matchesQuery(row: SampleRow, needle: string): boolean {
+  if (!needle) return true
+  return Object.values(row).some((value) => String(value).toLowerCase().includes(needle))
+}
+
+function matchesChip(row: SampleRow, chip: string): boolean {
+  if (!chip || chip.toLowerCase() === 'all' || chip.toLowerCase() === 'everyone') return true
+  const needle = chip.toLowerCase()
+  return Object.values(row).some((value) => {
+    const text = String(value).toLowerCase()
+    return text === needle || text.includes(needle)
+  })
+}
+
+function rowsFor(block: Extract<Block, { type: 'table' | 'list' }>, entity: Entity, ctl: ProtoCtl): SampleRow[] {
+  const base = block.rows
+    .map((id) => entity.rows.find((r) => String(r.id) === id))
+    .filter(Boolean) as SampleRow[]
+  const extra = ctl.extraRows[entity.id] ?? []
+  return [...extra, ...base].filter((row) => matchesQuery(row, ctl.query.trim().toLowerCase()) && matchesChip(row, ctl.chip))
 }
 
 function Chart({ block }: { block: Extract<Block, { type: 'chart' }> }) {
@@ -114,18 +171,25 @@ function Chart({ block }: { block: Extract<Block, { type: 'chart' }> }) {
   )
 }
 
-function TableBlock({ block, project }: { block: Extract<Block, { type: 'table' }>; project: Project }) {
+function TableBlock({ block, project, ctl }: { block: Extract<Block, { type: 'table' }>; project: Project; ctl: ProtoCtl }) {
   const entity = entityOf(project, block.entityId)
   if (!entity) return null
-  const rows = block.rows
-    .map((id) => entity.rows.find((r) => String(r.id) === id))
-    .filter(Boolean) as Record<string, string | number | boolean>[]
+  const total = block.rows.length + (ctl.extraRows[entity.id]?.length ?? 0)
+  const rows = rowsFor(block, entity, ctl)
+  const sorted = ctl.sort
+    ? [...rows].sort((a, b) => {
+        const av = a[ctl.sort!.key]
+        const bv = b[ctl.sort!.key]
+        if (typeof av === 'number' && typeof bv === 'number') return (av - bv) * ctl.sort!.dir
+        return String(av ?? '').localeCompare(String(bv ?? '')) * ctl.sort!.dir
+      })
+    : rows
   return (
     <div className="pv-card">
       <div className="pv-card-head">
         <span className="pv-card-title">{block.caption}</span>
         <span className="mono" style={{ fontSize: 9, color: 'var(--ink-faint)' }}>
-          {rows.length} rows
+          {sorted.length} of {total} rows{ctl.query ? ` · “${ctl.query}”` : ''}
         </span>
       </div>
       <div style={{ overflowX: 'auto' }}>
@@ -133,13 +197,24 @@ function TableBlock({ block, project }: { block: Extract<Block, { type: 'table' 
           <thead>
             <tr>
               {block.columns.map((c) => (
-                <th key={c}>{humanize(c)}</th>
+                <th key={c}>
+                  <button
+                    type="button"
+                    onClick={() => ctl.toggleSort(c)}
+                    className="pv-sort"
+                    aria-label={`Sort by ${humanize(c)}`}
+                    aria-pressed={ctl.sort?.key === c}
+                  >
+                    {humanize(c)}
+                    {ctl.sort?.key === c && <span className="caret">{ctl.sort.dir === 1 ? '▲' : '▼'}</span>}
+                  </button>
+                </th>
               ))}
             </tr>
           </thead>
           <tbody>
-            {rows.map((row) => (
-              <tr key={String(row.id)}>
+            {sorted.map((row) => (
+              <tr key={String(row.id)} onClick={() => ctl.say(`${entity.name} ${String(row[entity.primaryField] ?? row.id)} opened`)} className="pv-row">
                 {block.columns.map((c) => {
                   const field = entity.fields.find((f) => f.name === c)
                   const value = row[c]
@@ -152,6 +227,23 @@ function TableBlock({ block, project }: { block: Extract<Block, { type: 'table' 
                 })}
               </tr>
             ))}
+            {sorted.length === 0 && (
+              <tr>
+                <td colSpan={block.columns.length} className="pv-emptytd">
+                  Nothing matches these filters.
+                  <button
+                    type="button"
+                    className="pv-btn"
+                    onClick={() => {
+                      ctl.setQuery('')
+                      ctl.setChip('all')
+                    }}
+                  >
+                    Clear filters
+                  </button>
+                </td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
@@ -159,7 +251,7 @@ function TableBlock({ block, project }: { block: Extract<Block, { type: 'table' 
   )
 }
 
-function BlockView({ block, project }: { block: Block; project: Project }) {
+function BlockView({ block, project, ctl }: { block: Block; project: Project; ctl: ProtoCtl }) {
   switch (block.type) {
     case 'pageHeader':
       return (
@@ -170,7 +262,7 @@ function BlockView({ block, project }: { block: Block; project: Project }) {
           </div>
           <div className="pv-actions">
             {block.actions.map((a, i) => (
-              <button key={a} className={`pv-btn${i === 0 ? ' primary' : ''}`} tabIndex={-1}>
+              <button key={a} type="button" onClick={() => (i === 0 ? ctl.openDrawer() : ctl.say(`${a} · export queued`))} className={`pv-btn${i === 0 ? ' primary' : ''}`}>
                 {i === 0 && <Icon name="Plus" size={11} />}
                 {a}
               </button>
@@ -207,41 +299,53 @@ function BlockView({ block, project }: { block: Block; project: Project }) {
       return (
         <div className="pv-filters">
           {block.chips.map((c, i) => (
-            <span key={c} className={`pv-chip${i === 0 ? ' active' : ''}`}>
+            <button
+              key={c}
+              type="button"
+              onClick={() => ctl.setChip(i === 0 ? 'all' : c)}
+              aria-pressed={ctl.chip === c || (i === 0 && ctl.chip === 'all')}
+              className={`pv-chip${ctl.chip === c || (i === 0 && ctl.chip === 'all') ? ' active' : ''}`}
+            >
               {c}
-            </span>
+            </button>
           ))}
-          <span className="pv-searchbox">
-            <Icon name="Search" size={10} /> {block.search}
-          </span>
+          <label className="pv-searchbox">
+            <Icon name="Search" size={10} />
+            <input
+              type="search"
+              value={ctl.query}
+              onChange={(event) => ctl.setQuery(event.target.value)}
+              placeholder={block.search}
+              aria-label={block.search}
+            />
+          </label>
         </div>
       )
     case 'table':
-      return <TableBlock block={block} project={project} />
+      return <TableBlock block={block} project={project} ctl={ctl} />
     case 'list': {
       const entity = entityOf(project, block.entityId)
       if (!entity) return null
-      const rows = block.rows
-        .map((id) => entity.rows.find((r) => String(r.id) === id))
-        .filter(Boolean) as Record<string, string | number | boolean>[]
+      const rows = rowsFor(block, entity, ctl)
       return (
         <div className="pv-card">
           <div className="pv-card-head">
             <span className="pv-card-title">{block.title}</span>
-            <span className="pv-badge brand">{rows.length} waiting</span>
+            <span className="pv-badge brand">{rows.length} in this view</span>
           </div>
           {rows.map((row) => {
             const metaField = entity.fields.find((f) => f.name === block.metaField)
             return (
-              <div className="pv-listrow" key={String(row.id)}>
+              <button type="button" className="pv-listrow" key={String(row.id)} onClick={() => ctl.say(`${String(row[entity.primaryField] ?? entity.name)} opened`)}>
                 <div style={{ flex: 1, minWidth: 0 }}>
                   <div className="t">{String(row[entity.primaryField] ?? '')}</div>
                   <div className="m">{formatField(entity.fields.find((f) => f.name === entity.secondaryField), row[entity.secondaryField], project.currency)}</div>
                 </div>
                 {metaField?.type === 'status' ? statusBadge(String(row[metaField.name])) : <span className="pv-badge">{String(row[block.metaField] ?? '')}</span>}
-              </div>
+              </button>
             )
           })}
+          {rows.length === 0 && <p className="pv-empty">Nothing matches these filters.</p>}
         </div>
       )
     }
@@ -251,11 +355,18 @@ function BlockView({ block, project }: { block: Block; project: Project }) {
       const row = entity.rows.find((r) => String(r.id) === block.recordId)
       return (
         <div className="pv-card">
-          <div className="pv-tabs">
+          <div className="pv-tabs" role="tablist">
             {block.tabs.map((t, i) => (
-              <span key={t} className={`pv-tab${i === 0 ? ' active' : ''}`}>
+              <button
+                key={t}
+                type="button"
+                role="tab"
+                aria-selected={ctl.tab === i}
+                onClick={() => ctl.setTab(i)}
+                className={`pv-tab${ctl.tab === i ? ' active' : ''}`}
+              >
                 {t}
-              </span>
+              </button>
             ))}
           </div>
           <dl className="pv-detail">
@@ -275,37 +386,91 @@ function BlockView({ block, project }: { block: Block; project: Project }) {
     }
     case 'form': {
       const entity = entityOf(project, block.entityId)
+      const done = ctl.submitted
       return (
         <div className="pv-card">
           <div className="pv-card-head">
             <span className="pv-card-title">{block.title}</span>
-            <span className="pv-badge">Required marked</span>
+            <span className="pv-badge">{block.fields.length} fields</span>
           </div>
-          <div className="pv-form">
-            {block.fields.map((f) => {
-              const field = entity?.fields.find((x) => x.name === f)
-              const wide = field?.type === 'longtext'
-              return (
-                <div className="pv-field" key={f}>
-                  <label>
-                    {humanize(f)}
-                    {field?.required ? ' *' : ''}
-                  </label>
-                  <div className={`inputfake${wide ? ' textarea' : ''}`}>
-                    {field?.type === 'status' ? field.options?.[0] : field?.example ? String(field.example).slice(0, 44) : ''}
-                  </div>
-                </div>
-              )
-            })}
-            <div style={{ display: 'flex', gap: 7, marginTop: 2 }}>
-              <button className="pv-btn primary" tabIndex={-1}>
-                {block.submit}
-              </button>
-              <button className="pv-btn" tabIndex={-1}>
-                Cancel
+          {done ? (
+            <div className="pv-success" role="status">
+              <b>Saved</b>
+              <p>{entity ? `${entity.name} created from this form.` : 'Record created.'} The list above now includes it.</p>
+              <button type="button" className="pv-btn" onClick={ctl.reset}>
+                Add another
               </button>
             </div>
-          </div>
+          ) : (
+            <form
+              className="pv-form"
+              onSubmit={(event) => {
+                event.preventDefault()
+                ctl.submit(entity, block.fields)
+              }}
+            >
+              {block.fields.map((f) => {
+                const field = entity?.fields.find((x) => x.name === f)
+                const wide = field?.type === 'longtext'
+                const value = ctl.values[f] ?? ''
+                const error = ctl.errors[f]
+                const common = {
+                  id: `pv-${block.entityId}-${f}`,
+                  name: f,
+                  value,
+                  onChange: (event: { target: { value: string } }) => ctl.setValue(f, event.target.value),
+                  'aria-invalid': error ? true : undefined,
+                  'aria-describedby': error ? `pv-err-${f}` : undefined,
+                  required: field?.required,
+                }
+                return (
+                  <div className={`pv-field${wide ? ' wide' : ''}`} key={f}>
+                    <label htmlFor={common.id}>
+                      {humanize(f)}
+                      {field?.required ? ' *' : ''}
+                    </label>
+                    {field?.type === 'longtext' ? (
+                      <textarea {...common} rows={3} />
+                    ) : field?.type === 'status' && field.options?.length ? (
+                      <select {...common}>
+                        <option value="">Choose…</option>
+                        {field.options.map((option) => (
+                          <option key={option} value={option}>
+                            {option}
+                          </option>
+                        ))}
+                      </select>
+                    ) : field?.type === 'boolean' ? (
+                      <label className="pv-switch">
+                        <input type="checkbox" checked={value === 'yes'} onChange={(event) => ctl.setValue(f, event.target.checked ? 'yes' : 'no')} />
+                        <span>{value === 'yes' ? 'Yes' : 'No'}</span>
+                      </label>
+                    ) : (
+                      <input
+                        {...common}
+                        type={field?.type === 'email' ? 'email' : field?.type === 'phone' ? 'tel' : field?.type === 'number' || field?.type === 'money' || field?.type === 'percent' || field?.type === 'rating' ? 'number' : field?.type === 'date' ? 'date' : 'text'}
+                        placeholder={field?.example ? String(field.example) : undefined}
+                      />
+                    )}
+                    {error && (
+                      <span className="pv-error" id={`pv-err-${f}`} role="alert">
+                        {error}
+                      </span>
+                    )}
+                  </div>
+                )
+              })}
+              <div className="pv-formfoot">
+                <button type="submit" className="pv-btn primary">
+                  {block.submit}
+                </button>
+                <button type="button" className="pv-btn" onClick={ctl.reset}>
+                  Cancel
+                </button>
+                <span className="pv-hint">{entity ? `${entity.name} · required fields marked *` : ''}</span>
+              </div>
+            </form>
+          )}
         </div>
       )
     }
@@ -314,9 +479,9 @@ function BlockView({ block, project }: { block: Block; project: Project }) {
         <div className="pv-card">
           <div className="pv-card-head">
             <span className="pv-card-title">{block.title}</span>
-            <span className="mono" style={{ fontSize: 9, color: 'var(--ink-faint)' }}>
-              drag to move
-            </span>
+            <button type="button" className="pv-btn" onClick={ctl.addCard}>
+              <Icon name="Plus" size={10} /> Add card
+            </button>
           </div>
           <div className="pv-board">
             {block.columns.map((col) => (
@@ -325,7 +490,7 @@ function BlockView({ block, project }: { block: Block; project: Project }) {
                   {col.name}
                   <span className="n">{col.cards.length}</span>
                 </div>
-                {col.cards.map((card, i) => (
+                {[...col.cards, ...(col.name === block.columns[0]?.name ? ctl.addedCards : [])].map((card, i) => (
                   <div className="pv-kcard" key={`${card.title}-${i}`}>
                     <div className="t">{card.title}</div>
                     <div className="m">
@@ -429,10 +594,10 @@ function BlockView({ block, project }: { block: Block; project: Project }) {
               <div className="role">{block.role}</div>
             </div>
             <div style={{ marginLeft: 'auto' }} className="pv-actions">
-              <button className="pv-btn" tabIndex={-1}>
+              <button type="button" className="pv-btn" onClick={() => ctl.say(`Message composer opened for ${block.name}`)}>
                 Message
               </button>
-              <button className="pv-btn primary" tabIndex={-1}>
+              <button type="button" className="pv-btn primary" onClick={() => ctl.say(`Editing ${block.name}`)}>
                 Edit
               </button>
             </div>
@@ -538,7 +703,7 @@ function BlockView({ block, project }: { block: Block; project: Project }) {
         <div className="pv-card" style={{ textAlign: 'center', padding: 28 }}>
           <b>{block.title}</b>
           <p style={{ fontSize: 11.5, color: 'var(--ink-muted)', margin: '6px 0 12px' }}>{block.body}</p>
-          <button className="pv-btn primary" tabIndex={-1}>
+          <button type="button" className="pv-btn primary" onClick={() => ctl.say(`${block.action} · draft started`)}>
             {block.action}
           </button>
         </div>
@@ -558,19 +723,118 @@ export function AppPreview({
   screen,
   theme = 'light',
   device = 'desktop',
+  onNavigate,
 }: {
   project: Project
   screen: Screen
   theme?: 'light' | 'dark'
   device?: 'desktop' | 'mobile'
+  onNavigate?: (screenId: string) => void
 }) {
   const design = project.design
   const shell = design.layout.shell
   const nav = design.layout.nav.length ? design.layout.nav : project.sections.map((s) => s.name).slice(0, 5)
   const mobile = device === 'mobile'
+  const activeSection = project.sections.find((s) => s.screens.some((x) => x.id === screen.id))
+
+  const [query, setQuery] = useState('')
+  const [chip, setChip] = useState('all')
+  const [sort, setSort] = useState<{ key: string; dir: 1 | -1 } | null>(null)
+  const [values, setValues] = useState<Record<string, string>>({})
+  const [errors, setErrors] = useState<Record<string, string>>({})
+  const [submitted, setSubmitted] = useState(false)
+  const [tab, setTab] = useState(0)
+  const [extraRows, setExtraRows] = useState<Record<string, SampleRow[]>>({})
+  const [addedCards, setAddedCards] = useState<{ title: string; meta: string; tag: string }[]>([])
+  const [toast, setToast] = useState<string | null>(null)
+  const [navLabel, setNavLabel] = useState(activeSection?.name ?? nav[0] ?? '')
+  const [drawer, setDrawer] = useState(false)
+  const [mobileNav, setMobileNav] = useState(false)
+
+  const entityForScreen = useMemo(() => {
+    const id = screen.entityIds[0] ?? activeSection?.entityIds[0]
+    return project.data.entities.find((e) => e.id === id)
+  }, [project.data.entities, screen.entityIds, activeSection])
+
+  const ctl: ProtoCtl = {
+    query,
+    setQuery: (value) => {
+      setQuery(value)
+      setChip('all')
+    },
+    chip,
+    setChip,
+    sort,
+    toggleSort: (key) => setSort((prev) => (prev?.key === key ? { key, dir: prev.dir === 1 ? -1 : 1 } : { key, dir: 1 })),
+    values,
+    setValue: (key, value) => {
+      setValues((prev) => ({ ...prev, [key]: value }))
+      setErrors((prev) => {
+        if (!prev[key]) return prev
+        const next = { ...prev }
+        delete next[key]
+        return next
+      })
+    },
+    errors,
+    submit: (entity, fieldNames) => {
+      const filled: Record<string, string> = {}
+      if (entity) {
+        const visible = fieldNames ? entity.fields.filter((f) => fieldNames.includes(f.name)) : entity.fields
+        for (const field of visible) {
+          if (field.required && !String(values[field.name] ?? '').trim()) filled[field.name] = `${humanize(field.name)} is required.`
+        }
+      }
+      setErrors(filled)
+      if (Object.keys(filled).length > 0) {
+        setToast('Fix the highlighted fields')
+        return
+      }
+      if (entity) {
+        const row: SampleRow = { id: `${entity.id}-new-${Date.now()}`, ...values }
+        for (const field of entity.fields) if (row[field.name] === undefined) row[field.name] = String(field.example ?? '')
+        setExtraRows((prev) => ({ ...prev, [entity.id]: [row, ...(prev[entity.id] ?? [])] }))
+      }
+      setSubmitted(true)
+      setToast(entity ? `${entity.name} saved` : 'Saved')
+    },
+    reset: () => {
+      setValues({})
+      setErrors({})
+      setSubmitted(false)
+    },
+    submitted,
+    tab,
+    setTab,
+    extraRows,
+    addRow: (entityId, row) => setExtraRows((prev) => ({ ...prev, [entityId]: [row, ...(prev[entityId] ?? [])] })),
+    addedCards,
+    addCard: () => {
+      setAddedCards((prev) => [{ title: `New item ${prev.length + 1}`, meta: 'Added in this session', tag: 'draft' }, ...prev])
+      setToast('Card added')
+    },
+    toast,
+    say: (message) => setToast(message),
+    nav: navLabel,
+    navigate: (label) => {
+      setNavLabel(label)
+      const section = project.sections.find((s) => s.name === label)
+      const target = section?.screens[0]
+      if (target && onNavigate) onNavigate(target.id)
+      setMobileNav(false)
+      setToast(target ? `${label} · ${target.route}` : `${label} · coming in a later milestone`)
+    },
+    openDrawer: () => setDrawer(true),
+    drawer,
+    closeDrawer: () => setDrawer(false),
+    mobileNav,
+    toggleMobileNav: () => setMobileNav((prev) => !prev),
+  }
+
+  const navItems = shell === 'rail' ? nav.slice(0, 7) : nav.slice(0, 6)
 
   return (
-    <div className={`pv${mobile ? ' mobile' : ''}`} data-density={design.layout.density} style={tokenVars(design, theme)}>
+    <div className={`pv${mobile ? ' mobile' : ''}${mobileNav ? ' navopen' : ''}`} data-density={design.layout.density} data-prototype="interactive" style={tokenVars(design, theme)}>
       {shell !== 'topbar' && !mobile && (
         <aside className={`pv-side${shell === 'rail' ? ' rail' : ''}`}>
           <div className="pv-brand">
@@ -578,43 +842,73 @@ export function AppPreview({
             {shell !== 'rail' && <span>{project.name}</span>}
           </div>
           {shell !== 'rail' && <div className="pv-navlabel">Workspace</div>}
-          {nav.slice(0, 6).map((item, i) => (
-            <span key={item} className={`pv-nav${i === 0 ? ' active' : ''}`} title={item}>
+          {navItems.map((item, i) => (
+            <button
+              key={item}
+              type="button"
+              onClick={() => ctl.navigate(item)}
+              aria-current={navLabel === item ? 'page' : undefined}
+              className={`pv-nav${navLabel === item ? ' active' : ''}`}
+              title={item}
+            >
               <NavIcon index={i} />
               {shell !== 'rail' && <span style={{ overflow: 'hidden', textOverflow: 'ellipsis' }}>{item}</span>}
-              {shell !== 'rail' && i === 1 && <span className="badge">3</span>}
-            </span>
+              {shell !== 'rail' && i === 1 && <span className="badge">{3 + (extraRows[entityForScreen?.id ?? '']?.length ?? 0)}</span>}
+            </button>
           ))}
           {shell !== 'rail' && <div className="pv-navlabel">Account</div>}
-          <span className="pv-nav" title="Settings">
+          <button type="button" className="pv-nav" onClick={() => ctl.say('Settings · workspace preferences')} title="Settings">
             <Icon name="Settings" size={14} />
             {shell !== 'rail' && <span>Settings</span>}
-          </span>
+          </button>
           <div className="pv-sidefoot">
             <span className="pv-avatar">OM</span>
             {shell !== 'rail' && <span>Ops Manager</span>}
           </div>
         </aside>
       )}
+      {mobile && mobileNav && (
+        <div className="pv-drawer" role="dialog" aria-label="Navigation">
+          {navItems.map((item, i) => (
+            <button key={item} type="button" className={`pv-nav${navLabel === item ? ' active' : ''}`} onClick={() => ctl.navigate(item)}>
+              <NavIcon index={i} />
+              <span>{item}</span>
+            </button>
+          ))}
+        </div>
+      )}
       <div className="pv-main">
         <header className="pv-topbar">
-          {mobile && <Icon name="List" size={15} />}
+          {mobile && (
+            <button type="button" className="pv-iconbtn" aria-label="Menu" onClick={ctl.toggleMobileNav}>
+              <Icon name={mobileNav ? 'X' : 'Menu'} size={15} />
+            </button>
+          )}
           <span className="pv-badge brand">{project.brief.category}</span>
-          <div className="pv-search">
-            <Icon name="Search" size={11} /> Search or jump to…
-          </div>
+          <label className="pv-search">
+            <Icon name="Search" size={11} />
+            <input
+              type="search"
+              value={query}
+              onChange={(event) => ctl.setQuery(event.target.value)}
+              placeholder="Search or jump to…"
+              aria-label="Search this screen"
+            />
+          </label>
           <span className="spacer" />
-          <span className="pv-iconbtn">
+          <button type="button" className="pv-iconbtn" aria-label="Jump to schedule" onClick={() => ctl.say('Jump to schedule (⌘K)')}>
             <Icon name="CalendarCheck" size={12} />
-          </span>
-          <span className="pv-iconbtn">
+          </button>
+          <button type="button" className="pv-iconbtn" aria-label="Invite someone" onClick={() => ctl.say('Invite dialog opened')}>
             <Icon name="Users" size={12} />
-          </span>
-          <span className="pv-avatar">OM</span>
+          </button>
+          <button type="button" className="pv-avatar" aria-label="Account" onClick={() => ctl.say('Account menu')}>
+            OM
+          </button>
         </header>
         <div className="pv-body">
           {screen.blocks.map((block, i) => (
-            <BlockView key={i} block={block} project={project} />
+            <BlockView key={i} block={block} project={project} ctl={ctl} />
           ))}
           <div className="pv-pagefoot">
             <span>{project.name} · {screen.name}</span>
@@ -622,6 +916,72 @@ export function AppPreview({
           </div>
         </div>
       </div>
+      {drawer && entityForScreen && (
+        <div className="pv-overlay" role="dialog" aria-modal="true" aria-label={`New ${entityForScreen.name}`}>
+          <div className="pv-sheet">
+            <div className="pv-card-head">
+              <span className="pv-card-title">New {entityForScreen.name.toLowerCase()}</span>
+              <button type="button" className="pv-iconbtn" aria-label="Close" onClick={ctl.closeDrawer}>
+                <Icon name="X" size={13} />
+              </button>
+            </div>
+            {submitted ? (
+              <div className="pv-success" role="status">
+                <b>Created</b>
+                <p>{entityForScreen.name} added to this session. It appears in the list immediately.</p>
+                <button type="button" className="pv-btn" onClick={ctl.reset}>
+                  Create another
+                </button>
+              </div>
+            ) : (
+              <form
+                className="pv-form"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  ctl.submit(entityForScreen, entityForScreen.fields.slice(0, 6).map((f) => f.name))
+                }}
+              >
+                {entityForScreen.fields.slice(0, 6).map((field) => (
+                  <div className={`pv-field${field.type === 'longtext' ? ' wide' : ''}`} key={field.name}>
+                    <label htmlFor={`drawer-${field.name}`}>
+                      {humanize(field.name)}
+                      {field.required ? ' *' : ''}
+                    </label>
+                    <input
+                      id={`drawer-${field.name}`}
+                      value={values[field.name] ?? ''}
+                      onChange={(event) => ctl.setValue(field.name, event.target.value)}
+                      placeholder={String(field.example ?? '')}
+                      aria-invalid={errors[field.name] ? true : undefined}
+                    />
+                    {errors[field.name] && (
+                      <span className="pv-error" role="alert">
+                        {errors[field.name]}
+                      </span>
+                    )}
+                  </div>
+                ))}
+                <div className="pv-formfoot">
+                  <button type="submit" className="pv-btn primary">
+                    Create {entityForScreen.name.toLowerCase()}
+                  </button>
+                  <button type="button" className="pv-btn" onClick={ctl.closeDrawer}>
+                    Cancel
+                  </button>
+                </div>
+              </form>
+            )}
+          </div>
+        </div>
+      )}
+      {toast && (
+        <div className="pv-toast" role="status">
+          <span>{toast}</span>
+          <button type="button" onClick={() => setToast(null)} aria-label="Dismiss">
+            <Icon name="X" size={11} />
+          </button>
+        </div>
+      )}
     </div>
   )
 }

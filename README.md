@@ -36,11 +36,41 @@ Under the workspace phases sits a second track — **Flows → System → Protot
 | **System** (`/system`) | The decision record: tech stack per layer, a component registry (primitive / composite / pattern) where each entry declares the only tokens it may use, the AppShell regions and routes, and the data-layer rules. Four stack layers and the registry itself are **editable** — choices are stored with the product and follow into the export. |
 | **Prototype** (`/prototype`) | A working AppShell with real routes and seeded records, assembled only from registry components. Switch pages, walk a flow step by step, flip to mobile, or jump into the editor. |
 | **Token editor** (`/editor`) | Inline editing linked to the tokens: primary and accent hue, radius, spacing, shell and card style. Every change re-runs the compiler — ramps, contrast, semantic aliases, screens, audit — so nothing downstream can drift. |
-| **Wiki** (`/wiki`) | The prototype wiki: product, flows, data layer, design system, components, shell, screens, stack and audit, plus branches and snapshots. Restore rebuilds the product deterministically. |
+| **Wiki** (`/wiki`) | The prototype wiki: product, flows, data layer, design system, components, shell, screens, stack, audit and handoff, plus branches and snapshots. Restore rebuilds the product deterministically. |
+| **Coverage** (`/coverage`) | The parity audit. Every row rebuilds the export package and checks the artefact is really in it — Design OS's ten commands, the export contract, Agent OS's standards/specs, and each Figma complaint with its countermeasure. Nothing here is asserted in prose. |
 
 The export grows to match: `src/data/types.ts`, `src/data/repository.ts` and `src/data/mock-adapter.ts` (a dummy data layer the UI can only reach through an interface), `src/components/app-shell.tsx`, `system/{stack,registry,app-shell,data-layer}` and a `wiki/` folder with a changelog. Branches are real snapshots in the browser; the exported folder is ready to commit, one worktree per exploration.
 
-The one artefact that is deliberately *not* pre-filled is screenshots — the only step a designer still takes by hand. The starter product ships captured so the flow is complete on first paint; a newly compiled product starts with the empty state and a capture action.
+### Design OS and Agent OS, artefact by artefact
+
+The export is the same file tree Design OS hands a coding agent, and the standards layer Agent OS expects:
+
+| Design OS | Here |
+| --- | --- |
+| `/product-vision` `/product-roadmap` | `product-overview.md`, `product-brief.md`, `roadmap.md` |
+| `/data-shape` `/sample-data` | `data-model.md`, `schema.sql`, `data-shapes/{README.md,overview.ts}`, `sections/*/sample-data.json`, `src/data/mock-adapter.ts` |
+| `/design-tokens` `/design-shell` | `design-system/{tokens.css,tokens.dtcg.json,fonts.md,tailwind-colors.md}`, `shell/components/{AppShell,MainNav,UserMenu}.tsx` |
+| `/shape-section` `/design-screen` | `sections/<id>/{README.md,tests.md,types.ts,sample-data.json,screenshot.svg,components/*.tsx}` |
+| `/screenshot-design` | `sections/<id>/screenshot.svg` and `shell/screenshot.svg` — drawn from the compiled blocks, so never stale |
+| `/export-product` | the ZIP, plus `prompts/{one-shot,section}-prompt.md` and `instructions/{one-shot-instructions, incremental/01-shell, NN-section}.md` |
+| Agent OS `/plan-product` | `agent-os/product/{mission,roadmap,tech-stack}.md` |
+| Agent OS `/discover-standards` `/index-standards` | `agent-os/standards/{ui,data,quality,accessibility}/*.md` + `index.yml` with descriptions |
+| Agent OS `/shape-spec` | `agent-os/specs/<date>-<section>/{shape,plan,references,standards}.md` + `visuals/*.svg` |
+
+Generated components are **props-only** (no data imports, no routing), responsive at every breakpoint in the token file, and typechecked in CI: `npm run export-check` writes them to disk and runs `tsc` against them for three archetypes.
+
+### What was wrong with the tools this replaces
+
+| Complaint | Countermeasure |
+| --- | --- |
+| Variables that only exist inside one tool | `design-system/tokens.dtcg.json` — W3C DTCG `$value`/`$type` primitives, readable by Figma, Tokens Studio and Style Dictionary |
+| Layouts that only exist at one width | Four breakpoints compiled as tokens, audited (`Responsive contract`), used by every exported component; nav collapses, tables scroll inside their card |
+| Autolayout that guesses margins | The compiler emits the shell, content width, density, grid and spacing scale; components consume `--space-*`, never ad-hoc margins |
+| Hundreds of hand-crafted component states | States come from variant axes on registry components; screens are composed from the registry, never drawn once-off |
+| Inputs that are pictures of inputs | The prototype runs real `<input>`, `<select>`, `<textarea>` and `<button>` elements: type to filter, sort a table, submit a form with validation, create a record, navigate the shell |
+| Design knowledge lost in a chat | `wiki/` + `agent-os/` ship product, flows, system, standards and specs with the code, versioned by snapshots and branches |
+
+A new artefact that *is* pre-filled: screenshots. They used to be the one step left to a person; they are now rendered from the compiled blocks, which is why they can be regenerated and why every screen has one.
 
 ---
 
@@ -65,10 +95,10 @@ The result is a workspace you can open on a Monday morning with zero preparation
 | **Data model** | 4–5 entities, 30–40 typed fields, foreign keys, 40–60 seeded sample rows, runnable PostgreSQL DDL with indexes and check constraints |
 | **Design system** | 7 contrast-checked colour families × 11 stops, semantic tokens (light + dark), 3 type roles, 7-step scale, space/radius/elevation/motion scales, layout shell, 10-component inventory |
 | **Sections & screens** | 5–7 feature areas, 12–18 screens built from real blocks, requirements with IDs and priorities, 4 states per screen, acceptance criteria, framework-agnostic tests |
-| **Audit** | 22 checks across accessibility, system, coverage and handoff — contrast ratios are calculated from the actual hex values |
-| **Handoff** | 20–22 files: markdown specs, `schema.sql`, `tokens.css`, `tailwind-theme.css`, `tokens.json`, per-section specs, tests, an implementation brief for a coding agent, `audit.md`, `devzign.json` |
+| **Audit** | 24 checks across accessibility, system, coverage and handoff — contrast ratios are calculated from the actual hex values |
+| **Handoff** | ~200 files: markdown specs, generated React components, prompts, milestones, screenshots, Agent OS standards and specs, `schema.sql`, `tokens.css`, `tailwind-theme.css`, `tokens.json`, per-section specs, tests, an implementation brief for a coding agent, `audit.md`, `devzign.json` |
 
-Everything is text. Everything is diffable. The ZIP is typically under 120 KB.
+Everything is text. Everything is diffable. The ZIP is typically 200–800 KB depending on how many components and screenshots the product carries.
 
 ---
 
@@ -138,9 +168,11 @@ Build and verify:
 
 ```bash
 npm run build          # tsc + vite production build
-npm run render-check   # server-renders every view against a compiled project
+npm run render-check   # server-renders every view + proves the export contract
+npm run export-check   # writes generated components to disk and typechecks them
+npm run smoke          # mounts the app in jsdom and clicks through it, including real form input
 npm run qa             # compiles all 12 archetypes × 3 seeds, checks invariants
-npm run check          # all three
+npm run check          # all of the above, then the production build
 ```
 
 There is no backend, no database and no network call at runtime. Projects are stored in `localStorage` (with automatic pruning if the quota is reached). Clearing site data clears projects; use **Export → Download package** to keep anything you care about.
@@ -166,7 +198,10 @@ src/
     roadmap.ts           # priority → phases with entry/exit conditions
     audit.ts             # 22 computed checks + weighted score
     index.ts             # compileProject() — the only entry point
-  export/package.ts      # 20+ markdown/SQL/token files for handoff
+  export/package.ts      # assembles the package: specs, SQL, tokens, components, prompts
+  export/handoff.ts      # generated React components, prompts, milestones, design-system notes
+  export/agentos.ts      # Agent OS product docs, indexed standards, specs, design skill
+  export/screenshots.ts  # deterministic SVG screenshots drawn from the compiled blocks
   components/
     AppPreview.tsx       # renders a screen using the project's own tokens
     PreviewStage.tsx     # 30/60/100 % device canvas, edge grips, fullscreen
@@ -176,6 +211,7 @@ src/
   engine/flows.ts        # user flows derived from compiled screens
   engine/system.ts       # stack, component registry, AppShell, data layer
   export/systemFiles.ts  # generated src/data/*, app-shell.tsx, system/*, wiki/*
+  views/CoveragePage.tsx # parity audit, verified against the built package
   styles/app.css         # LulaZel-derived shell: rail, paper, rust accent, pill stepper
   styles/preview.css     # the generated artefact's own token-driven styles
   lib/                   # store (projects, captures, token edits, versions), router,

@@ -8,7 +8,7 @@ import { Link, navigate } from '../lib/router'
 import { TRACK } from './FlowsPage'
 
 export function PrototypePage({ project }: { project: Project }) {
-  const { commit, notify, overrides } = useStore()
+  const { commit, notify, overrides, theme } = useStore()
   const screens = useMemo(
     () => project.sections.flatMap((section) => section.screens.map((screen) => ({ section, screen }))),
     [project.sections],
@@ -44,7 +44,7 @@ export function PrototypePage({ project }: { project: Project }) {
         steps={TRACK}
         current="prototype"
         title="Prototype"
-        subtitle="A production-ready prototype: real routes, real seeded records, assembled only from the registry. No placeholder screens, no layout invented in the browser."
+        subtitle="A working prototype: real routes, real seeded records, real inputs, assembled only from the registry. Type in it, filter it, create a record, walk a flow. Nothing is a picture of a control."
         actions={
           <>
             <div className="lz-seg" role="group" aria-label="Device">
@@ -92,7 +92,15 @@ export function PrototypePage({ project }: { project: Project }) {
           </div>
           <div className="lz-proto-canvas">
             <div className={device === 'mobile' ? 'lz-proto-device' : undefined}>
-              <AppPreview project={project} screen={active.screen} theme="light" device={device} />
+              <AppPreview
+                project={project}
+                screen={active.screen}
+                theme={theme}
+                device={device}
+                onNavigate={(screenId) => {
+                  if (screens.some((s) => s.screen.id === screenId)) setActiveId(screenId)
+                }}
+              />
             </div>
           </div>
         </div>

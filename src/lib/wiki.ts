@@ -69,7 +69,7 @@ export function buildWiki(project: Project): WikiEntry[] {
         .map((c) => `- **${c.role}** \`${c.base}\` (on: ${c.contrastText}) — ${c.rationale}`)
         .join('\n')}\n\n## Type\n\n${design.typography
         .map((t) => `- **${t.role}** ${t.family} · ${t.size} / ${t.lineHeight} · ${t.tracking}`)
-        .join('\n')}\n\n## Radius & space\n\n${bullets(Object.entries(design.radii).map(([k, v]) => `${k}: ${v}px`))}\n\n## Shell\n\n- Frame: ${design.layout.shell}\n- Content: ${design.layout.contentWidth}px\n- Density: ${design.layout.density}\n- Cards: ${design.layout.cardStyle}\n\n## Tokens\n\n\`\`\`css\n${design.tokensCss}\n\`\`\``,
+        .join('\n')}\n\n## Radius & space\n\n${bullets(Object.entries(design.radii).map(([k, v]) => `${k}: ${v}px`))}\n\n## Shell\n\n- Frame: ${design.layout.shell}\n- Content: ${design.layout.contentWidth}px\n- Density: ${design.layout.density}\n- Cards: ${design.layout.cardStyle}\n\n## Responsive\n\n${bullets(design.breakpoints.map((b) => `\`${b.name}\` — ${b.px}px`))}\n\nThe prototype and every exported component are mobile-first: navigation collapses to a drawer, tables scroll inside their card rather than the page, and no width below 360px breaks the layout. Breakpoints also ship as documentation tokens (\`--breakpoint-*\`) because media queries cannot read custom properties.\n\n## Token format\n\n\`tokens.css\` is for the browser; \`design-system/tokens.dtcg.json\` is the same system in W3C Design Tokens Community Group format, with typed \`$value\`/\`$type\` primitives so Figma, Tokens Studio and Style Dictionary can consume it without a translation layer.\n\n## Tokens\n\n\`\`\`css\n${design.tokensCss}\n\`\`\``,
     },
     {
       slug: 'components',
@@ -116,6 +116,13 @@ export function buildWiki(project: Project): WikiEntry[] {
       body: `# Tech stack\n\n| Layer | Choice | Version | Why |\n| --- | --- | --- | --- |\n${project.system.stack
         .map((s) => `| ${s.layer} | ${s.choice} | ${s.version} | ${s.reason} |`)
         .join('\n')}`,
+    },
+    {
+      slug: 'handoff',
+      title: 'Agent handoff',
+      icon: 'PackageCheck',
+      summary: 'Design OS + Agent OS artefacts, and how they are verified',
+      body: `# Agent handoff\n\nThe export is not just documentation: it is the file tree a coding agent needs, plus the standards it must keep.\n\n## Design OS parity\n\n- \`prompts/one-shot-prompt.md\` and \`prompts/section-prompt.md\`\n- \`instructions/one-shot-instructions.md\` plus \`instructions/incremental/01-shell.md\` and one file per section\n- \`sections/<id>/components/*.tsx\` — props-based, responsive, never importing sample data\n- \`sections/<id>/tests.md\` — what to assert, written before implementation\n- \`design-system/{tokens.css,tokens.dtcg.json,fonts.md,tailwind-colors.md}\`\n- \`shell/components/{AppShell,MainNav,UserMenu,index}.tsx\` with a rendered shell screenshot\n- \`sections/<id>/screenshot.svg\` — the design, without running the app\n\n## Agent OS parity\n\n- \`agent-os/product/{mission,roadmap,tech-stack}.md\`\n- \`agent-os/standards/index.yml\` and eight rules across ui, data, quality and accessibility\n- \`agent-os/specs/<date>-<section>/{shape,plan,references,standards}.md\` with the screen visuals inline\n- \`agent-os/skills/frontend-design/SKILL.md\`\n\n## How this is proven\n\nOpen **Coverage**: every row rebuilds the package and checks the artefact exists. \`npm run export-check\` writes the generated components to disk and typechecks them, so "production-ready" is a compiler result rather than a claim.\n\n## The reusable loop\n\n1. Read \`product-overview.md\` and the mission.\n2. Inject the standards that apply to the section (\`specs/*/standards.md\` already inlines them).\n3. Follow the milestone, writing tests first.\n4. Wire the components; do not restyle them.\n5. Replace the mock adapter with the real one behind the same interface.`,
     },
     {
       slug: 'audit',

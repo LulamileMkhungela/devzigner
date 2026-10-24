@@ -53,7 +53,7 @@ const root = createRoot(w.document.getElementById('root')!)
 root.render(createElement(StoreProvider, null, createElement(App)))
 
 const wait = (ms = 60) => new Promise((r) => setTimeout(r, ms))
-const routes = ['/', '/data-shape', '/design', '/shell/design', '/sections', '/export', '/flows', '/system', '/prototype', '/editor', '/wiki']
+const routes = ['/', '/data-shape', '/design', '/shell/design', '/sections', '/export', '/flows', '/system', '/prototype', '/editor', '/wiki', '/coverage']
 
 await wait(150)
 const store = w.localStorage.getItem('lula.devzign.projects.v1')
@@ -177,6 +177,107 @@ click(otherPage ?? null)
 await wait(80)
 const afterUrl = w.document.querySelector('.lz-proto-url')?.textContent ?? ''
 console.log(`${afterUrl !== beforeUrl ? 'ok ' : 'ERR'} prototype page switch (${beforeUrl} → ${afterUrl})`)
+
+// the prototype contains real controls: type to filter, then open a screen with a form
+w.location.hash = '#/prototype'
+await wait(120)
+const protoSearch = w.document.querySelector('.pv-search input') as HTMLInputElement | null
+const rowsBefore = w.document.querySelectorAll('.pv-table tbody tr.pv-row').length
+const inputSetter = Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype, 'value')?.set
+if (protoSearch) {
+  inputSetter?.call(protoSearch, 'zzzz-no-match')
+  protoSearch.dispatchEvent(new w.Event('input', { bubbles: true }))
+  await wait(120)
+}
+const rowsAfter = w.document.querySelectorAll('.pv-table tbody tr.pv-row').length
+const emptyRow = Boolean(w.document.querySelector('.pv-emptytd'))
+console.log(`${protoSearch ? 'ok ' : 'ERR'} prototype exposes a real search input`)
+console.log(`${rowsBefore > 0 && rowsAfter < rowsBefore && emptyRow ? 'ok ' : 'ERR'} typing filters the table (${rowsBefore} → ${rowsAfter} rows, empty state ${emptyRow})`)
+
+// open a screen that contains a form, then submit it with a required field empty
+w.location.hash = '#/prototype'
+await wait(100)
+const stored = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]
+const formScreen = stored.sections
+  .flatMap((s: { screens: { id: string; route: string; blocks: { type: string }[] }[] }) => s.screens)
+  .find((screen: { blocks: { type: string }[] }) => screen.blocks.some((b) => b.type === 'form'))
+const formButton = formScreen
+  ? (Array.from(w.document.querySelectorAll('.lz-card button')).find(
+      (b) => b.getAttribute('title') === formScreen.route,
+    ) as HTMLButtonElement | undefined)
+  : undefined
+click(formButton ?? null)
+await wait(140)
+const protInput = w.document.querySelector('.pv-form input') as HTMLInputElement | null
+if (protInput) {
+  const labelBound =
+    Boolean(protInput.id) &&
+    Boolean(w.document.querySelector(`label[for="${protInput.id}"]`)) &&
+    w.document.querySelector(`label[for="${protInput.id}"]`)?.textContent?.trim().length! > 0
+  if (!labelBound) failed++
+  console.log(`${labelBound ? 'ok ' : 'ERR'} every prototype input has a bound label`)
+  const formEl = w.document.querySelector('.pv-form') as HTMLFormElement | null
+  const submit = () => formEl?.dispatchEvent(new w.Event('submit', { bubbles: true, cancelable: true }))
+  submit()
+  await wait(100)
+  const errorShown = Boolean(w.document.querySelector('.pv-error'))
+  const invalid = protInput.getAttribute('aria-invalid') === 'true'
+  if (!(errorShown && invalid)) failed++
+  console.log(`${errorShown && invalid ? 'ok ' : 'ERR'} empty required field blocks submit with an inline error`)
+  const fields = Array.from(w.document.querySelectorAll('.pv-form input, .pv-form select, .pv-form textarea')) as (HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement)[]
+  for (const field of fields) {
+    const setter =
+      field instanceof w.HTMLSelectElement
+        ? Object.getOwnPropertyDescriptor(w.HTMLSelectElement.prototype, 'value')?.set
+        : Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype, 'value')?.set
+    if (field instanceof w.HTMLInputElement && field.type === 'checkbox') {
+      click(field)
+      continue
+    }
+    const value =
+      field instanceof w.HTMLSelectElement
+        ? field.options[1]?.value ?? ''
+        : field.type === 'number'
+          ? '12'
+          : field.type === 'date'
+            ? '2026-01-15'
+            : field.type === 'email'
+              ? 'tester@example.com'
+              : field.type === 'tel'
+                ? '+27 82 000 0000'
+                : 'Typed by the tester'
+    setter?.call(field, value)
+    field.dispatchEvent(new w.Event(field instanceof w.HTMLSelectElement ? 'change' : 'input', { bubbles: true }))
+  }
+  await wait(80)
+  submit()
+  await wait(140)
+  const success = Boolean(w.document.querySelector('.pv-success'))
+  const toast = Boolean(w.document.querySelector('.pv-toast'))
+  if (!(success && toast)) failed++
+  console.log(`${success && toast ? 'ok ' : 'ERR'} a filled form actually saves and reports it (${formScreen?.route ?? 'no form screen'})`)
+} else {
+  failed++
+  console.log('ERR no real form control found in the prototype')
+}
+
+// navigation inside the prototype works from the shell
+const navButtons = Array.from(w.document.querySelectorAll('.pv-side .pv-nav')) as HTMLButtonElement[]
+const urlBeforeNav = w.document.querySelector('.lz-proto-url')?.textContent ?? ''
+const otherNav = navButtons.find((b) => !b.className.includes('active'))
+click(otherNav ?? null)
+await wait(140)
+const urlAfterNav = w.document.querySelector('.lz-proto-url')?.textContent ?? ''
+if (!(otherNav && urlAfterNav !== urlBeforeNav)) failed++
+console.log(`${otherNav && urlAfterNav !== urlBeforeNav ? 'ok ' : 'ERR'} prototype navigation changes the route (${urlBeforeNav} → ${urlAfterNav})`)
+
+// coverage page: nothing may be red
+w.location.hash = '#/coverage'
+await wait(120)
+const coverageHtml = w.document.getElementById('root')?.innerHTML ?? ''
+const warnRows = w.document.querySelectorAll('.lz-checkrow-ic.warn').length
+console.log(`${warnRows === 0 ? 'ok ' : 'ERR'} coverage page has no unverified artefact (${warnRows} warns)`)
+console.log(`${coverageHtml.includes('artefacts verified') ? 'ok ' : 'ERR'} coverage page reports the audit`)
 
 // system decisions are definable, not just generated
 w.location.hash = '#/system'

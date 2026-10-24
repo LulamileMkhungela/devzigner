@@ -1,0 +1,99 @@
+/**
+ * What the captured clone actually contains, and how to serve it.
+ *
+ * HTTrack got most of buildermethods.com, but 21 pages came back as Cloudflare
+ * "Just a moment…" challenge screens — the crawler was treated as a bot. Those
+ * files are in the repo and they look like pages, so they must be handled
+ * explicitly: served as a plain local notice, never as a live challenge, which
+ * would run Cloudflare's script and try to navigate (or close) the tab.
+ *
+ * Both the server and the check import from here, so "blocked" means the same
+ * thing in both places.
+ */
+
+export const isBlocked = (html: string): boolean =>
+  html.includes('challenges.cloudflare.com') || /<title>\s*Just a moment/i.test(html)
+
+export const PILL = `
+<div id="lula-local" style="position:fixed;right:16px;bottom:16px;z-index:2147483647;display:flex;align-items:center;gap:10px;
+  padding:9px 12px;border-radius:999px;border:1px solid #2b2b2b;background:#111;color:#fafafa;
+  font:500 12.5px/1 system-ui,-apple-system,'Segoe UI',sans-serif;box-shadow:0 10px 30px -14px rgba(0,0,0,.9)">
+  <span style="width:7px;height:7px;border-radius:50%;background:#ff5c1a"></span>
+  <span>Local copy — no email, no keys</span>
+  <a href="/workspace/" style="padding:6px 10px;border-radius:999px;background:#ff5c1a;color:#0a0a0a;text-decoration:none;font-weight:600">Open workspace</a>
+</div>`
+
+const TOOL_PAGE = /^\/(tools|prd-creator|skill-builder|ai-design-system|favicon-creator|agentcanon|build-new|rails-react-template|design-os|agent-os)(\/|\.html$|$)/
+
+/** A standalone page for a capture that failed, in the site's own palette. */
+export function blockedPage(path: string): string {
+  return `<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Not captured — ${path}</title>
+  <style>
+    :root { color-scheme: dark }
+    body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0a0a0a; color: #fafafa;
+      font: 400 15px/1.6 system-ui, -apple-system, 'Segoe UI', sans-serif; }
+    .card { max-width: 560px; padding: 28px; border: 1px solid #2b2b2b; border-radius: 14px; background: #121212 }
+    p.kicker { margin: 0 0 6px; font: 600 11px/1 ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: #ff5c1a }
+    h1 { margin: 0 0 10px; font-size: 20px; font-weight: 600 }
+    p { margin: 0 0 12px; color: #a3a3a3 }
+    code { color: #e5e5e5; font-family: ui-monospace, monospace; font-size: 12.5px }
+    a.btn { display: inline-block; margin-right: 8px; padding: 8px 14px; border-radius: 9px; text-decoration: none;
+      font-weight: 600; font-size: 13px }
+    a.primary { background: #ff5c1a; color: #0a0a0a }
+    a.quiet { border: 1px solid #3a3a3a; color: #fafafa }
+  </style>
+</head>
+<body>
+  <div class="card">
+    <p class="kicker">Local copy</p>
+    <h1>This page was not captured</h1>
+    <p>
+      The copy of the site was made by a crawler, and Cloudflare answered this URL with a
+      "Just a moment…" challenge instead of the page. Rather than run that challenge here,
+      this copy says so plainly.
+    </p>
+    <p><code>${path}</code></p>
+    <p>
+      The eight free tools are not affected: they are installed in the workspace, along with
+      Design OS's ten commands and Agent OS's five.
+    </p>
+    <p>
+      <a class="btn primary" href="/workspace/">Open the workspace</a>
+      <a class="btn quiet" href="/">Home</a>
+      <a class="btn quiet" href="/articles.html">Articles</a>
+    </p>
+  </div>
+</body>
+</html>`
+}
+
+/** Make a captured page offline and point it at the workspace. */
+export function adaptPage(html: string, path: string): string {
+  if (isBlocked(html)) return blockedPage(path)
+
+  let out = html
+    .replace(/https:\/\/(?:www\.)?buildermethods\.com\//g, '/')
+    // The clone ships Cloudflare's email obfuscator and a live analytics tag;
+    // neither can work offline, and both cost a failed request on every page.
+    .replace(/<script[^>]+src="[^"]*plausible\.io[^"]*"[^>]*><\/script>/g, '')
+    .replace(/<script[^>]+src="[^"]*(?:email-decode|challenge-platform)[^"]*"[^>]*><\/script>/g, '')
+
+  if (TOOL_PAGE.test(path)) {
+    out = out.replace(
+      '<body>',
+      `<body>
+<div id="lula-toolbar" style="padding:10px 16px;border-bottom:1px solid #2b2b2b;background:#111;color:#fafafa;
+  font:500 12.5px/1.4 system-ui,-apple-system,'Segoe UI',sans-serif">
+  This tool is installed in the workspace — it runs locally, with no email, model or key.
+  <a href="/workspace/" style="color:#ff5c1a;margin-left:6px">Open it →</a>
+</div>`,
+    )
+  }
+
+  return out.replace('</body>', `${PILL}\n</body>`)
+}

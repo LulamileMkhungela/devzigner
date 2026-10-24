@@ -1,5 +1,35 @@
 # Lula DevZign
 
+## Two things, side by side
+
+`site/` is the clone of **buildermethods.com** that was pushed to `main` — 155
+files, 92 pages with real server-rendered content. It is served as the site:
+page for page, offline, with absolute links rewritten to local paths and no
+analytics. `npm run preview:site` serves it at `/` and the workspace at
+`/workspace/`.
+
+| URL | What you get |
+| --- | --- |
+| `/` | the cloned site: home, tools, Design OS, Agent OS, articles, sessions, pro |
+| `/workspace/` | Lula DevZign — the five Design OS phases, the eight tools, the export |
+| `/workspace/#/system` | where the framework target is chosen (eight of them) |
+| `/lula-devzign-standalone.html` | the workspace as one file, no server |
+| `/lula-devzign-snapshot.html` | every workspace page as static markup, no JavaScript |
+
+`npm run site-check` walks the clone: it counts the pages, reads every internal
+link and image (4,926 of them), and fails if a page is an empty shell or a link
+points at a file that was never captured.
+
+### The 21 pages the crawler did not get
+
+HTTrack was answered with Cloudflare's "Just a moment…" challenge on 21 URLs —
+mostly article bodies and duplicate `sessions*.html` captures. Those files are
+real pages that would run Cloudflare's script and try to navigate, so they are
+**replaced at serve time** with a local notice that says exactly that and links
+back to the workspace. Nothing claims to be a page it is not.
+
+
+
 **A deterministic design compiler.** One seed in, a complete product package out: brief, data model, design system, interactive screens, tests and an agent-ready handoff.
 
 No API keys. No prompts. No blank page. Nothing to provide.

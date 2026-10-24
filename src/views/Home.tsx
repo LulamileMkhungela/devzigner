@@ -94,7 +94,8 @@ export function Home() {
               onClick={() => {
                 const next = Math.floor(Math.random() * 1_000_000_000)
                 const project = create({ idea: '', seed: next, archetypeId, genome: genomeFromSeed(next), currency })
-                navigate(`/p/${project.id}/brief`)
+                // Let the store commit before the hash change renders the workspace.
+                setTimeout(() => navigate(`/p/${project.id}/brief`), 0)
               }}
             >
               <Icon name="Zap" size={14} /> Compile a sample now

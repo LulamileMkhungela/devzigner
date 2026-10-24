@@ -141,6 +141,17 @@ checks.push(
   ['agent-os product docs exported', pkgHas('agent-os/product/mission.md') && pkgHas('agent-os/product/roadmap.md') && pkgHas('agent-os/product/tech-stack.md')],
   ['agent-os standards indexed', pkgHas('agent-os/standards/index.yml') && pkgPrefix('agent-os/standards/') >= 8],
   ['agent-os specs with visuals', pkgPrefix('agent-os/specs/') >= project.sections.length * 4],
+  ['product planning outputs exported', pkgHas('product/product-overview.md') && pkgHas('product/product-roadmap.md') && pkgHas('product/data-shape/data-shape.md') && pkgHas('product/design-system/colors.json') && pkgHas('product/design-system/typography.json') && pkgHas('product/shell/spec.md')],
+  ['design-os + agent-os commands exported', pkgPrefix('commands/') >= 14],
+  ['planning JSON is valid', (() => {
+    try {
+      const colors = JSON.parse(pkg.find((f) => f.path === 'product/design-system/colors.json')!.content)
+      const type = JSON.parse(pkg.find((f) => f.path === 'product/design-system/typography.json')!.content)
+      return Object.keys(colors.families).length >= 5 && type.families.length === 3
+    } catch {
+      return false
+    }
+  })()],
   ['coverage page verifies every artefact', (() => {
     const html = wrap(<CoveragePage project={project} />)
     return !html.includes('lz-checkrow-ic warn') && html.includes('artefacts verified')

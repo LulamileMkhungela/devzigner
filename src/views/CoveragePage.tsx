@@ -81,6 +81,9 @@ export function CoveragePage({ project }: { project: Project }) {
           row('Shell components', 'AppShell, MainNav, UserMenu, index', has('shell/components/AppShell.tsx') && has('shell/components/MainNav.tsx') && has('shell/components/UserMenu.tsx') && has('shell/components/index.ts'), ['shell/components/*.tsx']),
           row('Font notes', 'families, weights and how to load them', has('design-system/fonts.md'), ['design-system/fonts.md']),
           row('Tailwind colours', 'theme wiring, breakpoints, dark mode', has('design-system/tailwind-colors.md'), ['design-system/tailwind-colors.md']),
+          row('Planning outputs', 'product/ mirror written by the planning commands', has('product/product-overview.md') && has('product/data-shape/data-shape.md') && has('product/shell/spec.md'), ['product/product-overview.md', 'product/data-shape/data-shape.md', 'product/shell/spec.md']),
+          row('Slash commands', 'the Design OS and Agent OS commands, ready for .claude/commands', countPrefix('commands/') >= 10, [`${countPrefix('commands/')} commands`]),
+          row('Git workflow', 'branch, worktree and milestone commits', has('git-workflow.md'), ['git-workflow.md']),
         ],
       },
       {

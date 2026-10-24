@@ -53,6 +53,8 @@ The export is the same file tree Design OS hands a coding agent, and the standar
 | `/shape-section` `/design-screen` | `sections/<id>/{README.md,tests.md,types.ts,sample-data.json,screenshot.svg,components/*.tsx}` |
 | `/screenshot-design` | `sections/<id>/screenshot.svg` and `shell/screenshot.svg` — drawn from the compiled blocks, so never stale |
 | `/export-product` | the ZIP, plus `prompts/{one-shot,section}-prompt.md` and `instructions/{one-shot-instructions, incremental/01-shell, NN-section}.md` |
+| Planning outputs | `product/{product-overview,product-roadmap}.md`, `product/data-shape/`, `product/design-system/{colors,typography}.json`, `product/shell/spec.md` |
+| Slash commands | `commands/*.md` — the ten Design OS commands plus four Agent OS commands, ready for `.claude/commands/` |
 | Agent OS `/plan-product` | `agent-os/product/{mission,roadmap,tech-stack}.md` |
 | Agent OS `/discover-standards` `/index-standards` | `agent-os/standards/{ui,data,quality,accessibility}/*.md` + `index.yml` with descriptions |
 | Agent OS `/shape-spec` | `agent-os/specs/<date>-<section>/{shape,plan,references,standards}.md` + `visuals/*.svg` |

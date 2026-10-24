@@ -14,10 +14,23 @@ import { SectionsPage } from './views/SectionsPage'
 import { SectionPage } from './views/SectionPage'
 import { ScreenDesignPage } from './views/ScreenDesignPage'
 import { ExportPage } from './views/ExportPage'
+import { FlowsPage } from './views/FlowsPage'
+import { SystemPage } from './views/SystemPage'
+import { PrototypePage } from './views/PrototypePage'
+import { EditorPage } from './views/EditorPage'
+import { WikiPage } from './views/WikiPage'
+
+const TRACK_NAV = [
+  { path: 'flows', label: 'Flows', icon: 'Route' },
+  { path: 'system', label: 'System', icon: 'Layers' },
+  { path: 'prototype', label: 'Prototype', icon: 'Play' },
+  { path: 'editor', label: 'Token editor', icon: 'Sliders' },
+  { path: 'wiki', label: 'Wiki', icon: 'BookOpen' },
+] as const
 
 export function App() {
   const { path, fullscreen } = useRoute()
-  const { projects, active, captures, theme, toggleTheme, create, setActive, regenerate, reset, notify } = useStore()
+  const { projects, active, captures, theme, toggleTheme, create, setActive, regenerate, reset, notify, versions } = useStore()
   const [menuOpen, setMenuOpen] = useState(false)
   const [navOpen, setNavOpen] = useState(false)
   const [newOpen, setNewOpen] = useState(false)
@@ -26,6 +39,7 @@ export function App() {
   const done = useMemo(() => completedPhases(active, captures), [active, captures])
   const stats = useMemo(() => sectionStats(active, captures), [active, captures])
   const currentPhase = path[0] === 'data-shape' || path[0] === 'design' || path[0] === 'shell' ? (path[0] === 'shell' ? 'design' : path[0]) : path[0] ?? 'product'
+  const trackActive = TRACK_NAV.some((n) => n.path === path[0])
 
   useEffect(() => {
     document.body.classList.toggle('lz-nav-open', navOpen)
@@ -47,6 +61,11 @@ export function App() {
     if (path[0] === 'design') return <DesignPage project={active} />
     if (path[0] === 'shell') return <ShellDesignPage project={active} fullscreen={fullscreen} />
     if (path[0] === 'export') return <ExportPage project={active} />
+    if (path[0] === 'flows') return <FlowsPage project={active} />
+    if (path[0] === 'system') return <SystemPage project={active} />
+    if (path[0] === 'prototype') return <PrototypePage project={active} />
+    if (path[0] === 'editor') return <EditorPage project={active} />
+    if (path[0] === 'wiki') return <WikiPage project={active} />
     if (path[0] === 'sections') {
       if (!path[1]) return <SectionsPage project={active} />
       if (!section) {
@@ -109,7 +128,22 @@ export function App() {
             )
           })}
 
-          <div className="lz-nav-group">
+          <p className="lz-nav-label" style={{ marginTop: 14 }}>Prototype</p>
+          {TRACK_NAV.map((item) => (
+            <Link
+              key={item.path}
+              to={item.path}
+              className={`lz-nav-item${path[0] === item.path ? ' is-active' : ''}`}
+              aria-current={path[0] === item.path ? 'page' : undefined}
+            >
+              <Icon name={item.icon} size={17} />
+              <span className="lz-nav-label-text">{item.label}</span>
+              {item.path === 'wiki' && versions.length > 0 && <span className="lz-badge quiet">{versions.length}</span>}
+              {item.path === 'flows' && <span className="lz-badge quiet">{active.flows.length}</span>}
+            </Link>
+          ))}
+
+          <div className="lz-nav-group" style={{ marginTop: 8 }}>
             <button
               className="lz-nav-item lz-nav-group-toggle"
               type="button"
@@ -199,7 +233,7 @@ export function App() {
           </button>
           <strong>{active.name}</strong>
           <span className="lz-spacer" />
-          <span className="lz-pill">{PHASES[phaseIndex(currentPhase)]?.label ?? 'Product'}</span>
+          <span className="lz-pill">{trackActive ? TRACK_NAV.find((n) => n.path === path[0])?.label : PHASES[phaseIndex(currentPhase)]?.label ?? 'Product'}</span>
         </div>
 
         <div key={path.join('/') || 'product'}>{page()}</div>

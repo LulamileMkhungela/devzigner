@@ -1,5 +1,6 @@
-import type { Project, Section, Screen } from '../types'
+import type { Project, Section, Screen, Version } from '../types'
 import { formatCurrency } from '../lib/format'
+import { buildSystemFiles } from './systemFiles'
 
 export interface PackageFile {
   path: string
@@ -127,7 +128,7 @@ function sectionMarkdown(section: Section, project: Project): string {
   return lines.join('\n')
 }
 
-export function buildPackage(project: Project): PackageFile[] {
+export function buildPackage(project: Project, versions: Version[] = []): PackageFile[] {
   const { brief, data, design, sections, roadmap, audit } = project
   const files: PackageFile[] = []
   const stamp = new Date(project.updatedAt).toISOString().slice(0, 10)
@@ -593,6 +594,8 @@ Ask about **one** thing at a time: authentication provider, tenancy model, or de
       2,
     ),
   })
+
+  files.push(...buildSystemFiles(project, versions))
 
   return files
 }

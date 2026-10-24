@@ -2,6 +2,7 @@ import { useState } from 'react'
 import type { Project } from '../types'
 import { useStore } from '../lib/store'
 import { Collapsible, NextPhase, PhaseHeader, useFileDownload } from '../components/ui'
+import { Link } from '../lib/router'
 import { Icon } from '../components/Icons'
 import { buildPackage } from '../export/package'
 import { seedPhrase } from '../engine'
@@ -68,7 +69,10 @@ export function ProductPage({ project }: { project: Project }) {
                     <span className="lz-pill peach">{brief.category}</span>
                   </div>
                   <p className="lz-body" style={{ marginTop: 10 }}>{brief.summary}</p>
-                  <p className="lz-quote">{brief.elevator}</p>
+                  <div style={{ marginTop: 12, paddingLeft: 12, borderLeft: '2px solid var(--accent-line)' }}>
+                    <p className="lz-cmd-label" style={{ marginBottom: 4 }}>Value proposition</p>
+                    <p className="lz-body">{brief.elevator}</p>
+                  </div>
                 </div>
 
                 <Collapsible title="Problems" count={brief.problems.length} defaultOpen>
@@ -196,6 +200,17 @@ export function ProductPage({ project }: { project: Project }) {
             ))}
           </ol>
         </Collapsible>
+
+        <div className="lz-card" style={{ display: 'flex', alignItems: 'center', gap: 14, flexWrap: 'wrap' }}>
+          <span className="lz-tile-ic" style={{ width: 36, height: 36 }}><Icon name="Route" size={17} /></span>
+          <div style={{ flex: 1, minWidth: 0 }}>
+            <b style={{ font: '600 13.5px/1.3 var(--font)' }}>UX flows</b>
+            <p className="lz-hint" style={{ marginTop: 2 }}>
+              {project.flows.length} flows · {project.flows.reduce((n, f) => n + f.steps.length, 0)} steps, every one landing on a compiled screen.
+            </p>
+          </div>
+          <Link to="flows" className="lz-btn small">Open flows <Icon name="ArrowRight" size={13} /></Link>
+        </div>
 
         <NextPhase to="data-shape" label="Continue to Data Shape" hint="The brief is compiled. Next: the records it needs." />
       </div>

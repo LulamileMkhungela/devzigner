@@ -53,7 +53,7 @@ const root = createRoot(w.document.getElementById('root')!)
 root.render(createElement(StoreProvider, null, createElement(App)))
 
 const wait = (ms = 60) => new Promise((r) => setTimeout(r, ms))
-const routes = ['/', '/data-shape', '/design', '/shell/design', '/sections', '/export']
+const routes = ['/', '/data-shape', '/design', '/shell/design', '/sections', '/export', '/flows', '/system', '/prototype', '/editor', '/wiki']
 
 await wait(150)
 const store = w.localStorage.getItem('lula.devzign.projects.v1')
@@ -111,6 +111,106 @@ if (modal) {
   const grid = w.document.querySelectorAll('.lz-stage, .lz-cols-2 .lz-card').length
   console.log(`${!gone && grid > 0 ? 'ok ' : 'ERR'} capture fills the screenshot grid (${grid} tiles)`)
   console.log(`${/.*/.test(w.location.hash) ? 'ok ' : ''} route after capture: ${w.location.hash}`)
+}
+
+// ---- prototype track -------------------------------------------------------
+w.location.hash = '#/flows'
+await wait(90)
+const flowsBefore = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0].flows.length
+const newFlowBtn = Array.from(w.document.querySelectorAll('button')).find((b) => b.textContent?.includes('New flow'))
+click(newFlowBtn ?? null)
+await wait(50)
+const flowModal = w.document.querySelector('.lz-modal')
+console.log(`${flowModal ? 'ok ' : 'ERR'} new-flow dialog opens`)
+if (flowModal) {
+  const nameInput = flowModal.querySelector('input.lz-input') as HTMLInputElement | null
+  if (nameInput) {
+    const setter = Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype, 'value')?.set
+    setter?.call(nameInput, 'Refund a disputed order')
+    nameInput.dispatchEvent(new w.Event('input', { bubbles: true }))
+  }
+  const boxes = flowModal.querySelectorAll('input[type=checkbox]')
+  click(boxes[0] ?? null)
+  await wait(30)
+  click(boxes[1] ?? null)
+  await wait(30)
+  const addBtn = Array.from(flowModal.querySelectorAll('button')).find((b) => b.textContent?.includes('Add flow'))
+  click(addBtn ?? null)
+  await wait(90)
+  const after = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0].flows.length
+  console.log(`${after === flowsBefore + 1 ? 'ok ' : 'ERR'} flow added to the product (${flowsBefore} → ${after})`)
+}
+
+// token editor re-derives the design
+w.location.hash = '#/editor'
+await wait(100)
+const range = w.document.querySelector('input[type=range]') as HTMLInputElement | null
+const before = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0].design.colors[0].base
+if (range) {
+  const setter = Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype, 'value')?.set
+  setter?.call(range, '205')
+  range.dispatchEvent(new w.Event('input', { bubbles: true }))
+  await wait(120)
+}
+const editedProject = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]
+console.log(`${editedProject.design.colors[0].base !== before ? 'ok ' : 'ERR'} token editor re-derives the palette (${before} → ${editedProject.design.colors[0].base})`)
+console.log(`${editedProject.overrides?.primaryHue === 205 ? 'ok ' : 'ERR'} override persisted (${JSON.stringify(editedProject.overrides)})`)
+
+// wiki: commit a snapshot
+w.location.hash = '#/wiki'
+await wait(100)
+const commitBtn = Array.from(w.document.querySelectorAll('.lz-head button')).find((b) => b.textContent?.includes('Commit'))
+click(commitBtn ?? null)
+await wait(120)
+const book = JSON.parse(w.localStorage.getItem('lula.devzign.versions.v1') ?? '{}')
+const versionCount = book[editedProject.id]?.versions?.length ?? 0
+console.log(`${versionCount > 0 ? 'ok ' : 'ERR'} wiki committed a snapshot (${versionCount})`)
+
+// prototype: pages switch
+w.location.hash = '#/prototype'
+await wait(100)
+const pageButtons = Array.from(w.document.querySelectorAll('.lz-card button.lz-btn.small.primary'))
+const beforeUrl = w.document.querySelector('.lz-proto-url')?.textContent ?? ''
+const allPageBtns = Array.from(w.document.querySelectorAll('.lz-card button'))
+const otherPage = allPageBtns.find((b) => b.className.includes('lz-btn small quiet'))
+click(otherPage ?? null)
+await wait(80)
+const afterUrl = w.document.querySelector('.lz-proto-url')?.textContent ?? ''
+console.log(`${afterUrl !== beforeUrl ? 'ok ' : 'ERR'} prototype page switch (${beforeUrl} → ${afterUrl})`)
+
+// system decisions are definable, not just generated
+w.location.hash = '#/system'
+await wait(110)
+const selects = Array.from(w.document.querySelectorAll('select')) as HTMLSelectElement[]
+const stackSelect = selects.find((el) => el.getAttribute('aria-label') === 'Data choice')
+if (stackSelect) {
+  const setter = Object.getOwnPropertyDescriptor(w.HTMLSelectElement.prototype, 'value')?.set
+  setter?.call(stackSelect, 'Raw SQL')
+  stackSelect.dispatchEvent(new w.Event('change', { bubbles: true }))
+  await wait(120)
+}
+const sysProject = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]
+console.log(`${sysProject.systemOverrides?.stack?.Data ? 'ok ' : 'ERR'} stack override persisted (${JSON.stringify(sysProject.systemOverrides?.stack ?? {})})`)
+
+const addCompBtn = Array.from(w.document.querySelectorAll('.lz-head button')).find((b) => b.textContent?.includes('Component'))
+click(addCompBtn ?? null)
+await wait(60)
+const compModal = w.document.querySelector('.lz-modal')
+console.log(`${compModal ? 'ok ' : 'ERR'} component dialog opens`)
+if (compModal) {
+  const input = compModal.querySelector('input.lz-input') as HTMLInputElement | null
+  const setter = Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype, 'value')?.set
+  if (input) {
+    setter?.call(input, 'DisputeBanner')
+    input.dispatchEvent(new w.Event('input', { bubbles: true }))
+  }
+  await wait(40)
+  const save = Array.from(compModal.querySelectorAll('button')).find((b) => b.textContent?.includes('Add component'))
+  click(save ?? null)
+  await wait(120)
+  const after = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]
+  const added = after.system.components.some((c: { name: string }) => c.name === 'DisputeBanner')
+  console.log(`${added ? 'ok ' : 'ERR'} custom component registered`)
 }
 
 console.log(errors.length ? `\nconsole errors:\n${errors.join('\n')}` : '\nno console errors')

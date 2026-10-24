@@ -100,6 +100,11 @@ export function readiness(project: Project, captured: string[]) {
       state: stats.all ? 'pass' : 'warn',
     },
     {
+      label: 'Prototype system',
+      detail: `${project.flows.length} flows · ${project.system.components.length} registry components · mock data layer`,
+      state: project.flows.length >= 4 && project.system.components.length >= 10 ? 'pass' : 'warn',
+    },
+    {
       label: 'Audit',
       detail: `${project.audit.score}/100 · ${fails} fail · ${warns} warn`,
       state: fails ? 'fail' : warns ? 'warn' : 'pass',

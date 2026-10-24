@@ -401,9 +401,9 @@ function routeFor(kind: ScreenKind, sectionName: string, entity: Entity): string
     case 'analytics':
       return `${base}/analytics`
     case 'settings':
-      return '/settings'
+      return `${base}/settings`
     case 'onboarding':
-      return '/onboarding'
+      return `${base}/start`
     case 'profile':
       return `${base}/:id`
     default:

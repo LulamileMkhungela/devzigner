@@ -6,7 +6,7 @@ import { Icon } from '../components/Icons'
 import { buildPackage, packageSizeKb } from '../export/package'
 import { downloadProjectZip } from '../lib/download'
 import { readiness } from '../lib/progress'
-import { navigate } from '../lib/router'
+import { Link, navigate } from '../lib/router'
 
 const INCLUDED = [
   { icon: 'FileText', title: 'Product brief & roadmap', detail: 'Why it exists, who it serves, what success looks like, and the build order.' },
@@ -18,12 +18,12 @@ const INCLUDED = [
 ]
 
 export function ExportPage({ project }: { project: Project }) {
-  const { captures, regenerate, notify, projects, create } = useStore()
+  const { captures, regenerate, notify, projects, create, versions } = useStore()
   const copy = useCopy()
   const [zipping, setZipping] = useState(false)
   const rows = readiness(project, captures)
   const ready = rows.every((r) => r.state !== 'fail')
-  const files = useMemo(() => buildPackage(project), [project])
+  const files = useMemo(() => buildPackage(project, versions), [project, versions])
   const kb = packageSizeKb(files)
   const grouped = useMemo(() => {
     const map = new Map<string, typeof project.audit.checks>()
@@ -38,7 +38,7 @@ export function ExportPage({ project }: { project: Project }) {
   const download = async () => {
     setZipping(true)
     try {
-      await downloadProjectZip(project)
+      await downloadProjectZip(project, versions)
       notify('Package downloaded')
     } finally {
       setZipping(false)
@@ -103,6 +103,41 @@ export function ExportPage({ project }: { project: Project }) {
           <p className="lz-cmd-label">Every file in this package</p>
           <div className="lz-fieldlist" style={{ marginTop: 8 }}>
             {files.map((f) => <span key={f.path}>{f.path}</span>)}
+          </div>
+        </Collapsible>
+
+        <Collapsible
+          title="Prototype layer"
+          icon="Layers"
+          count={`${files.filter((f) => f.path.startsWith('system/') || f.path.startsWith('src/') || f.path.startsWith('wiki/')).length} files`}
+          meta={`${project.flows.length} flows · ${project.system.components.length} components · ${versions.length} snapshots`}
+        >
+          <div className="lz-cols-3">
+            <div>
+              <p className="lz-cmd-label">System</p>
+              <div className="lz-fieldlist" style={{ marginTop: 6 }}>
+                {files.filter((f) => f.path.startsWith('system/')).map((f) => <span key={f.path}>{f.path}</span>)}
+              </div>
+            </div>
+            <div>
+              <p className="lz-cmd-label">Data layer</p>
+              <div className="lz-fieldlist" style={{ marginTop: 6 }}>
+                {files.filter((f) => f.path.startsWith('src/data/') || f.path === 'src/components/app-shell.tsx').map((f) => <span key={f.path}>{f.path}</span>)}
+              </div>
+              <p className="lz-hint">Typed repositories + a mock adapter. UI code imports the interface, never a fixture.</p>
+            </div>
+            <div>
+              <p className="lz-cmd-label">Wiki</p>
+              <div className="lz-fieldlist" style={{ marginTop: 6 }}>
+                {files.filter((f) => f.path.startsWith('wiki/')).map((f) => <span key={f.path}>{f.path}</span>)}
+              </div>
+              <p className="lz-hint">Commit this folder beside the code; one worktree per branch.</p>
+            </div>
+          </div>
+          <div className="lz-row" style={{ marginTop: 12 }}>
+            <Link to="wiki" className="lz-btn small"><Icon name="BookOpen" size={13} /> Open the wiki</Link>
+            <Link to="system" className="lz-btn small quiet"><Icon name="Layers" size={13} /> System</Link>
+            <Link to="flows" className="lz-btn small quiet"><Icon name="Route" size={13} /> Flows</Link>
           </div>
         </Collapsible>
 

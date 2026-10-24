@@ -292,6 +292,126 @@ export interface Audit {
   summary: string
 }
 
+/* -------------------------------------------------------------------------
+   Prototype layer — flows, the system behind the UI, and token overrides
+   ------------------------------------------------------------------------- */
+
+/** Edits made in the inline design editor. Every value re-derives tokens. */
+export interface DesignOverrides {
+  primaryHue?: number
+  accentHue?: number
+  /** base radius in px, 0–20 */
+  radius?: number
+  /** spacing multiplier, 0.8–1.25 */
+  spacing?: number
+  shell?: 'sidebar' | 'rail' | 'topbar' | 'split'
+  cardStyle?: 'flat' | 'outlined' | 'elevated' | 'glass'
+}
+
+export type FlowStepKind = 'entry' | 'step' | 'decision' | 'exit'
+
+export interface FlowStep {
+  id: string
+  title: string
+  detail: string
+  kind: FlowStepKind
+  sectionId?: string
+  screenId?: string
+}
+
+export interface UserFlow {
+  id: string
+  name: string
+  persona: string
+  goal: string
+  trigger: string
+  steps: FlowStep[]
+  entities: string[]
+  success: string
+  failure: string
+  /** true when the user added it in the app rather than the engine */
+  custom?: boolean
+}
+
+export interface StackChoice {
+  layer: string
+  choice: string
+  version: string
+  reason: string
+}
+
+export interface RegistryComponent {
+  id: string
+  name: string
+  group: 'Primitive' | 'Composite' | 'Pattern'
+  variants: string[]
+  tokens: string[]
+  usedBy: string[]
+  props: { name: string; type: string }[]
+}
+
+export interface ShellRegion {
+  region: string
+  description: string
+  components: string[]
+}
+
+export interface AppShellSpec {
+  frame: string
+  regions: ShellRegion[]
+  routes: { path: string; name: string; sectionId: string }[]
+  nav: { label: string; screenId?: string }[]
+}
+
+export interface DataLayerSpec {
+  pattern: string
+  separation: string[]
+  interfaces: { entity: string; methods: string[] }[]
+}
+
+export interface PrototypeSystem {
+  stack: StackChoice[]
+  components: RegistryComponent[]
+  shell: AppShellSpec
+  dataLayer: DataLayerSpec
+}
+
+/** Decisions the user makes on top of the compiled system. */
+export interface SystemOverrides {
+  /** layer name → chosen option */
+  stack?: Record<string, string>
+  /** components added by the user */
+  components?: RegistryComponent[]
+  /** registry ids the user removed */
+  removed?: string[]
+}
+
+export interface VersionStats {
+  sections: number
+  screens: number
+  flows: number
+  score: number
+  primary: string
+  radius: number
+}
+
+export interface Version {
+  id: string
+  branch: string
+  message: string
+  at: number
+  parent: string | null
+  stats: VersionStats
+  /** enough to rebuild the product exactly */
+  snapshot: {
+    seed: number
+    archetypeId: string
+    genome: Genome
+    overrides: DesignOverrides
+    customFlows: UserFlow[]
+  }
+}
+
 export interface CompileInput {
   idea: string
   seed: number
@@ -300,6 +420,8 @@ export interface CompileInput {
   currency: string
   moduleSeeds: ModuleSeeds
   nameOverride?: string
+  overrides?: DesignOverrides
+  systemOverrides?: SystemOverrides
 }
 
 export interface Project extends CompileInput {
@@ -313,6 +435,8 @@ export interface Project extends CompileInput {
   data: DataModel
   design: DesignSystem
   sections: Section[]
+  flows: UserFlow[]
+  system: PrototypeSystem
   audit: Audit
   engineNotes: string[]
 }

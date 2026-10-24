@@ -1864,3 +1864,115 @@ pre {
     animation: none !important;
   }
 }
+
+/* --------------------------------------------------------------------------
+   live prototype frame + wiki markdown
+   -------------------------------------------------------------------------- */
+
+.lz-proto {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.lz-proto-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--card-soft);
+  border-bottom: 1px solid var(--line);
+}
+.lz-proto-dots {
+  display: inline-flex;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+.lz-proto-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+.lz-proto-dots i:first-child {
+  background: #e6a08a;
+}
+.lz-proto-url {
+  font: 500 11.5px/1 var(--mono);
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+.lz-proto-canvas {
+  background: #f1ede5;
+  padding: 18px;
+  max-height: calc(100vh - 340px);
+  min-height: 420px;
+  overflow: auto;
+}
+.lz-app[data-theme='dark'] .lz-proto-canvas {
+  background: #0f141d;
+}
+.lz-proto-device {
+  width: 392px;
+  max-width: 100%;
+  margin: 0 auto;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 6px solid #211f1c;
+  box-shadow: 0 24px 60px -30px rgba(28, 26, 22, 0.5);
+}
+.lz-proto-device .pv {
+  min-height: 620px;
+}
+
+.lz-md {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.lz-md a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.lz-md code {
+  font: 500 11.5px/1.4 var(--mono);
+  background: var(--line-soft);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.lz-md strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.lz-md .lz-bullets {
+  margin: 4px 0 10px;
+}
+.lz-md .lz-code {
+  margin: 8px 0 12px;
+}
+.lz-md .lz-table-scroll {
+  margin: 8px 0 12px;
+}
+
+input[type='range'] {
+  height: 22px;
+}
+
+/* editor diff swatch reuse */
+.lz-kv-row dd code {
+  font-family: var(--mono);
+}
+
+@media (max-width: 860px) {
+  .lz-proto-canvas {
+    padding: 10px;
+    max-height: none;
+  }
+  .lz-proto-device {
+    width: 100%;
+  }
+}

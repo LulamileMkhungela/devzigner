@@ -1,4 +1,4 @@
-import type { CompileInput, Genome, ModuleKey, Project } from '../types'
+import type { CompileInput, DesignOverrides, Genome, ModuleKey, Project, SystemOverrides } from '../types'
 import { getPack } from './packs'
 import { hashString, makeRng, moduleSeed, seedFrom, slugify } from './rng'
 import { compileBrief } from './brief'
@@ -7,6 +7,8 @@ import { compileDesign } from './design'
 import { compileSections } from './sections'
 import { compileRoadmap } from './roadmap'
 import { compileAudit } from './audit'
+import { compileFlows } from './flows'
+import { applySystemOverrides, compileSystem } from './system'
 
 export const DEFAULT_CURRENCY = 'ZAR'
 
@@ -51,6 +53,8 @@ export interface CompileOptions {
   currency?: string
   moduleSeeds?: Record<ModuleKey, number>
   nameOverride?: string
+  overrides?: DesignOverrides
+  systemOverrides?: SystemOverrides
   createdAt?: number
 }
 
@@ -67,9 +71,20 @@ export function compileProject(opts: CompileOptions = {}): Project {
 
   const brief = compileBrief(pack, makeRng(moduleSeeds.brief), name, idea)
   const data = compileDataModel(pack, makeRng(moduleSeeds.data))
-  const design = compileDesign(pack, makeRng(moduleSeeds.design), genome, name)
-  const sections = compileSections(pack, data.entities, makeRng(moduleSeeds.sections), opts.currency ?? DEFAULT_CURRENCY)
+  const design = compileDesign(pack, makeRng(moduleSeeds.design), genome, name, opts.overrides ?? {})
+  const sections = uniqueScreenAddresses(compileSections(pack, data.entities, makeRng(moduleSeeds.sections), opts.currency ?? DEFAULT_CURRENCY))
   const roadmap = compileRoadmap(sections, '')
+  const flows = compileFlows(sections, brief, moduleSeeds.sections)
+  const system = applySystemOverrides(
+    compileSystem({
+      archetypeId,
+      design,
+      sections,
+      entities: data.entities.map((e) => ({ id: e.id, name: e.name })),
+      seed: moduleSeeds.design,
+    }),
+    opts.systemOverrides ?? {},
+  )
   const audit = compileAudit(brief, data, design, sections)
 
   const now = Date.now()
@@ -81,6 +96,8 @@ export function compileProject(opts: CompileOptions = {}): Project {
     currency: opts.currency ?? DEFAULT_CURRENCY,
     moduleSeeds,
     nameOverride: opts.nameOverride,
+    overrides: opts.overrides ?? {},
+    systemOverrides: opts.systemOverrides ?? {},
   }
 
   return {
@@ -95,9 +112,34 @@ export function compileProject(opts: CompileOptions = {}): Project {
     data,
     design,
     sections,
+    flows,
+    system,
     audit,
     engineNotes: engineNotesFor(pack.label, name, pack.names, genome, audit.score),
   }
+}
+
+/** Screens must be addressable: the prototype routes to them and screenshots are
+ *  captured by id, so a duplicate gets a stable suffix rather than silently
+ *  shadowing its twin. */
+function uniqueScreenAddresses(sections: Project['sections']): Project['sections'] {
+  const seenIds = new Map<string, number>()
+  const seenRoutes = new Map<string, number>()
+  return sections.map((section) => ({
+    ...section,
+    screens: section.screens.map((screen) => {
+      const idCount = seenIds.get(screen.id) ?? 0
+      seenIds.set(screen.id, idCount + 1)
+      const routeCount = seenRoutes.get(screen.route) ?? 0
+      seenRoutes.set(screen.route, routeCount + 1)
+      if (idCount === 0 && routeCount === 0) return screen
+      return {
+        ...screen,
+        id: idCount === 0 ? screen.id : `${screen.id}-${idCount + 1}`,
+        route: routeCount === 0 ? screen.route : `${screen.route}-${routeCount + 1}`,
+      }
+    }),
+  }))
 }
 
 function engineNotesFor(
@@ -135,4 +177,6 @@ export { compileDesign } from './design'
 export { compileSections } from './sections'
 export { compileRoadmap } from './roadmap'
 export { compileAudit } from './audit'
+export { compileFlows } from './flows'
+export { compileSystem, applySystemOverrides } from './system'
 export { contrastRatio } from './color'

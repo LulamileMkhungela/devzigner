@@ -1,11 +1,12 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { Genome, ModuleKey, Project, Section } from '../types'
+import type { DesignOverrides, Genome, ModuleKey, Project, RegistryComponent, Section, SystemOverrides, UserFlow, Version } from '../types'
 import { compileProject, defaultModuleSeeds, genomeFromSeed, remixSeed, type CompileOptions } from '../engine'
 
 const STORAGE_KEY = 'lula.devzign.projects.v1'
 const THEME_KEY = 'lula.devzign.theme.v1'
 const CAPTURE_KEY = 'lula.devzign.captures.v1'
 const ACTIVE_KEY = 'lula.devzign.active.v1'
+const VERSION_KEY = 'lula.devzign.versions.v1'
 
 /** The install ships with one finished product, so the flow is walkable on
  *  first paint with no prompt, key, seed or paste. */
@@ -17,6 +18,11 @@ export const STARTER: CompileOptions = {
 
 type Theme = 'light' | 'dark'
 type CaptureMap = Record<string, string[]>
+interface VersionBook {
+  branch: string
+  versions: Version[]
+}
+type VersionMap = Record<string, VersionBook>
 
 interface StoreValue {
   projects: Project[]
@@ -35,6 +41,26 @@ interface StoreValue {
   reset: () => void
   toast: string
   notify: (message: string) => void
+  /* ---- inline design editor ---- */
+  overrides: DesignOverrides
+  setOverride: (key: keyof DesignOverrides, value: DesignOverrides[keyof DesignOverrides] | undefined) => void
+  clearOverrides: () => void
+  /* ---- iterative flows ---- */
+  addFlow: (flow: UserFlow) => void
+  removeFlow: (id: string) => void
+  /* ---- definable system ---- */
+  systemOverrides: SystemOverrides
+  setStack: (layer: string, choice: string) => void
+  addComponent: (component: RegistryComponent) => void
+  removeComponent: (id: string) => void
+  resetSystem: () => void
+  /* ---- versioned wiki ---- */
+  versions: Version[]
+  branch: string
+  branches: string[]
+  commit: (message: string) => Version
+  restore: (id: string) => void
+  createBranch: (name: string) => void
 }
 
 const StoreContext = createContext<StoreValue | null>(null)
@@ -57,6 +83,31 @@ function writeJson(key: string, value: unknown) {
   }
 }
 
+function initialVersion(project: Project): Version {
+  return {
+    id: `v1-${project.seed.toString(36)}`,
+    branch: 'main',
+    message: 'Initial compile',
+    at: project.createdAt,
+    parent: null,
+    stats: {
+      sections: project.sections.length,
+      screens: project.sections.reduce((n, s) => n + s.screens.length, 0),
+      flows: project.flows.length,
+      score: project.audit.score,
+      primary: project.design.colors[0].base,
+      radius: project.design.radii.md,
+    },
+    snapshot: {
+      seed: project.seed,
+      archetypeId: project.archetypeId,
+      genome: project.genome,
+      overrides: project.overrides ?? {},
+      customFlows: [],
+    },
+  }
+}
+
 export function screenIdsOf(section: Section): string[] {
   return section.screens.map((s) => s.id)
 }
@@ -65,10 +116,39 @@ export function allScreenIds(project: Project): string[] {
   return project.sections.flatMap(screenIdsOf)
 }
 
+function withCustomFlows(next: Project, previous: Project): Project {
+  const custom = previous.flows.filter((f) => f.custom)
+  return custom.length ? { ...next, flows: [...next.flows, ...custom] } : next
+}
+
+function compileLikeProject(project: Project, patch: Partial<CompileOptions> = {}): Project {
+  const options: CompileOptions = {
+    idea: project.idea,
+    seed: project.seed,
+    archetypeId: project.archetypeId,
+    genome: project.genome,
+    currency: project.currency,
+    moduleSeeds: { ...project.moduleSeeds },
+    nameOverride: project.name,
+    overrides: { ...(project.overrides ?? {}) },
+    systemOverrides: { ...(project.systemOverrides ?? {}) },
+    createdAt: project.createdAt,
+    ...patch,
+  }
+  const next = compileProject(options)
+  next.id = project.id
+  next.createdAt = project.createdAt
+  next.updatedAt = Date.now()
+  return withCustomFlows(next, project)
+}
+
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [projects, setProjects] = useState<Project[]>(() => {
     const stored = readJson<Project[]>(STORAGE_KEY, [])
-    if (Array.isArray(stored) && stored.length) return stored
+    if (Array.isArray(stored) && stored.length) {
+      // Records compiled before flows/system existed are upgraded in place.
+      return stored.map((p) => (p.flows && p.system ? p : compileLikeProject(p)))
+    }
     return [compileProject(STARTER)]
   })
   const [theme, setThemeState] = useState<Theme>(() => (readJson<string>(THEME_KEY, 'light') === 'dark' ? 'dark' : 'light'))
@@ -76,14 +156,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const [captures, setCaptures] = useState<CaptureMap>(() => {
     const stored = readJson<CaptureMap>(CAPTURE_KEY, {})
     if (stored && Object.keys(stored).length) return stored
-    // First run: the product on screen arrives with its screens already
-    // captured, so Section and Export are complete the moment the app opens.
     const first = projects[0]
     return first ? { [first.id]: allScreenIds(first) } : {}
+  })
+  const [books, setBooks] = useState<VersionMap>(() => {
+    const stored = readJson<VersionMap>(VERSION_KEY, {})
+    if (Object.keys(stored).length) return stored
+    const first = projects[0]
+    return first ? { [first.id]: { branch: 'main', versions: [initialVersion(first)] } } : {}
   })
   const [toast, setToast] = useState('')
 
   const active = projects.find((p) => p.id === activeId) ?? projects[0]
+  const book: VersionBook = (active && books[active.id]) || { branch: 'main', versions: [] }
 
   useEffect(() => {
     writeJson(STORAGE_KEY, projects)
@@ -91,6 +176,9 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     writeJson(CAPTURE_KEY, captures)
   }, [captures])
+  useEffect(() => {
+    writeJson(VERSION_KEY, books)
+  }, [books])
   useEffect(() => {
     document.documentElement.dataset.appTheme = theme
     writeJson(THEME_KEY, theme)
@@ -107,13 +195,16 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   const notify = useCallback((message: string) => setToast(message), [])
 
+  const replace = useCallback((next: Project) => {
+    setProjects((prev) => prev.map((p) => (p.id === next.id ? next : p)))
+  }, [])
+
   const create = useCallback((opts: CompileOptions) => {
     const project = compileProject(opts)
     setProjects((prev) => [project, ...prev].slice(0, 24))
     setActiveId(project.id)
-    // A fresh product starts with no captures: the screenshot step is the one
-    // artefact a designer still has to take.
     setCaptures((prev) => ({ ...prev, [project.id]: [] }))
+    setBooks((prev) => ({ ...prev, [project.id]: { branch: 'main', versions: [initialVersion(project)] } }))
     return project
   }, [])
 
@@ -126,6 +217,8 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       currency: project.currency,
       moduleSeeds: { ...project.moduleSeeds },
       nameOverride: project.name,
+      overrides: { ...(project.overrides ?? {}) },
+      systemOverrides: { ...(project.systemOverrides ?? {}) },
       createdAt: project.createdAt,
       ...patch,
     }
@@ -134,28 +227,103 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       const current = base.moduleSeeds[module]
       base.moduleSeeds[module] = remixSeed(current, `${module}`, Math.floor(Math.random() * 9999))
     }
-    const next = compileProject(base)
-    next.id = project.id
-    next.createdAt = project.createdAt
-    next.updatedAt = Date.now()
-    setProjects((prev) => prev.map((p) => (p.id === project.id ? next : p)))
+    const next = compileLikeProject(project, base)
+    replace(next)
     return next
-  }, [])
+  }, [replace])
+
+  const setOverride = useCallback(
+    (key: keyof DesignOverrides, value: DesignOverrides[keyof DesignOverrides] | undefined) => {
+      if (!active) return
+      const overrides: DesignOverrides = { ...(active.overrides ?? {}) }
+      if (value === undefined) delete overrides[key]
+      else (overrides as Record<string, unknown>)[key] = value
+      replace(compileLikeProject(active, { overrides }))
+    },
+    [active, replace],
+  )
+
+  const clearOverrides = useCallback(() => {
+    if (!active) return
+    replace(compileLikeProject(active, { overrides: {} }))
+  }, [active, replace])
+
+  const addFlow = useCallback(
+    (flow: UserFlow) => {
+      if (!active) return
+      setProjects((prev) => prev.map((p) => (p.id === active.id ? { ...p, flows: [...p.flows, flow] } : p)))
+    },
+    [active],
+  )
+
+  const removeFlow = useCallback(
+    (id: string) => {
+      if (!active) return
+      setProjects((prev) => prev.map((p) => (p.id === active.id ? { ...p, flows: p.flows.filter((f) => f.id !== id) } : p)))
+    },
+    [active],
+  )
+
+  const setStack = useCallback(
+    (layer: string, choice: string) => {
+      if (!active) return
+      const next: SystemOverrides = { ...(active.systemOverrides ?? {}), stack: { ...(active.systemOverrides?.stack ?? {}) } }
+      if (choice) next.stack![layer] = choice
+      else delete next.stack![layer]
+      replace(compileLikeProject(active, { systemOverrides: next }))
+    },
+    [active, replace],
+  )
+
+  const addComponent = useCallback(
+    (component: RegistryComponent) => {
+      if (!active) return
+      const current = active.systemOverrides ?? {}
+      const next: SystemOverrides = {
+        ...current,
+        components: [...(current.components ?? []).filter((c) => c.id !== component.id), component],
+        removed: (current.removed ?? []).filter((id) => id !== component.id),
+      }
+      replace(compileLikeProject(active, { systemOverrides: next }))
+    },
+    [active, replace],
+  )
+
+  const removeComponent = useCallback(
+    (id: string) => {
+      if (!active) return
+      const current = active.systemOverrides ?? {}
+      const custom = (current.components ?? []).some((c) => c.id === id)
+      const next: SystemOverrides = custom
+        ? { ...current, components: (current.components ?? []).filter((c) => c.id !== id) }
+        : { ...current, removed: Array.from(new Set([...(current.removed ?? []), id])) }
+      replace(compileLikeProject(active, { systemOverrides: next }))
+    },
+    [active, replace],
+  )
+
+  const resetSystem = useCallback(() => {
+    if (!active) return
+    replace(compileLikeProject(active, { systemOverrides: {} }))
+  }, [active, replace])
 
   const remove = useCallback((id: string) => {
     setProjects((prev) => {
       const next = prev.filter((p) => p.id !== id)
       return next.length ? next : [compileProject(STARTER)]
     })
+    setBooks((prev) => {
+      const next = { ...prev }
+      delete next[id]
+      return next
+    })
   }, [])
 
   const setActive = useCallback((id: string) => setActiveId(id), [])
-
   const setTheme = useCallback((t: Theme) => setThemeState(t), [])
   const toggleTheme = useCallback(() => setThemeState((t) => (t === 'dark' ? 'light' : 'dark')), [])
 
   const projectCaptures = useMemo(() => (active ? captures[active.id] ?? [] : []), [captures, active])
-
   const isCaptured = useCallback((screenId: string) => projectCaptures.includes(screenId), [projectCaptures])
 
   const capture = useCallback(
@@ -175,11 +343,86 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setCaptures((prev) => ({ ...prev, [active.id]: [] }))
   }, [active])
 
+  const commit = useCallback(
+    (message: string) => {
+      const target = active
+      const branch = book.branch
+      const head = book.versions[0]
+      const version: Version = {
+        id: `v${book.versions.length + 1}-${target.seed.toString(36)}-${Math.floor(Math.random() * 1296).toString(36)}`,
+        branch,
+        message: message.trim() || 'Snapshot',
+        at: Date.now(),
+        parent: head?.id ?? null,
+        stats: {
+          sections: target.sections.length,
+          screens: target.sections.reduce((n, s) => n + s.screens.length, 0),
+          flows: target.flows.length,
+          score: target.audit.score,
+          primary: target.design.colors[0].base,
+          radius: target.design.radii.md,
+        },
+        snapshot: {
+          seed: target.seed,
+          archetypeId: target.archetypeId,
+          genome: target.genome,
+          overrides: { ...(target.overrides ?? {}) },
+          customFlows: target.flows.filter((f) => f.custom),
+        },
+      }
+      setBooks((prev) => {
+        const current = prev[target.id] ?? { branch, versions: [] }
+        return { ...prev, [target.id]: { branch, versions: [version, ...current.versions] } }
+      })
+      return version
+    },
+    [active, book],
+  )
+
+  const restore = useCallback(
+    (id: string) => {
+      const target = active
+      const version = book.versions.find((v) => v.id === id)
+      if (!target || !version) return
+      const next = compileProject({
+        idea: target.idea,
+        seed: version.snapshot.seed,
+        archetypeId: version.snapshot.archetypeId,
+        genome: version.snapshot.genome,
+        currency: target.currency,
+        moduleSeeds: defaultModuleSeeds(version.snapshot.seed, version.snapshot.archetypeId),
+        nameOverride: target.name,
+        overrides: version.snapshot.overrides,
+        createdAt: target.createdAt,
+      })
+      next.id = target.id
+      next.createdAt = target.createdAt
+      next.flows = [...next.flows, ...version.snapshot.customFlows]
+      replace(next)
+    },
+    [active, book, replace],
+  )
+
+  const createBranch = useCallback(
+    (name: string) => {
+      if (!active) return
+      const clean = name.trim().toLowerCase().replace(/[^a-z0-9/_-]+/g, '-').replace(/^-|-$/g, '') || 'branch'
+      setBooks((prev) => {
+        const current = prev[active.id] ?? { branch: 'main', versions: [] }
+        return { ...prev, [active.id]: { ...current, branch: clean } }
+      })
+    },
+    [active],
+  )
+
+  const branches = useMemo(() => Array.from(new Set(['main', ...book.versions.map((v) => v.branch), book.branch])), [book])
+
   const reset = useCallback(() => {
     const starter = compileProject(STARTER)
     setProjects([starter])
     setActiveId(starter.id)
     setCaptures({ [starter.id]: allScreenIds(starter) })
+    setBooks({})
     setThemeState('light')
   }, [])
 
@@ -201,6 +444,22 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       reset,
       toast,
       notify,
+      overrides: active?.overrides ?? {},
+      setOverride,
+      clearOverrides,
+      addFlow,
+      removeFlow,
+      systemOverrides: active?.systemOverrides ?? {},
+      setStack,
+      addComponent,
+      removeComponent,
+      resetSystem,
+      versions: book.versions,
+      branch: book.branch,
+      branches,
+      commit,
+      restore,
+      createBranch,
     }),
     [
       projects,
@@ -219,6 +478,19 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       reset,
       toast,
       notify,
+      setOverride,
+      clearOverrides,
+      addFlow,
+      removeFlow,
+      setStack,
+      addComponent,
+      removeComponent,
+      resetSystem,
+      book,
+      branches,
+      commit,
+      restore,
+      createBranch,
     ],
   )
 

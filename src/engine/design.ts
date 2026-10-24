@@ -1,4 +1,4 @@
-import type { ColorRole, ColorStop, DesignSystem, Genome, TypographyRole } from '../types'
+import type { ColorRole, ColorStop, DesignOverrides, DesignSystem, Genome, TypographyRole } from '../types'
 import type { Pack } from './packTypes'
 import { contrastRatio, forceContrast, hexToHsl, hslToHex, mix, readableOn, tonalRamp, INK, PAPER } from './color'
 import type { Rng } from './rng'
@@ -115,7 +115,13 @@ function buildRole(
   }
 }
 
-export function compileDesign(pack: Pack, rng: Rng, genome: Genome, productName: string): DesignSystem {
+export function compileDesign(
+  pack: Pack,
+  rng: Rng,
+  genome: Genome,
+  productName: string,
+  overrides: DesignOverrides = {},
+): DesignSystem {
   const px = genome
   const primaryHue = pack.hues[rng.int(0, pack.hues.length - 1)]
   const primarySat = Math.round(38 + px.expression * 0.34)
@@ -125,7 +131,7 @@ export function compileDesign(pack: Pack, rng: Rng, genome: Genome, productName:
   const neutralHue = px.warmth > 50 ? 32 : 222
   const neutralSat = Math.round(3 + (100 - px.contrast) * 0.05 + px.warmth * 0.02)
 
-  const primary = buildRole(
+  let primary = buildRole(
     'primary',
     'Primary',
     'primary',
@@ -141,7 +147,7 @@ export function compileDesign(pack: Pack, rng: Rng, genome: Genome, productName:
     primary.contrastText = PAPER
     primary.rationale += ' The base was darkened from the raw ramp value to guarantee 4.5:1 with white text.'
   }
-  const accent = buildRole(
+  let accent = buildRole(
     'accent',
     'Accent',
     'accent',
@@ -150,6 +156,45 @@ export function compileDesign(pack: Pack, rng: Rng, genome: Genome, productName:
     Math.round(Math.max(38, Math.min(62, 54 - px.contrast * 0.05))),
     `Complement-offset from primary so the two never compete; used only for emphasis, never for large surfaces.`,
   )
+
+  /* ---- inline token edits -------------------------------------------------
+     Hue and radius edits rebuild the ramps rather than patching final hexes,
+     so contrast maths and the semantic layer stay authoritative. */
+  const basePrimaryHue = primaryHue
+  const accentOffset = (accentHue - basePrimaryHue + 360) % 360
+  const nextPrimaryHue = typeof overrides.primaryHue === 'number' ? ((overrides.primaryHue % 360) + 360) % 360 : basePrimaryHue
+  const nextAccentHue =
+    typeof overrides.accentHue === 'number'
+      ? ((overrides.accentHue % 360) + 360) % 360
+      : (nextPrimaryHue + accentOffset) % 360
+
+  if (nextPrimaryHue !== basePrimaryHue) {
+    primary = buildRole(
+      'primary',
+      'Primary',
+      'primary',
+      nextPrimaryHue,
+      primary.saturation,
+      primary.lightness,
+      `Hue ${nextPrimaryHue}° set in the token editor (compiled at ${basePrimaryHue}°). Saturation and lightness are unchanged, so contrast still holds.`,
+    )
+    if (contrastRatio(primary.base, PAPER) < 4.5) {
+      primary.base = forceContrast(hexToHsl(primary.base), PAPER, 4.6, 'darker')
+      primary.contrastText = PAPER
+      primary.rationale += ' The base was darkened to keep 4.5:1 with white text.'
+    }
+  }
+  if (nextAccentHue !== accentHue) {
+    accent = buildRole(
+      'accent',
+      'Accent',
+      'accent',
+      nextAccentHue,
+      accent.saturation,
+      accent.lightness,
+      `Accent re-derived at hue ${nextAccentHue}° from the primary edit, keeping the original ${accentOffset}° offset.`,
+    )
+  }
   const neutral = buildRole(
     'neutral',
     'Neutral',
@@ -214,16 +259,19 @@ export function compileDesign(pack: Pack, rng: Rng, genome: Genome, productName:
     { name: 'caption', px: 11, usage: 'Labels, overlines, status' },
   ]
 
-  const radiusBase = Math.round(2 + (px.geometry / 100) * 14)
+  const radiusBase =
+    typeof overrides.radius === 'number'
+      ? Math.max(0, Math.min(20, Math.round(overrides.radius)))
+      : Math.round(2 + (px.geometry / 100) * 14)
   const radii = {
-    xs: Math.max(1, radiusBase - 2),
-    sm: Math.max(2, radiusBase - 1),
+    xs: Math.max(0, radiusBase - 2),
+    sm: Math.max(0, radiusBase - 1),
     md: radiusBase,
     lg: radiusBase + 4,
     xl: radiusBase + 10,
     pill: 999,
   }
-  const spacing = [
+  const spacingBase = [
     { name: '3xs', px: 2 },
     { name: '2xs', px: 4 },
     { name: 'xs', px: 8 },
@@ -234,11 +282,15 @@ export function compileDesign(pack: Pack, rng: Rng, genome: Genome, productName:
     { name: '2xl', px: 48 },
     { name: '3xl', px: 72 },
   ]
+  const spacingMult = typeof overrides.spacing === 'number' ? Math.max(0.8, Math.min(1.25, overrides.spacing)) : 1
+  const spacing = spacingBase.map((s) => ({ name: s.name, px: Math.max(1, Math.round(s.px * spacingMult)) }))
 
-  const cardStyle: DesignSystem['layout']['cardStyle'] =
+  const compiledCardStyle: DesignSystem['layout']['cardStyle'] =
     px.contrast > 68 ? 'outlined' : px.expression > 66 ? 'elevated' : px.geometry > 70 ? 'glass' : 'flat'
-  const shell: DesignSystem['layout']['shell'] =
+  const compiledShell: DesignSystem['layout']['shell'] =
     px.density > 66 ? 'rail' : px.contrast > 70 ? 'topbar' : rng.chance(0.3) ? 'split' : 'sidebar'
+  const cardStyle: DesignSystem['layout']['cardStyle'] = overrides.cardStyle ?? compiledCardStyle
+  const shell: DesignSystem['layout']['shell'] = overrides.shell ?? compiledShell
 
   const shadows = {
     none: 'none',
@@ -291,7 +343,8 @@ export function compileDesign(pack: Pack, rng: Rng, genome: Genome, productName:
     mood: [...pack.moodWords, px.contrast > 65 ? 'high-contrast' : 'soft-contrast', densityLabel].slice(0, 4),
     rationale:
       `${pairing.label} — ${pairing.temperament}. ${densityLabel} density with a ${px.warmth > 55 ? 'warm' : 'cool'} neutral and ` +
-      `${primarySat}% primary saturation. Radii at ${radiusBase}px, cards ${cardStyle}. Every value below is generated from the genome, so changing one dial re-derives the whole system rather than patching it.`,
+      `${primarySat}% primary saturation. Radii at ${radiusBase}px, cards ${cardStyle}. Every value below is generated from the genome, so changing one dial re-derives the whole system rather than patching it.` +
+      (Object.keys(overrides).length ? ` Edited in the token editor: ${Object.entries(overrides).map(([k, v]) => `${k} ${v}`).join(', ')}.` : ''),
     colors: [primary, accent, neutral, success, warning, danger, info],
     semantic,
     darkSemantic,

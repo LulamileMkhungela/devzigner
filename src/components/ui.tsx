@@ -146,6 +146,69 @@ export function PhaseHeader({
   )
 }
 
+/** Header for the prototype track: flows → system → prototype → wiki. */
+export function TrackHeader({
+  project,
+  steps,
+  current,
+  title,
+  subtitle,
+  actions,
+}: {
+  project: Project
+  steps: { id: string; label: string; path: string }[]
+  current: string
+  title: string
+  subtitle?: string
+  actions?: ReactNode
+}) {
+  const { theme, toggleTheme } = useStore()
+  const idx = steps.findIndex((s) => s.id === current)
+  return (
+    <div className="lz-pagehead">
+      <div className="lz-head">
+        <div>
+          <h1>{title}</h1>
+          {subtitle && <p>{subtitle}</p>}
+        </div>
+        <div className="lz-head-actions">
+          {actions}
+          <button
+            className="lz-icon-btn"
+            onClick={toggleTheme}
+            title={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+            aria-label={`Switch to ${theme === 'dark' ? 'light' : 'dark'} theme`}
+          >
+            <Icon name={theme === 'dark' ? 'Sun' : 'Moon'} size={14} />
+          </button>
+        </div>
+      </div>
+      <div className="lz-weekhead">
+        <div className="lz-weeknow">
+          <strong>Prototype track</strong>
+          <span>{project.flows.length} flows · {project.system.components.length} components</span>
+        </div>
+        <div className="lz-weekhead-div" />
+        <nav className="lz-steps" aria-label="Prototype track">
+          {steps.map((step, i) => (
+            <span className="lz-row" style={{ gap: 0 }} key={step.id}>
+              <Link
+                to={step.path}
+                className={`lz-step${step.id === current ? ' is-active' : ''}${i < idx ? ' is-done' : ''}`}
+                aria-current={step.id === current ? 'page' : undefined}
+              >
+                <span className="lz-step-n">{i < idx ? <Icon name="Check" size={11} strokeWidth={2.6} /> : i + 1}</span>
+                {step.label}
+              </Link>
+              {i < steps.length - 1 && <span className="lz-step-line" />}
+            </span>
+          ))}
+        </nav>
+      </div>
+    </div>
+  )
+}
+
 /** Sub-page header: back link, breadcrumb title, actions. */
 export function SubHeader({
   backTo,

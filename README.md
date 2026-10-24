@@ -26,6 +26,20 @@ The app is a five-phase product workspace. Each phase is a page, and each page i
 
 Navigation is LulaZel's: a sticky 268 px rail with the five phases, collapsible section list and a product menu; a pill stepper across the top of every phase page; warm paper, rust accent, Inter, 14 px cards. The flow inside those slots is Design OS's, closely: phase stepper with completion ticks, numbered step rails, collapsible cards, dashed empty states with the command that fills them, a dismissible warning banner when earlier phases are incomplete, progress dots per section, resizable screen previews, and an export checklist with two usage paths.
 
+### The prototype track
+
+Under the workspace phases sits a second track — **Flows → System → Prototype → Wiki** with a token editor beside it. It is the "Bye Figma" half of the product: the place where the design system stops being a document and starts being the thing the prototype is built from.
+
+| Page | What it does |
+| --- | --- |
+| **Flows** (`/flows`) | Four UX flows compiled from the screens (first value, core loop, exception, setup), each step pointing at a real route. Add a flow in the app and it is stored with the product, written into the wiki and versioned. |
+| **System** (`/system`) | The decision record: tech stack per layer, a component registry (primitive / composite / pattern) where each entry declares the only tokens it may use, the AppShell regions and routes, and the data-layer rules. Four stack layers and the registry itself are **editable** — choices are stored with the product and follow into the export. |
+| **Prototype** (`/prototype`) | A working AppShell with real routes and seeded records, assembled only from registry components. Switch pages, walk a flow step by step, flip to mobile, or jump into the editor. |
+| **Token editor** (`/editor`) | Inline editing linked to the tokens: primary and accent hue, radius, spacing, shell and card style. Every change re-runs the compiler — ramps, contrast, semantic aliases, screens, audit — so nothing downstream can drift. |
+| **Wiki** (`/wiki`) | The prototype wiki: product, flows, data layer, design system, components, shell, screens, stack and audit, plus branches and snapshots. Restore rebuilds the product deterministically. |
+
+The export grows to match: `src/data/types.ts`, `src/data/repository.ts` and `src/data/mock-adapter.ts` (a dummy data layer the UI can only reach through an interface), `src/components/app-shell.tsx`, `system/{stack,registry,app-shell,data-layer}` and a `wiki/` folder with a changelog. Branches are real snapshots in the browser; the exported folder is ready to commit, one worktree per exploration.
+
 The one artefact that is deliberately *not* pre-filled is screenshots — the only step a designer still takes by hand. The starter product ships captured so the flow is complete on first paint; a newly compiled product starts with the empty state and a capture action.
 
 ---
@@ -157,11 +171,15 @@ src/
     AppPreview.tsx       # renders a screen using the project's own tokens
     PreviewStage.tsx     # 30/60/100 % device canvas, edge grips, fullscreen
     ui.tsx               # phase header, step rail, collapsibles, empty states, banner
-  views/                 # ProductPage, DataShapePage, DesignPage, ShellDesignPage,
-                         # SectionsPage, SectionPage, ScreenDesignPage, ExportPage
+  views/                 # the five phases + FlowsPage, SystemPage, PrototypePage,
+                         # EditorPage, WikiPage
+  engine/flows.ts        # user flows derived from compiled screens
+  engine/system.ts       # stack, component registry, AppShell, data layer
+  export/systemFiles.ts  # generated src/data/*, app-shell.tsx, system/*, wiki/*
   styles/app.css         # LulaZel-derived shell: rail, paper, rust accent, pill stepper
   styles/preview.css     # the generated artefact's own token-driven styles
-  lib/                   # store (localStorage + captures), hash router, progress, formatting
+  lib/                   # store (projects, captures, token edits, versions), router,
+                         # progress, wiki, formatting
 ```
 
 The compiler is deliberately separate from the UI. `compileProject()` takes plain data and returns a plain object; you could run it in a worker, a CLI or a test with no DOM.

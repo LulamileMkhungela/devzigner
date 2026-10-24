@@ -3,6 +3,7 @@ import { renderToString } from 'react-dom/server'
 import { App } from '../src/App'
 import { StoreProvider } from '../src/lib/store'
 import { compileProject } from '../src/engine'
+import { buildPackage } from '../src/export/package'
 import { ProductPage } from '../src/views/ProductPage'
 import { DataShapePage } from '../src/views/DataShapePage'
 import { DesignPage } from '../src/views/DesignPage'
@@ -11,6 +12,11 @@ import { SectionsPage } from '../src/views/SectionsPage'
 import { SectionPage } from '../src/views/SectionPage'
 import { ScreenDesignPage } from '../src/views/ScreenDesignPage'
 import { ExportPage } from '../src/views/ExportPage'
+import { FlowsPage } from '../src/views/FlowsPage'
+import { SystemPage } from '../src/views/SystemPage'
+import { PrototypePage } from '../src/views/PrototypePage'
+import { EditorPage } from '../src/views/EditorPage'
+import { WikiPage } from '../src/views/WikiPage'
 
 const store: Record<string, string> = {}
 ;(globalThis as any).localStorage = {
@@ -52,6 +58,11 @@ const views: [string, () => string][] = [
   ['screen-design', () => wrap(<ScreenDesignPage project={project} section={section} screenId={screen.id} fullscreen={false} />)],
   ['screen-design-full', () => wrap(<ScreenDesignPage project={project} section={section} screenId={screen.id} fullscreen />)],
   ['export', () => wrap(<ExportPage project={project} />)],
+  ['flows', () => wrap(<FlowsPage project={project} />)],
+  ['system', () => wrap(<SystemPage project={project} />)],
+  ['prototype', () => wrap(<PrototypePage project={project} />)],
+  ['editor', () => wrap(<EditorPage project={project} />)],
+  ['wiki', () => wrap(<WikiPage project={project} />)],
 ]
 
 let failed = 0
@@ -73,7 +84,36 @@ const checks = [
   ['step rail present', starterHtml.includes('lz-rail-step')],
   ['collapsibles present', starterHtml.includes('lz-fold')],
   ['export checklist present', wrap(<ExportPage project={project} />).includes('Readiness')],
+  ['flows derived', project.flows.length >= 4 && project.flows.every((f) => f.steps.length >= 3)],
+  ['registry populated', project.system.components.length >= 10],
+  ['data layer separated', wrap(<ExportPage project={project} />).includes('src/data/mock-adapter.ts')],
+  ['wiki generated', wrap(<WikiPage project={project} />).includes('wiki/') && wrap(<WikiPage project={project} />).includes('Component registry')],
+  ['token editor present', wrap(<EditorPage project={project} />).includes('Primary hue')],
 ]
+
+// inline token edits must re-derive tokens, screens and audit together
+const edited = compileProject({ archetypeId: 'marketplace', seed: 112233, overrides: { primaryHue: 205, radius: 4, spacing: 1.15 } })
+const original = compileProject({ archetypeId: 'marketplace', seed: 112233 })
+checks.push(['token edit re-derives colour', edited.design.colors[0].base !== original.design.colors[0].base])
+checks.push(['token edit re-derives radius', edited.design.radii.md === 4 && original.design.radii.md !== 4])
+checks.push(['token edit keeps audit honest', edited.audit.checks.length === original.audit.checks.length])
+checks.push(['token edit does not move requirements', JSON.stringify(edited.sections) === JSON.stringify(original.sections)])
+checks.push(['mock data rows unchanged by restyle', JSON.stringify(edited.data.entities) === JSON.stringify(original.data.entities)])
+
+// the system is definable: stack decisions and registry additions survive a compile
+const custom = compileProject({
+  archetypeId: 'saas',
+  seed: 4242,
+  systemOverrides: {
+    stack: { Data: 'Raw SQL' },
+    components: [
+      { id: 'disputebanner', name: 'DisputeBanner', group: 'Pattern', variants: ['warning'], tokens: ['--warning-soft'], usedBy: ['Billing'], props: [] },
+    ],
+  },
+})
+checks.push(['stack override applied', custom.system.stack.find((s) => s.layer === 'Data')?.choice === 'Raw SQL'])
+checks.push(['custom component registered', custom.system.components.some((c) => c.name === 'DisputeBanner')])
+checks.push(['custom component reaches the package', buildPackage(custom).some((f) => f.path === 'system/registry.json' && f.content.includes('DisputeBanner'))])
 for (const [label, ok] of checks) {
   if (!ok) failed++
   console.log(`${ok ? 'ok ' : 'ERR'} ${label}`)

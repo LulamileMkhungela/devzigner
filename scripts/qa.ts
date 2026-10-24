@@ -10,9 +10,27 @@ for (const a of ARCHETYPES) {
     const files = buildPackage(p)
     const sql = p.data.sql
     const nullish = p.data.entities.some((e) => e.rows.some((r) => e.fields.some((f) => r[f.name] === undefined)))
-    if (p.audit.score < 80 || nullish || !sql.includes('create table') || files.length < 20) bad++
+    const screenIds = new Set(p.sections.flatMap((s) => s.screens.map((sc) => sc.id)))
+    const flowsOk =
+      p.flows.length >= 4 &&
+      p.flows.every((f) => f.steps.length >= 3 && f.steps.every((st) => !st.screenId || screenIds.has(st.screenId)))
+    const systemOk =
+      p.system.components.length >= 12 &&
+      p.system.stack.length >= 8 &&
+      p.system.shell.routes.length === screenIds.size &&
+      p.system.dataLayer.interfaces.length === p.data.entities.length
+    const paths = new Set(files.map((f) => f.path))
+    const filesOk =
+      paths.has('src/data/repository.ts') &&
+      paths.has('src/data/mock-adapter.ts') &&
+      paths.has('src/components/app-shell.tsx') &&
+      paths.has('system/registry.json') &&
+      paths.has('wiki/product.md') &&
+      paths.has('wiki/flows.md') &&
+      paths.has('flows.md')
+    if (p.audit.score < 80 || nullish || !sql.includes('create table') || files.length < 30 || !flowsOk || !systemOk || !filesOk) bad++
     if (seed === 112233) {
-      console.log(`${a.id.padEnd(13)} ${p.name.padEnd(16)} audit ${p.audit.score}  sec ${p.sections.length} scr ${String(screens).padStart(2)} req ${String(reqs).padStart(3)} ent ${p.data.entities.length} files ${files.length}  fails ${p.audit.checks.filter(c=>c.status==='fail').length} warns ${p.audit.checks.filter(c=>c.status==='warn').length}`)
+      console.log(`${a.id.padEnd(13)} ${p.name.padEnd(16)} audit ${p.audit.score}  sec ${p.sections.length} scr ${String(screens).padStart(2)} req ${String(reqs).padStart(3)} ent ${p.data.entities.length} flows ${p.flows.length} comp ${p.system.components.length} files ${files.length}  fails ${p.audit.checks.filter(c=>c.status==='fail').length} warns ${p.audit.checks.filter(c=>c.status==='warn').length}`)
     }
   }
 }

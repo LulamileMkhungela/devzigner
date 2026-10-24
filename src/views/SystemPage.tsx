@@ -100,7 +100,10 @@ export function SystemPage({ project }: { project: Project }) {
             </table>
           </div>
           <div className="lz-between" style={{ marginTop: 10 }}>
-            <p className="lz-hint" style={{ marginTop: 0 }}>The stack is a decision record, not a scaffold. Editable layers are decisions you make; the rest is derived. Export writes it to <code>system/stack.md</code>.</p>
+            <p className="lz-hint" style={{ marginTop: 0 }}>
+              The stack is a decision record, not a scaffold. Editable layers are decisions you make; the rest is derived. Export writes it to <code>system/stack.md</code>.
+              <b style={{ color: 'var(--ink)' }}> UI runtime is the export target</b> — React ships hook components, Vue and Svelte ship single-file components, Preact swaps the runtime, Web Components ship custom elements. All of them share one framework-free renderer and one design system.
+            </p>
             {(Object.keys(systemOverrides.stack ?? {}).length > 0 || removed.length > 0 || custom.length > 0) && (
               <button className="lz-btn small quiet" onClick={() => { resetSystem(); notify('System reset to compiled') }}>
                 <Icon name="RotateCcw" size={12} /> Reset system
@@ -290,6 +293,7 @@ export function SystemPage({ project }: { project: Project }) {
 
 const STACK_OPTIONS: Record<string, string[]> = {
   Framework: ['Next.js', 'Remix', 'SvelteKit', 'Nuxt'],
+  'UI runtime': ['React', 'Vue 3', 'Svelte 5', 'Preact', 'Web Components'],
   Data: ['Drizzle ORM', 'Prisma', 'Kysely', 'Raw SQL'],
   Registry: ['Radix UI primitives', 'Base UI', 'Ark UI', 'Headless UI'],
   Charts: ['Recharts', 'visx', 'Chart primitives (generated)', 'ECharts'],

@@ -14,6 +14,7 @@ import { ARCHETYPES, compileProject } from '../src/engine'
 import { BLOCK_COMPONENT_NAMES } from '../src/engine/system'
 import { buildPackage } from '../src/export/package'
 import { TOOLS } from '../src/tools'
+import { FRAMEWORKS } from '../src/export/frameworks'
 
 const input = { archetypeId: 'clinic', seed: 4242, now: 1_760_000_000_000 } as const
 
@@ -184,3 +185,72 @@ function requireWorkflows(paths: Set<string>) {
   const workflows = [...paths].filter((p) => p.startsWith('docs/agent-os-v2/workflows/'))
   assert.equal(workflows.length, 15, 'the v2 workflow set is incomplete')
 }
+
+test('every framework target emits a component for every screen', () => {
+  const base = compileProject(input as never)
+  const screens = base.sections.reduce((total, section) => total + section.screens.length, 0)
+
+  for (const framework of FRAMEWORKS) {
+    const project = {
+      ...base,
+      system: {
+        ...base.system,
+        stack: base.system.stack.map((entry) => (entry.layer === 'UI runtime' ? { ...entry, choice: framework.label } : entry)),
+      },
+    }
+    const files = buildPackage(project)
+    const components = files.filter(
+      (file) =>
+        /^sections\/.+\/components\/[^/]+$/.test(file.path) &&
+        !file.path.endsWith('index.ts') &&
+        file.path.endsWith(`.${framework.extension}`),
+    )
+    assert.equal(components.length, screens, `${framework.label} has ${components.length} components for ${screens} screens`)
+
+    // The section index must point at files that were actually written.
+    for (const section of project.sections) {
+      const index = files.find((file) => file.path === `sections/${section.id}/components/index.ts`)
+      assert.ok(index, `${framework.label}: ${section.id} has no components/index.ts`)
+      for (const line of index!.content.split('\n').filter(Boolean)) {
+        const target = line.match(/from '\.\/(.+)'/)?.[1]
+        assert.ok(target, `${section.id}: unparsable export line: ${line}`)
+        const file = target.includes('.') ? target : `${target}.${framework.extension}`
+        assert.ok(
+          files.some((existing) => existing.path === `sections/${section.id}/components/${file}`),
+          `${framework.label}: ${section.id}/index.ts points at a missing ${target}`,
+        )
+      }
+    }
+
+    if (framework.id === 'react') continue
+    assert.ok(files.some((file) => file.path === 'FRAMEWORK.md'), `${framework.label} ships no FRAMEWORK.md`)
+    if (framework.id === 'preact') {
+      const component = components[0]
+      assert.match(component!.content, /from 'preact\/hooks'/, 'Preact must import preact/hooks')
+      assert.doesNotMatch(component!.content, /from 'react'/, 'Preact must not import react')
+    } else {
+      const renderer = files.find((file) => file.path === 'ui/renderer.ts')
+      assert.ok(renderer, `${framework.label} ships no renderer`)
+      const imports = renderer!.content.match(/^import .*$/gm) ?? []
+      assert.deepEqual(imports, ["import screens from './screens.json'"], 'the renderer must stay framework-free')
+      assert.ok(files.some((file) => file.path === 'ui/screens.json'), `${framework.label} ships no screen IR`)
+    }
+  }
+})
+
+test('a framework component carries no data, only props', () => {
+  const base = compileProject(input as never)
+  const project = {
+    ...base,
+    system: {
+      ...base.system,
+      stack: base.system.stack.map((entry) => (entry.layer === 'UI runtime' ? { ...entry, choice: 'Vue 3' } : entry)),
+    },
+  }
+  const files = buildPackage(project)
+  const component = files.find((file) => file.path.startsWith('sections/') && file.path.endsWith('.vue'))!
+  assert.ok(component, 'no Vue component emitted')
+  assert.doesNotMatch(component!.content, /sample-data|fetch\(/, 'a component must not import data or fetch')
+  assert.match(component!.content, /defineProps/, 'Vue components declare their props')
+  assert.match(component!.content, /renderScreen\(/, 'Vue components render through the shared renderer')
+})

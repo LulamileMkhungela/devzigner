@@ -1,6 +1,8 @@
 import type { Block, Entity, Project, Screen, Section } from '../types'
 import type { PackageFile } from './package'
 import { screenScreenshot, shellScreenshot } from './screenshots'
+import { frameworkDoc, frameworkFiles, resolveFramework, screenFile } from './frameworks'
+import { camel, componentName, kebab, pascal } from './naming'
 
 /**
  * The handoff package, matching the shape Design OS produces:
@@ -35,24 +37,6 @@ const TYPES: Record<string, string> = {
   location: 'string',
   tag: 'string[]',
   percent: 'number',
-}
-
-function pascal(value: string): string {
-  return value
-    .replace(/[^a-zA-Z0-9]+/g, ' ')
-    .split(' ')
-    .filter(Boolean)
-    .map((w) => w[0].toUpperCase() + w.slice(1))
-    .join('')
-}
-
-function camel(value: string): string {
-  const p = pascal(value)
-  return p[0]?.toLowerCase() + p.slice(1)
-}
-
-function kebab(value: string): string {
-  return value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '')
 }
 
 function bullet(items: string[]): string {
@@ -261,12 +245,6 @@ ${block.steps.map((s) => `        <li className="flex gap-3">
 /* -------------------------------------------------------------------------
    per-screen component
    ------------------------------------------------------------------------- */
-
-function componentName(section: Section, screen: Screen): string {
-  const sectionName = pascal(section.name)
-  const screenName = pascal(screen.name)
-  return sectionName && screenName.startsWith(sectionName) ? screenName : `${sectionName}${screenName}`
-}
 
 function screenComponent(project: Project, section: Section, screen: Screen): string {
   const name = componentName(section, screen)
@@ -1372,10 +1350,16 @@ export function buildHandoff(project: Project): PackageFile[] {
   const files: PackageFile[] = []
   files.push(gitWorkflow(project))
 
+  const framework = resolveFramework(project)
+  const reactLike = framework.id === 'react' || framework.id === 'preact'
+
   files.push(...promptsAndInstructions(project))
   files.push(...designSystemFiles(project))
   files.push(...dataShapeFiles(project))
-  files.push(...shellFiles(project))
+  if (framework.id === 'preact') files.push(frameworkDoc(project, framework))
+  const shell = shellFiles(project)
+  files.push(...(reactLike ? shell : shell.filter((file) => !file.path.startsWith('shell/components/'))))
+  if (!reactLike) files.push(...frameworkFiles(project, framework, shell))
   files.push(...standards(project))
   files.push(...specs(project))
 
@@ -1402,15 +1386,36 @@ export function buildHandoff(project: Project): PackageFile[] {
       ),
     })
     for (const screen of section.screens) {
-      files.push({
-        path: `sections/${section.id}/components/${componentName(section, screen)}.tsx`,
-        content: screenComponent(project, section, screen),
-      })
+      if (reactLike) {
+        files.push({
+          path: `sections/${section.id}/components/${componentName(section, screen)}.tsx`,
+          content: screenComponent(project, section, screen),
+        })
+      } else {
+        files.push(screenFile(project, section, screen, framework))
+      }
     }
     files.push({
       path: `sections/${section.id}/components/index.ts`,
-      content: section.screens.map((s) => `export { ${componentName(section, s)} } from './${componentName(section, s)}'`).join('\n') + '\n',
+      content: section.screens
+        .map((screen) => {
+          const name = componentName(section, screen)
+          if (framework.id === 'vue' || framework.id === 'svelte') return `export { default as ${name} } from './${name}.${framework.extension}'`
+          if (framework.id === 'vanilla') return `export { ${name}Element } from './${name}'`
+          return `export { ${name} } from './${name}'`
+        })
+        .join('\n') + '\n',
     })
+  }
+
+  if (framework.id === 'preact') {
+    return files.map((file) => ({
+      ...file,
+      content: file.content
+        .replace(/from 'react-dom\/client'/g, "from 'preact/compat'")
+        .replace(/from 'react'/g, "from 'preact/hooks'")
+        .replace(/from 'react\/jsx-runtime'/g, "from 'preact/jsx-runtime'"),
+    }))
   }
 
   return files

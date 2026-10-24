@@ -78,6 +78,15 @@ generates one:
 `/system` shows the route table live, and `/coverage` checks the spec parses, is
 3.1, and covers every entity.
 
+## Beyond upstream: the framework layer
+
+Design OS exports React. The `UI runtime` decision on `/system` now selects the
+target — React, Vue 3, Svelte 5, Preact or plain Web Components — and
+`npm run export-check` proves it by running `@vue/compiler-sfc` over every
+generated SFC, `svelte/compiler` over every generated component, and `tsc` over
+the renderer and the custom elements. Nothing is claimed without a compiler
+having seen the file.
+
 ## What is deliberately not claimed
 
 - **Build New** is a full Rails starter. The package carries its agent setup,

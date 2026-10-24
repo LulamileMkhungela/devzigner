@@ -8,8 +8,11 @@ import { execFileSync } from 'node:child_process'
 import { mkdirSync, rmSync, writeFileSync } from 'node:fs'
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { parse as parseVue, compileScript, compileTemplate } from '@vue/compiler-sfc'
+import { compile as compileSvelte } from 'svelte/compiler'
 import { compileProject } from '../src/engine'
 import { buildPackage } from '../src/export/package'
+import { FRAMEWORKS } from '../src/export/frameworks'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const scratch = join(root, 'node_modules', '.export-check')
@@ -109,6 +112,146 @@ for (const [index, testCase] of cases.entries()) {
       )
     })(),
   )
+}
+
+/* --------------------------------------------------------------------------
+   Every framework target: real components, compiled with the framework's own
+   compiler. Vue and Svelte have compilers in devDependencies for exactly this;
+   the vanilla target is typechecked by tsc like any other .ts file.
+   -------------------------------------------------------------------------- */
+
+const base = compileProject(cases[0] as never)
+
+function asFramework(label: string) {
+  return {
+    ...base,
+    system: {
+      ...base.system,
+      stack: base.system.stack.map((entry) => (entry.layer === 'UI runtime' ? { ...entry, choice: label } : entry)),
+    },
+  }
+}
+
+const screenCount = base.sections.reduce((total, section) => total + section.screens.length, 0)
+
+for (const framework of FRAMEWORKS) {
+  const project = asFramework(framework.label)
+  const files = buildPackage(project)
+  const components = files.filter(
+    (file) =>
+      /^sections\/.+\/components\/[^/]+$/.test(file.path) &&
+      !file.path.endsWith('index.ts') &&
+      file.path.endsWith(`.${framework.extension}`),
+  )
+
+  check(
+    `${framework.label} · a component for every screen`,
+    components.length === screenCount,
+    `${components.length}/${screenCount} .${framework.extension}`,
+  )
+
+  if (framework.id === 'vue') {
+    const problems: string[] = []
+    for (const file of components) {
+      const { descriptor, errors } = parseVue(file.content, { filename: file.path })
+      if (errors.length) problems.push(`${file.path}: ${errors[0].message}`)
+      if (!descriptor.template) {
+        problems.push(`${file.path}: no template`)
+        continue
+      }
+      try {
+        compileScript(descriptor, { id: file.path })
+        const compiled = compileTemplate({
+          source: descriptor.template.content,
+          filename: file.path,
+          id: file.path,
+        })
+        if (compiled.errors.length) problems.push(`${file.path}: ${String(compiled.errors[0])}`)
+      } catch (error) {
+        problems.push(`${file.path}: ${(error as Error).message}`)
+      }
+    }
+    check(`${framework.label} · every SFC compiles`, problems.length === 0, problems.slice(0, 3).join(' | '))
+  }
+
+  if (framework.id === 'svelte') {
+    const problems: string[] = []
+    for (const file of components) {
+      try {
+        const result = compileSvelte(file.content, { filename: file.path, generate: 'client' })
+        if (result.warnings?.some((warning) => String(warning.code).startsWith('a11y') === false && warning.code === 'parse-error')) {
+          problems.push(`${file.path}: parse error`)
+        }
+      } catch (error) {
+        problems.push(`${file.path}: ${(error as Error).message}`)
+      }
+    }
+    check(`${framework.label} · every component compiles`, problems.length === 0, problems.slice(0, 3).join(' | '))
+    const shell = files.find((file) => file.path === 'shell/components/AppShell.svelte')
+    check(`${framework.label} · shell compiled`, Boolean(shell) && shell!.content.includes('<slot />'))
+  }
+
+  if (framework.id === 'vanilla') {
+    const dir = join(scratch, 'vanilla')
+    const keep = files.filter(
+      (file) => file.path === 'ui/renderer.ts' || file.path === 'ui/screens.json' || components.some((c) => c.path === file.path),
+    )
+    for (const file of keep) {
+      const target = join(dir, file.path)
+      mkdirSync(dirname(target), { recursive: true })
+      writeFileSync(target, file.content)
+    }
+    writeFileSync(
+      join(dir, 'tsconfig.json'),
+      JSON.stringify(
+        {
+          compilerOptions: {
+            target: 'ES2022',
+            module: 'ESNext',
+            moduleResolution: 'bundler',
+            strict: true,
+            noEmit: true,
+            skipLibCheck: true,
+            lib: ['ES2022', 'DOM', 'DOM.Iterable'],
+            resolveJsonModule: true,
+            types: [],
+          },
+          include: ['**/*.ts'],
+        },
+        null,
+        2,
+      ),
+    )
+    try {
+      execFileSync(join(root, 'node_modules', '.bin', 'tsc'), ['-p', join(dir, 'tsconfig.json')], {
+        cwd: root,
+        stdio: 'pipe',
+        encoding: 'utf8',
+      })
+      check(`${framework.label} · renderer and components typecheck`, true)
+    } catch (error) {
+      const output = String((error as { stdout?: string; stderr?: string }).stdout ?? (error as Error).message)
+      check(`${framework.label} · renderer and components typecheck`, false, output.split('\n').slice(0, 6).join(' | '))
+    }
+  }
+
+  if (framework.id === 'preact') {
+    const component = components[0]
+    check(
+      `${framework.label} · imports preact, not react`,
+      Boolean(component) && component!.content.includes("from 'preact/hooks'") && !component!.content.includes("from 'react'"),
+    )
+  }
+
+  if (framework.id !== 'react') {
+    const renderer = files.some((file) => file.path === 'ui/renderer.ts') && files.some((file) => file.path === 'ui/screens.json')
+    check(
+      framework.id === 'preact' ? `${framework.label} · ships its own migration note` : `${framework.label} · ships the framework-free renderer`,
+      framework.id === 'preact'
+        ? files.some((file) => file.path === 'FRAMEWORK.md')
+        : renderer && files.some((file) => file.path === 'FRAMEWORK.md'),
+    )
+  }
 }
 
 /* --------------------------------------------------------------------------

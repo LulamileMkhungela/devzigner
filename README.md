@@ -70,6 +70,26 @@ upstream, what was cloned into the package, and what was deliberately left out.
 page in the app lists the same eight with the steps parsed from the shipped
 `SKILL.md` files, so the page cannot drift from the text being shipped.
 
+### Not a React-only export
+
+The **UI runtime** decision on `/system` is the export target. Change it and the
+package changes — verified by compiling the output with each framework's own
+compiler on every `npm run check`.
+
+| Target | What is emitted | How it is proven |
+| --- | --- | --- |
+| **React** (default) | one hook component per screen, typed props, no data imports | `tsc` over every generated file |
+| **Vue 3** | one SFC per screen plus `AppShell.vue` / `MainNav.vue` | `@vue/compiler-sfc` parses, compiles script and template |
+| **Svelte 5** | one `.svelte` component per screen plus the shell | `svelte/compiler` compiles every file |
+| **Preact** | the React components on `preact/hooks` — one implementation, 3 kB runtime | assertions that no `react` import survives |
+| **Web Components** | `<app-screen-…>` custom elements, no framework | `tsc` over the renderer (with the JSON IR) and the elements |
+
+Vue, Svelte and the web components share one **framework-free renderer**
+(`ui/renderer.ts` + `ui/screens.json`): the design system, tokens, Tailwind
+classes, types, data layer and API are the same files in every target, so a
+layout fixed once is fixed everywhere. React keeps its idiomatic components;
+`FRAMEWORK.md` in the package explains the wiring for whichever target you chose.
+
 ### The backend is part of the handoff
 
 A design handoff that stops at the UI leaves the expensive half to the agent. The
@@ -243,6 +263,7 @@ npm run walkthrough    # runs the whole process in jsdom with zero user input: i
 npm run example-app    # builds the exported package into a real Vite + Tailwind app
 npm run check          # all of the above, then the production build
 npm run standalone     # one self-contained HTML file — script, styles and fonts inlined
+npm run preview:static # serve dist/ on 0.0.0.0:5173 — no dev server, no websocket
 ```
 
 There is no backend, no database and no network call at runtime. Projects are stored in `localStorage` (with automatic pruning if the quota is reached). Clearing site data clears projects; use **Export → Download package** to keep anything you care about.

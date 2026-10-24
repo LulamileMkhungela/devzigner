@@ -188,7 +188,13 @@ checks.push(
   ['every block renders through a registry component', project.sections.flatMap((s) => s.screens).flatMap((s) => s.blocks).every((b) => project.system.components.some((c) => c.name === BLOCK_COMPONENT_NAMES[b.type]))],
   ['coverage page verifies every artefact', (() => {
     const html = wrap(<CoveragePage project={project} />)
-    return !html.includes('lz-checkrow-ic warn') && html.includes('artefacts verified')
+    return (
+      !html.includes('lz-checkrow-ic warn') &&
+      html.includes('artefacts verified') &&
+      html.includes('Framework targets') &&
+      html.includes('Vue 3: ') &&
+      html.includes('Web Components: ')
+    )
   })()],
 )
 

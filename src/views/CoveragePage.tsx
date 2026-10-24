@@ -5,6 +5,7 @@ import { Icon } from '../components/Icons'
 import { buildPackage } from '../export/package'
 import { TRACK } from './FlowsPage'
 import { BLOCK_COMPONENT_NAMES } from '../engine/system'
+import { FRAMEWORKS } from '../export/frameworks'
 
 type State = 'pass' | 'warn'
 
@@ -34,6 +35,36 @@ export function CoveragePage({ project }: { project: Project }) {
     const has = (path: string) => paths.has(path)
     const hasPrefix = (prefix: string) => [...paths].some((p) => p.startsWith(prefix))
     const countPrefix = (prefix: string) => [...paths].filter((p) => p.startsWith(prefix)).length
+
+    /** Rebuild the package as if the UI runtime layer said `label`. */
+    const asFramework = (label: string) => {
+      const variant: Project = {
+        ...project,
+        system: {
+          ...project.system,
+          stack: project.system.stack.map((entry) => (entry.layer === 'UI runtime' ? { ...entry, choice: label } : entry)),
+        },
+      }
+      return buildPackage(variant).map((f) => f.path)
+    }
+
+    const frameworkPaths = FRAMEWORKS.map((entry) => ({ entry, paths: asFramework(entry.label) }))
+    const screens = project.sections.reduce((total, section) => total + section.screens.length, 0)
+    const frameworkReport = frameworkPaths.map(({ entry, paths: list }) => {
+      const components = list.filter(
+        (path) =>
+          path.startsWith('sections/') &&
+          path.includes('/components/') &&
+          !path.endsWith('/index.ts') &&
+          path.endsWith(`.${entry.extension}`),
+      )
+      const ok =
+        components.length === screens &&
+        (entry.id === 'react' || entry.id === 'preact'
+          ? list.includes('shell/components/AppShell.tsx')
+          : list.includes('ui/renderer.ts') && list.includes('ui/screens.json') && list.includes('FRAMEWORK.md'))
+      return { id: entry.id, label: entry.label, count: components.length, ok }
+    })
 
     const row = (label: string, detail: string, ok: boolean, evidence: string[]): Row => ({
       label,
@@ -131,6 +162,12 @@ export function CoveragePage({ project }: { project: Project }) {
           row('Toolkit guide', 'every tool, its steps and where it is installed', has('TOOLKIT.md'), ['TOOLKIT.md']),
           row('Manuals and licences', 'the tools\' own documentation travels with the package', has('docs/design-os/requirements.md') && has('docs/design-os/LICENSE') && has('docs/agent-os/README.md') && has('docs/bm-skills/LICENSE') && has('docs/agentcanon/LICENSE'), ['docs/design-os/', 'docs/agent-os/', 'docs/bm-skills/', 'docs/agentcanon/']),
           row('Agent OS v2 workflows', 'the workflows the docs page describes, vendored because v3 removed the compiler', countPrefix('docs/agent-os-v2/workflows/') >= 15, [`${countPrefix('docs/agent-os-v2/workflows/')} workflow files`]),
+          row(
+            'Framework targets',
+            'one product, five targets: React hooks, Vue SFCs, Svelte components, Preact and plain custom elements',
+            frameworkReport.every((report) => report.ok),
+            frameworkReport.map((report) => `${report.label}: ${report.count}/${screens} screens`),
+          ),
           row('Requirements', 'what the package needs to run, and what is optional', has('requirements.md'), ['requirements.md']),
         ],
       },

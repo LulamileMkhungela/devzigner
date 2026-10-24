@@ -1402,6 +1402,8 @@ export function buildHandoff(project: Project): PackageFile[] {
           const name = componentName(section, screen)
           if (framework.id === 'vue' || framework.id === 'svelte') return `export { default as ${name} } from './${name}.${framework.extension}'`
           if (framework.id === 'vanilla') return `export { ${name}Element } from './${name}'`
+          if (framework.id === 'angular') return `export { ${name}Component } from './${name}.component'`
+          if (framework.id === 'lit') return `export { ${name}Element } from './${name}.element'`
           return `export { ${name} } from './${name}'`
         })
         .join('\n') + '\n',

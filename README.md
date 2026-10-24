@@ -82,6 +82,9 @@ compiler on every `npm run check`.
 | **Vue 3** | one SFC per screen plus `AppShell.vue` / `MainNav.vue` | `@vue/compiler-sfc` parses, compiles script and template |
 | **Svelte 5** | one `.svelte` component per screen plus the shell | `svelte/compiler` compiles every file |
 | **Preact** | the React components on `preact/hooks` — one implementation, 3 kB runtime | assertions that no `react` import survives |
+| **Solid** | signal components, `innerHTML` from the renderer | `tsc` with `solid-js` types |
+| **Angular** | standalone components with an inline template | `@angular/compiler` parses every template |
+| **Lit** | `LitElement` with reactive `rows` and `unsafeHTML` | `tsc` with `lit` types and decorators |
 | **Web Components** | `<app-screen-…>` custom elements, no framework | `tsc` over the renderer (with the JSON IR) and the elements |
 
 Vue, Svelte and the web components share one **framework-free renderer**
@@ -264,6 +267,7 @@ npm run example-app    # builds the exported package into a real Vite + Tailwind
 npm run check          # all of the above, then the production build
 npm run standalone     # one self-contained HTML file — script, styles and fonts inlined
 npm run preview:static # serve dist/ on 0.0.0.0:5173 — no dev server, no websocket
+npm run snapshot       # every page as one static HTML file — no JavaScript at all
 ```
 
 There is no backend, no database and no network call at runtime. Projects are stored in `localStorage` (with automatic pruning if the quota is reached). Clearing site data clears projects; use **Export → Download package** to keep anything you care about.

@@ -15,7 +15,7 @@ import type { Project, Screen, Section } from '../../types'
 import type { PackageFile } from '../package'
 import { RUNTIME_SOURCE } from './runtime'
 
-export type FrameworkId = 'react' | 'vue' | 'svelte' | 'preact' | 'vanilla'
+export type FrameworkId = 'react' | 'vue' | 'svelte' | 'preact' | 'solid' | 'angular' | 'lit' | 'vanilla'
 
 export interface Framework {
   id: FrameworkId
@@ -61,6 +61,30 @@ export const FRAMEWORKS: Framework[] = [
     note: 'The React components with the import specifier swapped — 3 kB runtime, same props.',
   },
   {
+    id: 'solid',
+    label: 'Solid',
+    extension: 'tsx',
+    install: 'solid-js',
+    idiom: 'Signals, `createSignal`, JSX with `innerHTML`',
+    note: 'Each screen is a Solid component: one signal holds the state, one accessor returns the markup.',
+  },
+  {
+    id: 'angular',
+    label: 'Angular',
+    extension: 'ts',
+    install: '@angular/core',
+    idiom: 'Standalone components, `@Input`, `[innerHTML]`',
+    note: 'Each screen is a standalone component with an inline template; rows come in as an `@Input`.',
+  },
+  {
+    id: 'lit',
+    label: 'Lit',
+    extension: 'ts',
+    install: 'lit',
+    idiom: '`LitElement`, reactive properties, `unsafeHTML`',
+    note: 'Each screen is a Lit element with a reactive `rows` property and a directive-rendered body.',
+  },
+  {
     id: 'vanilla',
     label: 'Web Components',
     extension: 'ts',
@@ -77,7 +101,10 @@ export function resolveFramework(project: Project): Framework {
   if (choice.startsWith('vue')) return FRAMEWORKS[1]
   if (choice.startsWith('svelte')) return FRAMEWORKS[2]
   if (choice.startsWith('preact')) return FRAMEWORKS[3]
-  if (choice.startsWith('web') || choice.startsWith('vanilla') || choice.startsWith('lit')) return FRAMEWORKS[4]
+  if (choice.startsWith('solid')) return FRAMEWORKS[4]
+  if (choice.startsWith('angular')) return FRAMEWORKS[5]
+  if (choice.startsWith('lit')) return FRAMEWORKS[6]
+  if (choice.startsWith('web') || choice.startsWith('vanilla')) return FRAMEWORKS[7]
   return FRAMEWORKS[0]
 }
 
@@ -211,6 +238,192 @@ function svelteComponent(section: Section, screen: Screen): string {
 </script>
 
 <div class={className} onclick={onClick} oninput={onInput} onsubmit={submit}>{@html html}</div>
+`
+}
+
+
+function solidComponent(section: Section, screen: Screen): string {
+  const name = componentName(section, screen)
+  return `// ${name} — exported by Lula DevZign. Props only: no data imports, no fetch.
+import { createSignal } from 'solid-js'
+import {
+  handleClick,
+  handleInput,
+  handleSubmit,
+  initialState,
+  renderScreen,
+  type Handlers,
+  type Row,
+} from '../../../ui/renderer'
+
+export interface ${name}Props {
+  rows: Row[]
+  onOpen?: (id: string) => void
+  onCreate?: () => void
+  onSearch?: (value: string) => void
+  onSubmit?: (values: Record<string, string>) => void
+  class?: string
+}
+
+export function ${name}(props: ${name}Props) {
+  const [state, setState] = createSignal(initialState())
+
+  const handlers: Handlers = {
+    onOpen: (id) => props.onOpen?.(id),
+    onCreate: () => props.onCreate?.(),
+    onSearch: (value) => props.onSearch?.(value),
+    onSubmit: (values) => props.onSubmit?.(values),
+  }
+
+  return (
+    <div
+      class={props.class}
+      innerHTML={renderScreen('${screen.id}', props.rows, state())}
+      onClick={(event: MouseEvent) => setState(handleClick(event, state(), handlers))}
+      onInput={(event: InputEvent) => setState(handleInput(event, state(), handlers))}
+      onSubmit={(event: SubmitEvent) => {
+        handleSubmit(event, state(), handlers)
+      }}
+    />
+  )
+}
+`
+}
+
+function angularComponent(section: Section, screen: Screen): string {
+  const name = componentName(section, screen)
+  const tag = `app-${kebab(name)}`
+  return `// ${name} — exported by Lula DevZign. A standalone component: \`<${tag} [rows]="rows">\`.
+import { ChangeDetectionStrategy, Component, Input, ViewEncapsulation } from '@angular/core'
+import {
+  handleClick,
+  handleInput,
+  handleSubmit,
+  initialState,
+  renderScreen,
+  type Handlers,
+  type Row,
+  type ScreenState,
+} from '../../../ui/renderer'
+
+@Component({
+  selector: '${tag}',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  encapsulation: ViewEncapsulation.None, // the design system's classes are global
+  template: \`
+    <div [innerHTML]="html" (click)="onClick($event)" (input)="onInput($event)" (submit)="onSubmit($event)"></div>
+  \`,
+})
+export class ${name}Component {
+  @Input() rows: Row[] = []
+  @Input() onOpen?: (id: string) => void
+  @Input() onCreate?: () => void
+  @Input() onSearch?: (value: string) => void
+  @Input() onSubmit?: (values: Record<string, string>) => void
+
+  private state: ScreenState = initialState()
+
+  private get handlers(): Handlers {
+    return {
+      onOpen: (id) => this.onOpen?.(id),
+      onCreate: () => this.onCreate?.(),
+      onSearch: (value) => this.onSearch?.(value),
+      onSubmit: (values) => this.onSubmit?.(values),
+    }
+  }
+
+  get html(): string {
+    return renderScreen('${screen.id}', this.rows, this.state)
+  }
+
+  onClick(event: MouseEvent) {
+    this.state = handleClick(event, this.state, this.handlers)
+  }
+
+  onInput(event: Event) {
+    this.state = handleInput(event, this.state, this.handlers)
+  }
+
+  onSubmit(event: Event) {
+    handleSubmit(event, this.state, this.handlers)
+  }
+}
+`
+}
+
+function litComponent(section: Section, screen: Screen): string {
+  const name = componentName(section, screen)
+  const tag = `app-screen-${kebab(name)}`
+  return `// ${name} — exported by Lula DevZign. A Lit element: \`<${tag}>\`.
+import { LitElement, html } from 'lit'
+import { customElement, property, state as reactive } from 'lit/decorators.js'
+import { unsafeHTML } from 'lit/directives/unsafe-html.js'
+import {
+  handleClick,
+  handleInput,
+  handleSubmit,
+  initialState,
+  renderScreen,
+  type Handlers,
+  type Row,
+  type ScreenState,
+} from '../../../ui/renderer'
+
+@customElement('${tag}')
+export class ${name}Element extends LitElement {
+  // The design system's classes are global; no shadow root to fight them.
+  createRenderRoot() {
+    return this
+  }
+
+  @property({ attribute: false }) rows: Row[] = []
+  @property({ attribute: false }) onOpen?: (id: string) => void
+  @property({ attribute: false }) onCreate?: () => void
+  @property({ attribute: false }) onSearch?: (value: string) => void
+  @property({ attribute: false }) onSubmit?: (values: Record<string, string>) => void
+
+  @reactive() private model: ScreenState = initialState()
+
+  private get handlers(): Handlers {
+    return {
+      onOpen: (id) => this.onOpen?.(id),
+      onCreate: () => this.onCreate?.(),
+      onSearch: (value) => this.onSearch?.(value),
+      onSubmit: (values) => this.onSubmit?.(values),
+    }
+  }
+
+  private paint(event: Event) {
+    this.model = handleClick(event, this.model, this.handlers)
+  }
+
+  private typed(event: Event) {
+    this.model = handleInput(event, this.model, this.handlers)
+  }
+
+  private submit(event: Event) {
+    handleSubmit(event, this.model, this.handlers)
+  }
+
+  render() {
+    return html\`
+      <div
+        @click=\${(event: MouseEvent) => this.paint(event)}
+        @input=\${(event: InputEvent) => this.typed(event)}
+        @submit=\${(event: SubmitEvent) => this.submit(event)}
+      >
+        \${unsafeHTML(renderScreen('${screen.id}', this.rows, this.model))}
+      </div>
+    \`
+  }
+}
+
+declare global {
+  interface HTMLElementTagNameMap {
+    '${tag}': ${name}Element
+  }
+}
 `
 }
 
@@ -369,6 +582,150 @@ function svelteShell(project: Project): PackageFile[] {
   ]
 }
 
+
+function solidShell(project: Project): PackageFile[] {
+  const items = navItems(project)
+  return [
+    {
+      path: 'shell/components/MainNav.tsx',
+      content: `const items = ${JSON.stringify(items, null, 2)}
+
+export function MainNav() {
+  return (
+    <nav class="flex items-center gap-1" aria-label="Primary">
+      {items.map((item) => (
+        <a
+          href={'#' + item.route}
+          class="rounded-[var(--radius-sm)] px-3 py-1.5 text-sm font-medium text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
+        >
+          {item.name}
+        </a>
+      ))}
+    </nav>
+  )
+}
+`,
+    },
+    {
+      path: 'shell/components/AppShell.tsx',
+      content: `import type { JSX } from 'solid-js'
+import { MainNav } from './MainNav'
+
+export function AppShell(props: { children?: JSX.Element }) {
+  return (
+    <div class="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
+      <header class="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--surface)]/90 backdrop-blur">
+        <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
+          <span class="text-sm font-semibold">${project.name}</span>
+          <MainNav />
+        </div>
+      </header>
+      <main class="mx-auto w-full max-w-3xl px-4 py-6">{props.children}</main>
+    </div>
+  )
+}
+`,
+    },
+  ]
+}
+
+function angularShell(project: Project): PackageFile[] {
+  const items = navItems(project)
+  return [
+    {
+      path: 'shell/components/main-nav.component.ts',
+      content: `import { ChangeDetectionStrategy, Component } from '@angular/core'
+
+@Component({
+  selector: 'app-main-nav',
+  standalone: true,
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: \`
+    <nav class="flex items-center gap-1" aria-label="Primary">
+      @for (item of items; track item.route) {
+        <a
+          [href]="'#' + item.route"
+          class="rounded-[var(--radius-sm)] px-3 py-1.5 text-sm font-medium text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
+        >{{ item.name }}</a>
+      }
+    </nav>
+  \`,
+})
+export class MainNavComponent {
+  items = ${JSON.stringify(items, null, 2)}
+}
+`,
+    },
+    {
+      path: 'shell/components/app-shell.component.ts',
+      content: `import { ChangeDetectionStrategy, Component } from '@angular/core'
+import { MainNavComponent } from './main-nav.component'
+
+@Component({
+  selector: 'app-shell',
+  standalone: true,
+  imports: [MainNavComponent],
+  changeDetection: ChangeDetectionStrategy.OnPush,
+  template: \`
+    <div class="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
+      <header class="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--surface)]">
+        <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
+          <span class="text-sm font-semibold">${project.name}</span>
+          <app-main-nav />
+        </div>
+      </header>
+      <main class="mx-auto w-full max-w-3xl px-4 py-6"><ng-content /></main>
+    </div>
+  \`,
+})
+export class AppShellComponent {}
+`,
+    },
+  ]
+}
+
+function litShell(project: Project): PackageFile[] {
+  const items = navItems(project)
+  return [
+    {
+      path: 'shell/components/app-shell.element.ts',
+      content: `import { LitElement, html } from 'lit'
+import { customElement } from 'lit/decorators.js'
+
+const NAV = ${JSON.stringify(items, null, 2)}
+
+@customElement('app-shell')
+export class AppShellElement extends LitElement {
+  createRenderRoot() {
+    return this
+  }
+
+  render() {
+    return html\`
+      <div class="min-h-screen bg-[var(--bg)] text-[var(--ink)]">
+        <header class="sticky top-0 z-20 border-b border-[var(--border)] bg-[var(--surface)]">
+          <div class="mx-auto flex max-w-5xl items-center justify-between gap-4 px-4 py-3">
+            <span class="text-sm font-semibold">${project.name}</span>
+            <nav class="flex items-center gap-1" aria-label="Primary">
+              \${NAV.map(
+                (item) => html\`<a
+                  href=\${'#' + item.route}
+                  class="rounded-[var(--radius-sm)] px-3 py-1.5 text-sm font-medium text-[var(--ink-muted)] hover:bg-[var(--surface-2)] hover:text-[var(--ink)]"
+                >\${item.name}</a>\`,
+              )}
+            </nav>
+          </div>
+        </header>
+        <main class="mx-auto w-full max-w-3xl px-4 py-6"><slot></slot></main>
+      </div>
+    \`
+  }
+}
+`,
+    },
+  ]
+}
+
 function vanillaShell(project: Project): PackageFile[] {
   const items = navItems(project)
   return [
@@ -422,6 +779,12 @@ export function screenFile(project: Project, section: Section, screen: Screen, f
       return { path: `sections/${section.id}/components/${name}.svelte`, content: svelteComponent(section, screen) }
     case 'preact':
       return { path: `sections/${section.id}/components/${name}.tsx`, content: '' }
+    case 'solid':
+      return { path: `sections/${section.id}/components/${name}.tsx`, content: solidComponent(section, screen) }
+    case 'angular':
+      return { path: `sections/${section.id}/components/${name}.component.ts`, content: angularComponent(section, screen) }
+    case 'lit':
+      return { path: `sections/${section.id}/components/${name}.element.ts`, content: litComponent(section, screen) }
     case 'vanilla':
       return { path: `sections/${section.id}/components/${name}.ts`, content: vanillaComponent(section, screen) }
     default:
@@ -447,6 +810,28 @@ import { CarelineControlRoom } from './sections/control-room/components/Careline
 </script>
 
 <CarelineControlRoom {rows} onOpen={open} onSearch={search} />
+\`\`\``,
+    solid: `\`\`\`tsx
+import { ${'{'} ControlRoom ${'}'}  } from './sections/control-room/components/CarelineControlRoom'
+
+<ControlRoom rows={rows} onOpen={open} onSearch={search} />
+\`\`\``,
+    angular: `\`\`\`ts
+import { CarelineControlRoomComponent } from './sections/control-room/components/CarelineControlRoom.component'
+
+@Component({
+  imports: [CarelineControlRoomComponent],
+  template: '<app-careline-control-room [rows]="rows" [onOpen]="open" />',
+})
+export class Page {}
+\`\`\``,
+    lit: `\`\`\`html
+<script type="module">
+  import './sections/control-room/components/CarelineControlRoom.element'
+  const screen = document.querySelector('app-screen-careline-control-room')
+  screen.rows = rows
+  screen.onOpen = (id) => open(id)
+</script>
 \`\`\``,
     preact: `\`\`\`tsx
 import { CarelineControlRoom } from './sections/control-room/components/CarelineControlRoom'
@@ -516,6 +901,21 @@ export function frameworkFiles(project: Project, framework: Framework, reactShel
     files.push(...svelteShell(project), {
       path: 'shell/components/index.ts',
       content: "export { default as AppShell } from './AppShell.svelte'\nexport { default as MainNav } from './MainNav.svelte'\n",
+    })
+  } else if (framework.id === 'solid') {
+    files.push(...solidShell(project), {
+      path: 'shell/components/index.ts',
+      content: "export { AppShell } from './AppShell'\nexport { MainNav } from './MainNav'\n",
+    })
+  } else if (framework.id === 'angular') {
+    files.push(...angularShell(project), {
+      path: 'shell/components/index.ts',
+      content: "export { AppShellComponent } from './app-shell.component'\nexport { MainNavComponent } from './main-nav.component'\n",
+    })
+  } else if (framework.id === 'lit') {
+    files.push(...litShell(project), {
+      path: 'shell/components/index.ts',
+      content: "export { AppShellElement } from './app-shell.element'\n",
     })
   } else if (framework.id === 'vanilla') {
     files.push(...vanillaShell(project), {

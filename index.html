@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="theme-color" content="#faf8f4" />
+    <meta name="theme-color" content="#fafaf9" />
     <meta
       name="description"
       content="Lula DevZign — five phases from an idea to a build-ready product package. Brief, data shape, design system, sections, screens and export, compiled locally. No prompts, no API keys, no blank pages."
@@ -13,6 +13,85 @@
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
+    <noscript>
+      <div style="font-family: system-ui, sans-serif; max-width: 640px; margin: 12vh auto; padding: 24px; border: 1px solid #e7e5e4; border-radius: 12px">
+        <h1 style="font-size: 18px; margin: 0 0 8px">Lula DevZign needs JavaScript</h1>
+        <p style="margin: 0; font-size: 14px; color: #57534e">
+          The workspace compiles the product in the browser. Enable JavaScript, or open
+          <code>/lula-devzign-standalone.html</code>, which carries the whole app in one file.
+        </p>
+      </div>
+    </noscript>
+
+    <script>
+      /*
+       * Boot guard. A blank page carries no information, so this prints the
+       * reason instead: a module that never loaded, a script error, or an app
+       * that simply did not mount. It is deliberately dependency-free — it has
+       * to work when nothing else does.
+       */
+      ;(function () {
+        var problems = []
+
+        function escapeHtml(text) {
+          return String(text).replace(/[&<>"]/g, function (character) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[character]
+          })
+        }
+
+        function show(reason) {
+          if (document.getElementById('lula-boot-error')) return
+          var root = document.getElementById('root')
+          if (root && root.children.length > 0) return
+
+          var lines = problems.concat(reason ? [reason] : []).filter(Boolean).slice(0, 4)
+          var box = document.createElement('div')
+          box.id = 'lula-boot-error'
+          box.setAttribute('role', 'alert')
+          box.style.cssText =
+            'font-family:system-ui,-apple-system,sans-serif;max-width:720px;margin:12vh auto;padding:24px;' +
+            'border:1px solid #e7e5e4;border-radius:12px;background:#fff;color:#1c1917;line-height:1.55'
+          box.innerHTML =
+            '<p style="margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#a8a29e">Lula DevZign</p>' +
+            '<h1 style="margin:6px 0 8px;font-size:20px;font-weight:600">The app did not start</h1>' +
+            '<p style="margin:0 0 12px;font-size:14px;color:#57534e">This page is not blank on purpose: the entry point never mounted. ' +
+            'That usually means a proxy dropped the module, or a script failed before React existed.</p>' +
+            (lines.length
+              ? '<pre style="margin:0 0 14px;padding:12px;border-radius:8px;background:#fafaf9;border:1px solid #e7e5e4;' +
+                'font-family:ui-monospace,monospace;font-size:12px;white-space:pre-wrap">' +
+                lines.map(escapeHtml).join('\n') +
+                '</pre>'
+              : '') +
+            '<p style="margin:0 0 8px;font-size:13px;color:#57534e">URL: <code>' +
+            escapeHtml(location.href) +
+            '</code></p>' +
+            '<p style="margin:0 0 16px;font-size:13px;color:#57534e">Try <code>/lula-devzign-standalone.html</code> — the same app as one file, no server needed.</p>' +
+            '<button onclick="location.reload()" style="padding:8px 14px;border-radius:8px;border:1px solid #1c1917;' +
+            'background:#1c1917;color:#fafaf9;font-size:13px;font-weight:500;cursor:pointer">Reload</button>'
+          document.body.appendChild(box)
+        }
+
+        window.addEventListener('error', function (event) {
+          problems.push((event && event.message) || 'a script failed to load')
+          setTimeout(function () {
+            show('')
+          }, 250)
+        })
+
+        window.addEventListener('unhandledrejection', function (event) {
+          problems.push(String((event && event.reason) || 'an import rejected'))
+        })
+
+        setTimeout(function () {
+          show('no content after 6s')
+        }, 6000)
+      })()
+    </script>
+
+    <script
+      type="module"
+      src="/src/main.tsx"
+      onerror="window.dispatchEvent(new ErrorEvent('error', { message: 'the module entry point failed to load' }))"
+    ></script>
   </body>
 </html>

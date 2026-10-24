@@ -214,9 +214,15 @@ test('every framework target emits a component for every screen', () => {
       for (const line of index!.content.split('\n').filter(Boolean)) {
         const target = line.match(/from '\.\/(.+)'/)?.[1]
         assert.ok(target, `${section.id}: unparsable export line: ${line}`)
-        const file = target.includes('.') ? target : `${target}.${framework.extension}`
+        // React/Vue/Svelte index a bare name; Angular and Lit append a suffix.
+        const prefix = `sections/${section.id}/components/${target}`
         assert.ok(
-          files.some((existing) => existing.path === `sections/${section.id}/components/${file}`),
+          files.some(
+            (existing) =>
+              existing.path === prefix ||
+              existing.path === `${prefix}.${framework.extension}` ||
+              (existing.path.startsWith(`${prefix}.`) && existing.path.endsWith(`.${framework.extension}`)),
+          ),
           `${framework.label}: ${section.id}/index.ts points at a missing ${target}`,
         )
       }

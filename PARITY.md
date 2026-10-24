@@ -140,7 +140,7 @@ verbatim from their repositories, so the steps below are the tools' own.
 | Favicon Creator | Agent skill | `.agents/skills/favicon-creator/` | `/coverage`, `/tools` |
 | Agent OS | Workflow | `agent-os/` + `.claude/commands/agent-os/` (5) | `/coverage` |
 | Design OS | Workflow | `product-plan/` + `.claude/commands/design-os/` (10) | `/coverage` |
-| Framework targets | Export | React, Vue 3, Svelte 5, Preact, Web Components from one product | `export-check` compiles each with its own compiler |
+| Framework targets | Export | React, Vue 3, Svelte 5, Preact, Solid, Angular, Lit, Web Components from one product | `export-check` compiles each with its own compiler |
 | Manuals | Documentation | `requirements.md`, `docs/` (40 files: Design OS, Agent OS v3, Agent OS v2 workflows, bm-skills, agentcanon, licences) | `render-check`, `npm test` |
 
 The **Tools** page reads the steps out of the shipped `SKILL.md` headings rather

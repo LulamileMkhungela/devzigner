@@ -81,7 +81,8 @@ generates one:
 ## Beyond upstream: the framework layer
 
 Design OS exports React. The `UI runtime` decision on `/system` now selects the
-target — React, Vue 3, Svelte 5, Preact or plain Web Components — and
+target — React, Vue 3, Svelte 5, Preact, Solid, Angular, Lit or plain Web
+Components — and
 `npm run export-check` proves it by running `@vue/compiler-sfc` over every
 generated SFC, `svelte/compiler` over every generated component, and `tsc` over
 the renderer and the custom elements. Nothing is claimed without a compiler

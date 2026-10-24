@@ -10,6 +10,8 @@ import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { parse as parseVue, compileScript, compileTemplate } from '@vue/compiler-sfc'
 import { compile as compileSvelte } from 'svelte/compiler'
+import { parseTemplate } from '@angular/compiler'
+import ts from 'typescript'
 import { compileProject } from '../src/engine'
 import { buildPackage } from '../src/export/package'
 import { FRAMEWORKS } from '../src/export/frameworks'
@@ -232,6 +234,79 @@ for (const framework of FRAMEWORKS) {
     } catch (error) {
       const output = String((error as { stdout?: string; stderr?: string }).stdout ?? (error as Error).message)
       check(`${framework.label} · renderer and components typecheck`, false, output.split('\n').slice(0, 6).join(' | '))
+    }
+  }
+
+  if (framework.id === 'angular') {
+    const problems: string[] = []
+    for (const file of components) {
+      const template = file.content.match(/template:\s*`([\s\S]*?)`,\n\}/)?.[1]
+      if (!template) {
+        problems.push(`${file.path}: no inline template`)
+        continue
+      }
+      const parsed = parseTemplate(template, file.path, { preserveWhitespaces: false })
+      if (parsed.errors?.length) problems.push(`${file.path}: ${String(parsed.errors[0])}`)
+      const transpiled = ts.transpileModule(file.content, {
+        compilerOptions: { target: ts.ScriptTarget.ES2022, module: ts.ModuleKind.ESNext, experimentalDecorators: true },
+        reportDiagnostics: true,
+      })
+      const errors = (transpiled.diagnostics ?? []).filter((d) => d.category === ts.DiagnosticCategory.Error)
+      if (errors.length) problems.push(`${file.path}: ${ts.flattenDiagnosticMessageText(errors[0].messageText, ' ')}`)
+    }
+    check(`${framework.label} · every template parses`, problems.length === 0, problems.slice(0, 3).join(' | '))
+  }
+
+  if (framework.id === 'solid' || framework.id === 'lit') {
+    const dir = join(scratch, framework.id)
+    const keep = files.filter(
+      (file) =>
+        file.path === 'ui/renderer.ts' ||
+        file.path === 'ui/screens.json' ||
+        (file.path.startsWith('shell/components/') && file.path.endsWith('.ts')) ||
+        (file.path.startsWith('shell/components/') && file.path.endsWith('.tsx')) ||
+        components.some((component) => component.path === file.path),
+    )
+    for (const file of keep) {
+      const target = join(dir, file.path)
+      mkdirSync(dirname(target), { recursive: true })
+      writeFileSync(target, file.content)
+    }
+    writeFileSync(
+      join(dir, 'tsconfig.json'),
+      JSON.stringify(
+        {
+          compilerOptions: {
+            target: 'ES2022',
+            module: 'ESNext',
+            moduleResolution: 'bundler',
+            strict: true,
+            noEmit: true,
+            skipLibCheck: true,
+            lib: ['ES2022', 'DOM', 'DOM.Iterable'],
+            resolveJsonModule: true,
+            experimentalDecorators: framework.id === 'lit',
+            useDefineForClassFields: framework.id !== 'lit',
+            jsx: framework.id === 'solid' ? 'preserve' : 'react-jsx',
+            jsxImportSource: framework.id === 'solid' ? 'solid-js' : undefined,
+            types: [],
+          },
+          include: ['**/*.ts', '**/*.tsx'],
+        },
+        null,
+        2,
+      ),
+    )
+    try {
+      execFileSync(join(root, 'node_modules', '.bin', 'tsc'), ['-p', join(dir, 'tsconfig.json')], {
+        cwd: root,
+        stdio: 'pipe',
+        encoding: 'utf8',
+      })
+      check(`${framework.label} · components typecheck`, true)
+    } catch (error) {
+      const output = String((error as { stdout?: string; stderr?: string }).stdout ?? (error as Error).message)
+      check(`${framework.label} · components typecheck`, false, output.split('\n').slice(0, 6).join(' | '))
     }
   }
 

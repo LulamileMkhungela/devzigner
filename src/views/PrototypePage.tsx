@@ -14,7 +14,9 @@ export function PrototypePage({ project }: { project: Project }) {
     [project.sections],
   )
   const [activeId, setActiveId] = useState(screens[0]?.screen.id ?? '')
-  const [device, setDevice] = useState<'desktop' | 'mobile'>('desktop')
+  const [breakpoint, setBreakpoint] = useState('xl')
+  const bp = project.design.breakpoints.find((b) => b.name === breakpoint) ?? project.design.breakpoints[project.design.breakpoints.length - 1]
+  const device: 'desktop' | 'mobile' = bp && bp.px <= 640 ? 'mobile' : 'desktop'
   const [flowId, setFlowId] = useState(project.flows[0]?.id ?? '')
   const [stepIndex, setStepIndex] = useState(0)
 
@@ -47,13 +49,18 @@ export function PrototypePage({ project }: { project: Project }) {
         subtitle="A working prototype: real routes, real seeded records, real inputs, assembled only from the registry. Type in it, filter it, create a record, walk a flow. Nothing is a picture of a control."
         actions={
           <>
-            <div className="lz-seg" role="group" aria-label="Device">
-              <button className={device === 'desktop' ? 'is-on' : ''} onClick={() => setDevice('desktop')} title="Desktop">
-                <Icon name="Monitor" size={13} />
-              </button>
-              <button className={device === 'mobile' ? 'is-on' : ''} onClick={() => setDevice('mobile')} title="Mobile">
-                <Icon name="Smartphone" size={13} />
-              </button>
+            <div className="lz-seg" role="group" aria-label="Breakpoint">
+              {project.design.breakpoints.map((item) => (
+                <button
+                  key={item.name}
+                  className={breakpoint === item.name ? 'is-on' : ''}
+                  onClick={() => setBreakpoint(item.name)}
+                  title={`${item.name} · ${item.px}px`}
+                  aria-pressed={breakpoint === item.name}
+                >
+                  {item.name}
+                </button>
+              ))}
             </div>
             <Link to="editor" className="lz-btn small">
               <Icon name="Sliders" size={13} /> Edit tokens
@@ -88,10 +95,13 @@ export function PrototypePage({ project }: { project: Project }) {
             <span className="lz-proto-url">{active.screen.route}</span>
             <span className="lz-spacer" />
             <span className="lz-pill mono">{overrides.primaryHue !== undefined ? `hue ${overrides.primaryHue}` : project.design.colors[0].base}</span>
-            <span className="lz-pill">{device}</span>
+            <span className="lz-pill">{bp?.name} · {bp?.px}px</span>
           </div>
           <div className="lz-proto-canvas">
-            <div className={device === 'mobile' ? 'lz-proto-device' : undefined}>
+            <div
+              className={device === 'mobile' ? 'lz-proto-device' : undefined}
+              style={device === 'mobile' ? undefined : { width: bp?.px ?? 1280, maxWidth: '100%', margin: '0 auto' }}
+            >
               <AppPreview
                 project={project}
                 screen={active.screen}

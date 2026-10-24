@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react'
 import type { CSSProperties } from 'react'
 import type { Block, DesignSystem, Entity, Project, SampleRow, Screen } from '../types'
 import { formatField, humanize } from '../lib/format'
+import { blockComponent } from '../engine/system'
 import { Icon } from './Icons'
 
 export function tokenVars(design: DesignSystem, theme: 'light' | 'dark'): CSSProperties {
@@ -908,7 +909,9 @@ export function AppPreview({
         </header>
         <div className="pv-body">
           {screen.blocks.map((block, i) => (
-            <BlockView key={i} block={block} project={project} ctl={ctl} />
+            <div key={i} data-component={blockComponent(block.type).name} data-block={block.type}>
+              <BlockView block={block} project={project} ctl={ctl} />
+            </div>
           ))}
           <div className="pv-pagefoot">
             <span>{project.name} · {screen.name}</span>

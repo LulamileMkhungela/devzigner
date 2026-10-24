@@ -191,6 +191,20 @@ if (protoSearch) {
 }
 const rowsAfter = w.document.querySelectorAll('.pv-table tbody tr.pv-row').length
 const emptyRow = Boolean(w.document.querySelector('.pv-emptytd'))
+const bpButtons = Array.from(w.document.querySelectorAll('[aria-label="Breakpoint"] button')) as HTMLButtonElement[]
+const smBtn = bpButtons.find((b) => b.textContent?.trim() === 'sm')
+click(smBtn ?? null)
+await wait(120)
+const mobilePreview = Boolean(w.document.querySelector('.pv.mobile'))
+const drawerBtn = Boolean(w.document.querySelector('.pv-topbar .pv-iconbtn'))
+console.log(`${smBtn && mobilePreview && drawerBtn ? 'ok ' : 'ERR'} breakpoint switch reflows the prototype to mobile (${bpButtons.length} breakpoints)`)
+if (!(smBtn && mobilePreview && drawerBtn)) failed++
+const xlBtn = bpButtons.find((b) => b.textContent?.trim() === 'xl')
+click(xlBtn ?? null)
+await wait(120)
+
+const registryBlocks = w.document.querySelectorAll('.pv-body [data-component]').length
+console.log(`${registryBlocks > 0 ? 'ok ' : 'ERR'} prototype blocks name their registry component (${registryBlocks} blocks)`)
 console.log(`${protoSearch ? 'ok ' : 'ERR'} prototype exposes a real search input`)
 console.log(`${rowsBefore > 0 && rowsAfter < rowsBefore && emptyRow ? 'ok ' : 'ERR'} typing filters the table (${rowsBefore} → ${rowsAfter} rows, empty state ${emptyRow})`)
 

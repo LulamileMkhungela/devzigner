@@ -4,6 +4,7 @@ import { TrackHeader } from '../components/ui'
 import { Icon } from '../components/Icons'
 import { buildPackage } from '../export/package'
 import { TRACK } from './FlowsPage'
+import { BLOCK_COMPONENT_NAMES } from '../engine/system'
 
 type State = 'pass' | 'warn'
 
@@ -132,7 +133,20 @@ export function CoveragePage({ project }: { project: Project }) {
           ),
           row('Real inputs', 'the prototype accepts typing, filtering, sorting, submitting and creating', true, ['Prototype → filters, form, create drawer']),
           row('No hand-crafted states', 'states come from variant axes on registry components', project.system.components.every((c) => c.variants.length > 0), [`${project.system.components.length} components with variant axes`]),
-          row('Registry-only composition', 'screens are assembled from components, not bespoke divs', has('system/registry.json') && componentFiles.length > 0, ['system/registry.json', 'sections/<id>/components/']),
+          row(
+            'Registry-only composition',
+            'every block on every screen renders through a named registry component',
+            has('system/registry.json') &&
+              componentFiles.length > 0 &&
+              (() => {
+                const names = new Set(project.system.components.map((c) => c.name))
+                return project.sections
+                  .flatMap((s) => s.screens)
+                  .flatMap((s) => s.blocks)
+                  .every((b) => names.has(BLOCK_COMPONENT_NAMES[b.type]))
+              })(),
+            ['system/registry.json', 'sections/<id>/components/', 'data-component on every prototype block'],
+          ),
           row('Data layer separated', 'components take props; only the adapter holds rows', has('src/data/mock-adapter.ts') && has('data-shapes/overview.ts'), ['src/data/repository.ts', 'src/data/mock-adapter.ts', 'data-shapes/overview.ts']),
           row('Definable stack and registry', 'the stack and component registry are editable and reach the export', has('system/stack.md') && has('system/registry.json'), ['system/stack.md', 'system/registry.json']),
           row('Versioned in git', 'commits, branches and a changelog inside the wiki', hasPrefix('wiki/') && has('wiki/CHANGELOG.md'), ['wiki/CHANGELOG.md', 'wiki/README.md']),

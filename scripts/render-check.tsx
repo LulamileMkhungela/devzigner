@@ -4,6 +4,7 @@ import { App } from '../src/App'
 import { StoreProvider } from '../src/lib/store'
 import { compileProject } from '../src/engine'
 import { buildPackage } from '../src/export/package'
+import { BLOCK_COMPONENT_NAMES } from '../src/engine/system'
 import { ProductPage } from '../src/views/ProductPage'
 import { DataShapePage } from '../src/views/DataShapePage'
 import { DesignPage } from '../src/views/DesignPage'
@@ -152,6 +153,7 @@ checks.push(
       return false
     }
   })()],
+  ['every block renders through a registry component', project.sections.flatMap((s) => s.screens).flatMap((s) => s.blocks).every((b) => project.system.components.some((c) => c.name === BLOCK_COMPONENT_NAMES[b.type]))],
   ['coverage page verifies every artefact', (() => {
     const html = wrap(<CoveragePage project={project} />)
     return !html.includes('lz-checkrow-ic warn') && html.includes('artefacts verified')

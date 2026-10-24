@@ -192,6 +192,15 @@ const PRIMITIVES: ComponentSpec[] = [
   },
 ]
 
+/** The registry component that renders a given block type. */
+export function blockComponent(type: Block['type']): ComponentSpec {
+  return BLOCK_COMPONENTS[type]
+}
+
+export const BLOCK_COMPONENT_NAMES: Record<Block['type'], string> = Object.fromEntries(
+  Object.entries(BLOCK_COMPONENTS).map(([type, spec]) => [type, spec.name]),
+) as Record<Block['type'], string>
+
 function uniqueBlocks(sections: Section[]): { type: Block['type']; screens: string[] }[] {
   const map = new Map<Block['type'], Set<string>>()
   for (const section of sections) {

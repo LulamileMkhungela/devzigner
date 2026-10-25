@@ -264,6 +264,27 @@ const checks = [
   })()],
   ['the starter shows no earned tick', (starterHtml.match(/lz-step is-done/g) ?? []).length === 0],
 
+  /* ---- guidance after a rebuild ------------------------------------------ */
+  /* The store clears every confirmation when the brief is rewritten, so the
+     guide must point back at the first stage — and the toast must offer the way
+     there. Both are rendered from the same state here. */
+  ['the guide after a rebuild points at the first stage', (() => {
+    // Server-rendered text separates interpolations with comments; the page the
+    // browser builds does not, so compare the string without them.
+    const guide = wrap(<NextStepGuide onDismiss={() => {}} />).replace(/<!-- -->/g, '')
+    const toast = wrap(<Toast />)
+    return (
+      guide.includes('0 of 5 confirmed') &&
+      guide.includes('Confirm Product') &&
+      ['Product', 'Data Shape', 'Design', 'Sections', 'Export'].every((stage) => guide.includes(stage)) &&
+      // the toast is a live region with a button beside its words, not a sentence
+      toast.includes('role="status"') &&
+      guide.includes('lz-guide-road') &&
+      // dismissing is offered, never forced
+      guide.includes('Dismiss')
+    )
+  })()],
+
   /* ---- alignment: the tick comes before the button it unlocks ------------ */
   /**
    * "Mark this stage complete above to unlock the next phase" is only true if

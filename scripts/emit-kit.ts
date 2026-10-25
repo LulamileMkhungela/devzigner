@@ -19,6 +19,7 @@ import { chmodSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'n
 import { dirname, join, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { PHASE_COMMANDS, PHASE_SKILL } from '../src/export/vendor/phaseCommands'
+import { LICENSES } from '../src/export/licenses'
 import { STANDARDS_COMMANDS } from '../src/export/vendor/standardsCommands'
 import { TOOLKIT } from '../src/export/vendor/toolkit'
 
@@ -176,7 +177,12 @@ ProdOps workspace writes the same shape per section (\`shape.md\`, \`plan.md\`).
 
 for (const file of STANDARDS) write(file.path, file.content)
 
-/* 6. The repo-level instructions, written for whoever — or whatever — works in
+/* 6. The licence notices. `.agents/`, `standards/` and `template/` carry
+      redistributed MIT material, and MIT requires the notice to travel with
+      every copy — which now includes this checkout, not only the export. */
+write('LICENSES.md', LICENSES.replace('`../LICENSE`', '`LICENSE`'))
+
+/* 7. The repo-level instructions, written for whoever — or whatever — works in
       this checkout next. It states the two contexts, the five stages, and where
       the commands live, so an agent reads the same flow the app enforces. */
 write(
@@ -232,7 +238,7 @@ npm run kit           # rewrite the toolkit files above
 `,
 )
 
-/* 7. The symlink script the agents-canon tool documents. */
+/* 8. The symlink script the agents-canon tool documents. */
 write(
   'scripts/link-agents.sh',
   `#!/usr/bin/env bash

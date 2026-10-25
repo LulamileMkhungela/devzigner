@@ -2962,6 +2962,67 @@ input[type='range'] {
   font-size: 19px;
   letter-spacing: -0.02em;
 }
+/* The listing's three columns, borrowed whole: kind, what it is, one arrow.
+   The listing page is the reference; this is the same row inside the panel. */
+.lz-listing-head {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.lz-listing-head h2 {
+  margin: 0;
+}
+.lz-listing-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.3em;
+  font-size: 14px;
+  color: var(--muted);
+}
+.lz-listing-blurb {
+  margin: 10px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.lz-listing-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+  background: transparent;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+.lz-listing-arrow:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.lz-listing-arrow svg {
+  transition: transform 0.18s ease;
+}
+.lz-listing-arrow:hover svg {
+  transform: translateX(2px);
+}
+@media (max-width: 720px) {
+  .lz-listing-head {
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+  }
+  .lz-listing-label {
+    grid-column: 1 / -1;
+  }
+}
 .lz-toolaccess {
   margin-top: 16px;
   border: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);

@@ -250,7 +250,35 @@ export const RUNTIME = `<script id="prodops-runtime">
           markPillHeights();
         });
       }
-      markPillHeights();
+      trackSections();
+    }
+
+    /* The copied sidebar marks where the reader is, the way the tool page does:
+       the heading nearest the top of the viewport owns the "current" mark. The
+       panel is inside a long page, so this is an observation, not a scroll
+       listener. Environments without IntersectionObserver keep the first mark. */
+    var observer = null;
+
+    function trackSections() {
+      if (observer && observer.disconnect) observer.disconnect();
+      if (!window.IntersectionObserver) return;
+      var links = {};
+      var anchors = sidebar.querySelectorAll('a[href^="#"]');
+      for (var n = 0; n < anchors.length; n++) links[anchors[n].getAttribute('href')] = anchors[n];
+      observer = new window.IntersectionObserver(
+        function (entries) {
+          for (var e = 0; e < entries.length; e++) {
+            if (!entries[e].isIntersecting) continue;
+            var id = '#' + entries[e].target.id;
+            if (!links[id]) continue;
+            for (var key in links) if (links[key].removeAttribute) links[key].removeAttribute('aria-current');
+            links[id].setAttribute('aria-current', 'location');
+          }
+        },
+        { rootMargin: '-15% 0px -70% 0px', threshold: 0 },
+      );
+      var targets = body.querySelectorAll('h2[id], h3[id], section[id]');
+      for (var t = 0; t < targets.length; t++) observer.observe(targets[t]);
     }
 
     var firstSection = '';

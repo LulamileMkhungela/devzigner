@@ -134,7 +134,43 @@ npm run preview:static # serve dist/ on 0.0.0.0:5173 — no dev server, no webso
 npm run snapshot       # every page as one static HTML file — no JavaScript at all
 npm run site-check     # the reference site copy: pages, links, and the restored behaviour
 npm run preview:site   # the reference copy at / and the workspace at /workspace/
+npm run kit            # rewrite the installable toolkit: .agents/, standards/, AGENTS.md
 ```
+
+## The docs, applied
+
+Thirteen documents describe how a product gets planned, shaped and shipped. They live in
+[`docs/`](docs/README.md), and each one is applied by a named surface rather than quoted:
+
+| Command | Stage in the workspace | What it writes |
+| --- | --- | --- |
+| `/product-vision`, `/product-roadmap` | Product (`/`) | `product/product-overview.md`, `product-roadmap.md`, `_build_plan/prd.md` |
+| `/data-shape` | Data Shape (`/data-shape`) | `data-shape/data-shape.md`, `schema.sql` |
+| `/design-tokens`, `/design-shell` | Design (`/design`, `/shell`) | `design-system/{colors,typography}.json`, `product/shell/spec.md` |
+| `/shape-section`, `/sample-data` | Section (`/sections/:id`) | `sections/<name>/{shape.md,plan.md}` |
+| `/design-screen`, `/screenshot-design` | Section → screens | `sections/<name>/visuals/`, the rendered screens |
+| `/export-product` | Export (`/export`) | `product-plan/` — the whole handoff |
+
+`/coverage` in the workspace is the same table, checked against the package that actually exists;
+`/wiki` explains the canon the eight tools share.
+
+The commands themselves are in the repository, not only in that table: `npm run kit` writes
+`.agents/skills/<tool>/`, `.agents/commands/prodops/`, `standards/`, `template/starter/`,
+`AGENTS.md` and `scripts/link-agents.sh`. Every `cp -r prodops/…` line in the Installation
+section of the eight tool pages names one of those paths, and `npm run site-check` fails if a
+page promises a path this checkout does not have.
+
+## The tools page
+
+`/tools.html` keeps the captured page — the eight cards, in the site's own listing — and above
+them a browser whose left panel is the captured documentation sidebar of the selected tool
+(`Getting Started` → Overview, Installation, Learn to build, How it works; `The workflow` → 1 to
+8; `Using the output`). The tabs across the top of the article swap the panel in place, the
+panel's anchors are scoped so they never collide with the page underneath, and the sidebar marks
+the section you are reading as you scroll.
+
+Below that browser the page is exactly the capture: the same cards, the same words. Nothing was
+taken away to make room for the tabs.
 
 There is no backend, no database and no network call at runtime. Projects are stored in
 `localStorage`, with automatic pruning if the quota is reached. Clearing site data clears
@@ -144,6 +180,11 @@ There is no "new product" dialog. The Product stage opens on a description field
 placeholder and the four things a complete answer contains, and the compiler reads what you
 write — the archetype, the name, the problem statement and the persona's segment all come from
 your words. Rewriting it rebuilds the product and clears the ticks.
+
+Rewriting the description is the one action that empties every tick, so it is the one action that
+has to say where to start again: a receipt stays in the composer — *0 of 5 confirmed*, the stage
+road with the next stage marked, and a **Confirm Product** button that goes there — and the toast
+that confirms the rebuild carries the same button, so it can be acted on rather than read.
 
 A tick is earned, not compiled. Artefacts can be complete while a stage is still open; each
 stage ends with **Mark stage complete**, which stays disabled and lists what is missing until

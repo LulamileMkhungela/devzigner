@@ -28,18 +28,30 @@ export function ToolPanel({ tool }: { tool: Tool }) {
 
   return (
     <div className="lz-card lz-toolpanel" role="tabpanel" id="tool-panel" aria-labelledby={`tool-tab-${tool.id}`}>
-      <div className="lz-row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+      {/* The card anatomy of the tools listing, kept: kind on the left, the
+          name and the one-line description in the middle, one arrow on the
+          right. Same three columns, same rules, so the workspace and the
+          listing page read as one product. */}
+      <div className="lz-listing-head">
+        <span className="lz-listing-label">
+          {tool.kind}
+          {count ? ` · ${count} files` : ''}
+        </span>
         <div>
-          <p className="lz-sub" style={{ margin: 0 }}>
-            {tool.kind}
-            {count ? ` · ${count} files` : ''}
-          </p>
-          <h2 style={{ margin: '4px 0 0' }}>{tool.name}</h2>
+          <h2>{tool.name}</h2>
+          <p className="lz-listing-blurb">{tool.blurb}</p>
         </div>
-        <span className="lz-pill quiet">{count ? `${count} files` : tool.kind}</span>
+        <a
+          className="lz-listing-arrow"
+          href={`/${tool.id}.html`}
+          target="_blank"
+          rel="noreferrer"
+          title={`${tool.name} on the site`}
+        >
+          <Icon name="ArrowRight" size={16} />
+          <span>Explore</span>
+        </a>
       </div>
-
-      <p style={{ marginTop: 12 }}>{tool.blurb}</p>
 
       <ol className="lz-toolsteps">
         {tool.steps.map((step, index) => (
@@ -153,6 +165,25 @@ export function ToolsPage({ project }: { project: Project }) {
               tabIndex={on ? 0 : -1}
               className={`lz-tooltab${on ? ' is-on' : ''}`}
               onClick={() => setActive(entry.id)}
+              // A tablist that only answers the mouse is half a tablist: arrows
+              // move between tabs, Home and End jump to the ends, and focus
+              // follows the selection.
+              onKeyDown={(event) => {
+                const keys = ['ArrowRight', 'ArrowLeft', 'Home', 'End']
+                if (!keys.includes(event.key)) return
+                event.preventDefault()
+                const at = TOOLS.findIndex((tool) => tool.id === entry.id)
+                const next =
+                  event.key === 'ArrowRight'
+                    ? (at + 1) % TOOLS.length
+                    : event.key === 'ArrowLeft'
+                      ? (at - 1 + TOOLS.length) % TOOLS.length
+                      : event.key === 'Home'
+                        ? 0
+                        : TOOLS.length - 1
+                setActive(TOOLS[next].id)
+                document.getElementById(`tool-tab-${TOOLS[next].id}`)?.focus()
+              }}
             >
               <Icon name={KIND_ICON[entry.kind] ?? 'Layers'} size={13} />
               <span>{entry.name}</span>

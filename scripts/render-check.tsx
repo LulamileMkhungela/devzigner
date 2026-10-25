@@ -271,6 +271,23 @@ const checks = [
     const light = css.match(/html\[data-app-theme='light'\] body \{([^}]*)\}/)
     return Boolean(light) && /#fafaf9/.test(light?.[1] ?? '') && !/#0a0a0a/.test(light?.[1] ?? '')
   })()],
+  /* The workspace resolves its theme before the module loads, so the first
+     paint is already the right one — the app's React mount is not the first
+     thing that knows. */
+  ['the workspace resolves its theme before the first paint', (() => {
+    const html = readFileSync(join(root, 'index.html'), 'utf8')
+    const boot = html.indexOf("localStorage.getItem('prodops.theme.v1')")
+    const module = html.indexOf('src="/src/main.tsx"')
+    return (
+      boot !== -1 &&
+      module !== -1 &&
+      // the boot runs above the entry point, and before the boot guard
+      boot < module &&
+      /setAttribute\('data-app-theme'/.test(html) &&
+      // and the document's own orange is the brand token
+      !/#ff5c1a|#d8430a/i.test(html)
+    )
+  })()],
   /* The accent is the site's own two brand tokens, not a third orange. */
   ['the app accent is the site\'s brand tokens', (() => {
     const css = readFileSync(join(root, 'src/styles/app.css'), 'utf8')

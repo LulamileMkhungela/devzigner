@@ -75,6 +75,19 @@ const click = (el: Element | null) => (el as HTMLElement | null)?.click()
 click(w.document.querySelector('.lz-dots'))
 await wait(30)
 console.log(`${w.document.querySelector('.lz-menu') ? 'ok ' : 'ERR'} product menu opens`)
+click(w.document.querySelector('.lz-dots'))
+await wait(30)
+
+// The theme switch in the header is a real control: one click flips the theme
+// on the document, and the choice is written where the boot script reads it.
+const beforeTheme = w.document.documentElement.dataset.appTheme
+click(w.document.querySelector('.lz-theme-toggle'))
+await wait(80)
+const afterTheme = w.document.documentElement.dataset.appTheme
+const storedTheme = JSON.parse(w.localStorage.getItem('prodops.theme.v1') ?? 'null')
+const themeOk = Boolean(beforeTheme) && beforeTheme !== afterTheme && storedTheme === afterTheme
+if (!themeOk) failed++
+console.log(`${themeOk ? 'ok ' : 'ERR'} the theme switch flips the app (${beforeTheme} → ${afterTheme}, saved ${storedTheme})`)
 
 w.location.hash = '#/sections'
 await wait(80)

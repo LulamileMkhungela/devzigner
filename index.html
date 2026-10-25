@@ -26,6 +26,28 @@
 
     <script>
       /*
+       * The theme, before the first paint.
+       *
+       * The workspace remembers the theme it was last used in. React applies it
+       * after it mounts, which is a frame or two of the wrong background — a
+       * white flash for a dark-mode reader, or a black one for a light-mode
+       * reader. This reads the same key the store writes and sets the same
+       * attribute, so the first paint is already right. With storage blocked it
+       * does nothing and the app's own default stands.
+       */
+      ;(function () {
+        try {
+          var saved = localStorage.getItem('prodops.theme.v1')
+          var theme = saved === 'light' ? 'light' : 'dark'
+          document.documentElement.setAttribute('data-app-theme', theme)
+          var meta = document.querySelector('meta[name="theme-color"]')
+          if (meta) meta.setAttribute('content', theme === 'light' ? '#fafaf9' : '#0a0a0a')
+        } catch (error) {}
+      })()
+    </script>
+
+    <script>
+      /*
        * Boot guard. A blank page carries no information, so this prints the
        * reason instead: a module that never loaded, a script error, or an app
        * that simply did not mount. It is deliberately dependency-free — it has
@@ -54,7 +76,7 @@
             'border:1px solid #262626;border-radius:12px;background:#141414;color:#fafafa;line-height:1.55'
           box.innerHTML =
             '<p style="display:flex;align-items:center;gap:8px;margin:0;font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#a8a29e">' +
-            '<svg viewBox="0 0 64 64" width="18" height="18" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#ff5c1a"/>' +
+            '<svg viewBox="0 0 64 64" width="18" height="18" aria-hidden="true"><rect width="64" height="64" rx="15" fill="#f0621a"/>' +
             '<path d="M17 33.5 L27.5 44 L47.5 20.5" fill="none" stroke="#fff" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round"/></svg>' +
             'ProdOps</p>' +
             '<h1 style="margin:6px 0 8px;font-size:20px;font-weight:600">The app did not start</h1>' +
@@ -70,8 +92,8 @@
             escapeHtml(location.href) +
             '</code></p>' +
             '<p style="margin:0 0 16px;font-size:13px;color:#a3a3a3">Try <code>/prodops-standalone.html</code> — the same app as one file, no server needed.</p>' +
-            '<button onclick="location.reload()" style="padding:8px 14px;border-radius:8px;border:1px solid #ff5c1a;' +
-            'background:#ff5c1a;color:#0a0a0a;font-size:13px;font-weight:500;cursor:pointer">Reload</button> ' +
+            '<button onclick="location.reload()" style="padding:8px 14px;border-radius:8px;border:1px solid #f0621a;' +
+            'background:#f0621a;color:#fff;font-size:13px;font-weight:500;cursor:pointer">Reload</button> ' +
             '<button onclick="try{localStorage.clear()}catch(e){};location.reload()" style="margin-left:8px;padding:8px 14px;' +
             'border-radius:8px;border:1px solid #3a3a3a;background:#141414;color:#fafafa;font-size:13px;font-weight:500;' +
             'cursor:pointer">Clear saved data and reload</button>' +

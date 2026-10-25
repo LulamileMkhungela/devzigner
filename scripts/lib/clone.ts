@@ -175,7 +175,7 @@ const MOTION_CSS = `<style id="prodops-motion">
     background: transparent;
     color: var(--color-body);
     padding: 8px 12px;
-    font: 500 14px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
+    font: 500 14px/1.5 var(--font-sans);
     letter-spacing: -.01em;
     cursor: pointer;
     white-space: nowrap;
@@ -199,15 +199,15 @@ const MOTION_CSS = `<style id="prodops-motion">
     border-bottom: 1px solid var(--color-hairline);
   }
   .prodops-panel-head h2 { margin: 0; font-size: 24px; letter-spacing: -.02em; }
-  .prodops-panel-head a { font: 600 13.5px/1.4 system-ui, sans-serif; color: var(--color-brand); text-decoration: none; }
+  .prodops-panel-head a { font: 600 13.5px/1.4 var(--font-sans); color: var(--color-brand); text-decoration: none; }
   .prodops-panel-kind {
     margin: 0 0 6px;
-    font: 600 10.5px/1 ui-monospace, mono;
+    font: 600 10.5px/1 var(--font-mono);
     letter-spacing: .14em;
     text-transform: uppercase;
     color: var(--color-brand);
   }
-  .prodops-panel-loading { font: 500 14px/1.6 system-ui, sans-serif; color: var(--color-muted, #6b6560); }
+  .prodops-panel-loading { font: 500 14px/1.6 var(--font-sans); color: var(--color-muted, #6b6560); }
   /* Inside the copied article the capture's own headings already carry the
      site's rhythm; only the code blocks needed a scrollbar. */
   .prodops-browser .body-content pre { overflow: auto; }

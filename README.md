@@ -43,14 +43,15 @@ clicked.
 
 ### The prototype track
 
-Beside the five stages: **Tools → Flows → System → Prototype → Wiki → Coverage**, with the token
-editor next to them.
+Beside the five stages: **Tools → Personas → User Flows → Tech Stack → Prototype → Wiki →
+Coverage**, with the token editor next to them.
 
 | Page | What it does |
 | --- | --- |
 | **Tools** (`/tools`) | The eight builder tools, each with the steps it actually runs, parsed from the tool's own instruction file, and the file each step lives in. |
-| **Flows** (`/flows`) | Four UX flows compiled from the screens — first value, core loop, exception, setup — each step pointing at a real route. |
-| **System** (`/system`) | The decision record: tech stack per layer, the component registry (primitive / composite / pattern) with the tokens each entry may use, the AppShell regions, the data-layer rules. Editable. |
+| **Personas** (`/personas`) | Each persona with its goal, pain and quote, joined to the flows it walks and the screens those flows land on — plus who the product is explicitly not for. |
+| **User Flows** (`/flows`) | Four UX flows compiled from the screens — first value, core loop, exception, setup — each step pointing at a real route. |
+| **Tech Stack** (`/system`) | The decision record: tech stack per layer, the component registry (primitive / composite / pattern) with the tokens each entry may use, the AppShell regions, the data-layer rules. Editable. |
 | **Prototype** (`/prototype`) | A working AppShell with real routes and seeded records, assembled only from registry components. Type to filter, sort a table, submit a validated form, create a record, switch breakpoints. |
 | **Token editor** (`/editor`) | Primary and accent hue, radius, spacing, shell and card style. Every change re-runs the compiler, so nothing downstream can drift. |
 | **Wiki** (`/wiki`) | The product wiki: product, flows, data layer, design system, components, shell, screens, stack, audit and handoff, plus branches and snapshots. |

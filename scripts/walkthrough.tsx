@@ -240,6 +240,18 @@ step(
   paths.filter((p) => p.endsWith('.svg')).length >= stored().sections.length + 1,
 )
 
+/* ---- 5b. Personas -------------------------------------------------------- */
+
+w.location.hash = '#/personas'
+await wait(160)
+const personasHtml = text()
+step(
+  'every persona is shown with the flows it walks',
+  stored().brief.personas.every((p) => personasHtml.includes(p.name)) &&
+    stored().brief.personas.every((p) => stored().flows.some((f) => f.persona === p.name)),
+)
+step('the personas page states who the product is not for', personasHtml.includes('Who this is not for'))
+
 /* ---- 6. Tools ------------------------------------------------------------ */
 
 w.location.hash = '#/tools'

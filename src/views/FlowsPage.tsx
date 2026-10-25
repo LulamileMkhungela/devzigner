@@ -6,8 +6,9 @@ import { Icon } from '../components/Icons'
 import { Link, navigate } from '../lib/router'
 
 export const TRACK = [
-  { id: 'flows', label: 'Flows', path: 'flows' },
-  { id: 'system', label: 'System', path: 'system' },
+  { id: 'personas', label: 'Personas', path: 'personas' },
+  { id: 'flows', label: 'User Flows', path: 'flows' },
+  { id: 'system', label: 'Tech Stack', path: 'system' },
   { id: 'prototype', label: 'Prototype', path: 'prototype' },
   { id: 'wiki', label: 'Wiki', path: 'wiki' },
   { id: 'coverage', label: 'Coverage', path: 'coverage' },

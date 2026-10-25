@@ -20,6 +20,7 @@ import { SectionPage } from './views/SectionPage'
 import { ScreenDesignPage } from './views/ScreenDesignPage'
 import { ExportPage } from './views/ExportPage'
 import { FlowsPage } from './views/FlowsPage'
+import { PersonasPage } from './views/PersonasPage'
 import { SystemPage } from './views/SystemPage'
 import { PrototypePage } from './views/PrototypePage'
 import { EditorPage } from './views/EditorPage'
@@ -29,8 +30,9 @@ import { ToolsPage } from './views/ToolsPage'
 
 const TRACK_NAV = [
   { path: 'tools', label: 'Tools', icon: 'Sparkles' },
-  { path: 'flows', label: 'Flows', icon: 'Route' },
-  { path: 'system', label: 'System', icon: 'Layers' },
+  { path: 'personas', label: 'Personas', icon: 'Users' },
+  { path: 'flows', label: 'User Flows', icon: 'Route' },
+  { path: 'system', label: 'Tech Stack', icon: 'Layers' },
   { path: 'prototype', label: 'Prototype', icon: 'Play' },
   { path: 'editor', label: 'Token editor', icon: 'Sliders' },
   { path: 'wiki', label: 'Wiki', icon: 'BookOpen' },
@@ -70,6 +72,7 @@ export function App() {
     if (path[0] === 'design') return <DesignPage project={active} />
     if (path[0] === 'shell') return <ShellDesignPage project={active} fullscreen={fullscreen} />
     if (path[0] === 'export') return <ExportPage project={active} />
+    if (path[0] === 'personas') return <PersonasPage project={active} />
     if (path[0] === 'flows') return <FlowsPage project={active} />
     if (path[0] === 'system') return <SystemPage project={active} />
     if (path[0] === 'prototype') return <PrototypePage project={active} />

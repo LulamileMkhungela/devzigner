@@ -15,6 +15,7 @@ import { SectionPage } from '../src/views/SectionPage'
 import { ScreenDesignPage } from '../src/views/ScreenDesignPage'
 import { ExportPage } from '../src/views/ExportPage'
 import { FlowsPage } from '../src/views/FlowsPage'
+import { PersonasPage } from '../src/views/PersonasPage'
 import { SystemPage } from '../src/views/SystemPage'
 import { PrototypePage } from '../src/views/PrototypePage'
 import { EditorPage } from '../src/views/EditorPage'
@@ -63,6 +64,7 @@ const views: [string, () => string][] = [
   ['screen-design', () => wrap(<ScreenDesignPage project={project} section={section} screenId={screen.id} fullscreen={false} />)],
   ['screen-design-full', () => wrap(<ScreenDesignPage project={project} section={section} screenId={screen.id} fullscreen />)],
   ['export', () => wrap(<ExportPage project={project} />)],
+  ['personas', () => wrap(<PersonasPage project={project} />)],
   ['flows', () => wrap(<FlowsPage project={project} />)],
   ['system', () => wrap(<SystemPage project={project} />)],
   ['prototype', () => wrap(<PrototypePage project={project} />)],
@@ -91,6 +93,12 @@ const checks = [
   ['collapsibles present', starterHtml.includes('lz-fold')],
   ['export checklist present', wrap(<ExportPage project={project} />).includes('Readiness')],
   ['flows derived', project.flows.length >= 4 && project.flows.every((f) => f.steps.length >= 3)],
+  ['every persona is joined to a flow and a screen', (() => {
+    const html = wrap(<PersonasPage project={project} />)
+    const named = project.brief.personas.every((p) => html.includes(p.name))
+    const joined = project.brief.personas.every((p) => project.flows.some((f) => f.persona === p.name))
+    return named && joined && html.includes('Who this is not for')
+  })()],
   ['registry populated', project.system.components.length >= 10],
   ['data layer separated', wrap(<ExportPage project={project} />).includes('src/data/mock-adapter.ts')],
   ['wiki generated', wrap(<WikiPage project={project} />).includes('wiki/') && wrap(<WikiPage project={project} />).includes('Component registry')],

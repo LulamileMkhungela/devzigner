@@ -253,10 +253,10 @@ pre {
   height: 220px;
   pointer-events: none;
   background:
-    radial-gradient(120px 90px at 18% 0%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 70%),
-    radial-gradient(140px 110px at 88% 12%, color-mix(in srgb, var(--accent-3) 16%, transparent), transparent 72%);
-  animation: lz-aurora 16s ease-in-out infinite alternate;
-  opacity: 0.9;
+    radial-gradient(150px 120px at 18% 0%, color-mix(in srgb, var(--accent) 40%, transparent), transparent 70%),
+    radial-gradient(170px 140px at 88% 12%, color-mix(in srgb, var(--accent-3) 26%, transparent), transparent 72%);
+  animation: lz-aurora 9s ease-in-out infinite alternate;
+  opacity: 1;
 }
 @keyframes lz-aurora {
   0% {
@@ -264,12 +264,12 @@ pre {
     filter: hue-rotate(0deg) saturate(1);
   }
   50% {
-    transform: translate3d(8%, 4%, 0) scale(1.08);
-    filter: hue-rotate(-14deg) saturate(1.15);
+    transform: translate3d(10%, 5%, 0) scale(1.16);
+    filter: hue-rotate(-26deg) saturate(1.3);
   }
   100% {
-    transform: translate3d(-6%, 2%, 0) scale(1.02);
-    filter: hue-rotate(12deg) saturate(1.05);
+    transform: translate3d(-8%, 2%, 0) scale(1.04);
+    filter: hue-rotate(22deg) saturate(1.1);
   }
 }
 
@@ -2790,4 +2790,143 @@ input[type='range'] {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
+}
+
+/* ---- the tools browser ---------------------------------------------------
+   One tab per tool, one panel. The strip wraps rather than scrolls, because
+   eight names are short and a hidden overflow would hide a tool instead of
+   showing it on a second line. The selected tab carries the accent gradient —
+   the same moving accent the rail uses — so which tool is open is never a
+   guess. */
+.lz-tooltabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0 14px;
+}
+.lz-tooltab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line-strong);
+  background: var(--card);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 7px 13px;
+  font: 500 12.5px/1 var(--font);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: color 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+.lz-tooltab:hover {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line-strong));
+}
+.lz-tooltab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.lz-tooltab.is-on {
+  color: #1a1206;
+  border-color: transparent;
+  background-image: linear-gradient(100deg, var(--accent) 0%, var(--accent-3) 45%, var(--accent-2) 60%, var(--accent) 100%);
+  background-size: 240% 100%;
+  animation: lz-sweep 7s ease-in-out infinite;
+  font-weight: 600;
+}
+.lz-app[data-theme='dark'] .lz-tooltab.is-on {
+  color: #1a1206;
+}
+@keyframes lz-sweep {
+  0%,
+  100% {
+    background-position: 0% 0;
+  }
+  50% {
+    background-position: 100% 0;
+  }
+}
+.lz-toolpanel {
+  animation: lz-fade 0.22s ease both;
+}
+.lz-toolpanel h2 {
+  font-size: 19px;
+  letter-spacing: -0.02em;
+}
+.lz-toolaccess {
+  margin-top: 16px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  animation: lz-fade 0.22s ease both;
+}
+.lz-toolaccess ol {
+  margin: 0;
+  padding-left: 20px;
+}
+.lz-toolaccess li {
+  margin: 5px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.lz-toolaccess code {
+  font: 500 11.5px/1.5 var(--mono);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+
+
+/* ---- the shell's colour never sits still --------------------------------
+   The user asked twice why the colour animation was not visible, and the
+   honest answer was that it was: 16 seconds, 26% opacity, behind the logo. It
+   is now three things you can see without knowing to look — the product name
+   carries a sweeping accent, a hairline travels down the rail's edge, and the
+   wash behind the rail is brighter and twice as quick. Nothing moves that the
+   layout depends on: only colour, filter and background position. */
+.lz-brand-name {
+  background-image: linear-gradient(
+    100deg,
+    var(--ink) 0%,
+    var(--ink) 32%,
+    var(--accent) 46%,
+    var(--accent-3) 56%,
+    var(--ink) 70%,
+    var(--ink) 100%
+  );
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: lz-sweep 9s ease-in-out infinite;
+}
+.lz-side::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--accent) 20%,
+    var(--accent-3) 45%,
+    var(--accent-2) 70%,
+    transparent 100%
+  );
+  background-size: 100% 320%;
+  animation: lz-rail-drop 7s linear infinite;
+  opacity: 0.9;
+}
+@keyframes lz-rail-drop {
+  from {
+    background-position: 0 -320%;
+  }
+  to {
+    background-position: 0 320%;
+  }
 }

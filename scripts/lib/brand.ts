@@ -73,6 +73,12 @@ const PHRASES: [RegExp, string][] = [
   [/Brian/g, 'Lulamile'],
   // Repositories, handles and hosts.
   [/github\.com\/buildermethods\//g, 'github.com/LulamileMkhungela/'],
+  // The five upstream repositories are one repository here, so a link to any of
+  // them points at the package that now carries all five.
+  [
+    /github\.com\/LulamileMkhungela\/(?:agent-os|design-os|bm-skills|build-new|agentcanon)\b/g,
+    'github.com/LulamileMkhungela/devzigner',
+  ],
   // Captured install snippets curl a setup script from the old organisation.
   // That script is not ours to publish, so the mirrored command points at this
   // repository's own `scripts/` directory instead of a stranger's.
@@ -100,11 +106,12 @@ const PHRASES: [RegExp, string][] = [
  * served copy is what makes the site ProdOps's site rather than a catalogue of
  * somebody else's products.
  *
- * These are *display* names, matched case-sensitively and applied to the whole
- * document, so structured data is renamed too. The capture's lower-case slugs
- * (`/agent-os/installation` and friends) are left alone: they are the mirror's
- * own paths, every link in the capture points at them, and renaming them would
- * trade a cosmetic mismatch for a site full of 404s.
+ * These are *display* names, matched case-sensitively and applied to the text
+ * of the document only — never inside a tag, where a product name can also be a
+ * file name. The capture's lower-case slugs (`/agent-os/installation` and
+ * friends) are left alone for the same reason: they are the mirror's own paths,
+ * every link in the capture points at them, and renaming them would trade a
+ * cosmetic mismatch for a site full of 404s.
  */
 const PRODUCTS: [RegExp, string][] = [
   [/Agent OS’s/g, 'Standards’'],
@@ -143,13 +150,12 @@ function swapLogos(html: string): string {
   html = html.replace(/https:\/\/buildermethods[^"'\s<>]*/g, light)
   // The portrait on the about page is the previous author's; the mark stands in
   // for it rather than showing a stranger on this product's page.
-  html = html.replace(/images\/design-system\/brian-casel\.jpg/g, light)
-  return html
-    .replace(/(src=")images\/logos\/builder-methods-light\.svg(")/g, `$1${light}$2`)
-    .replace(/(src=")images\/logos\/builder-methods\.svg(")/g, `$1${dark}$2`)
-    .replace(/images\/logos\/builder-methods-light\.svg/g, light)
-    .replace(/images\/logos\/builder-methods\.svg/g, dark)
-    .replace(/images\/logos\/builder-methods[^"' ]*/g, light)
+  html = html.replace(new RegExp('(?:\.\.\/)*images/design-system/brian-casel\.jpg', 'g'), light)
+  // The reference may be relative — nested pages write ../images/logos/… — and
+  // the prefix has to go with the path, or the data URI becomes "../data:".
+  // The pattern is built from a string so the escape level is stated once.
+  const logoRef = new RegExp('(?:\.\.\/)*images/logos/builder-methods(-light)?\.svg', 'g')
+  return html.replace(logoRef, (match: string) => (match.includes('-light') ? light : dark))
 }
 
 /**
@@ -215,15 +221,47 @@ function retitle(html: string, path: string): string {
  * width would make it twice as tall and push the navigation out of alignment.
  * Sizing it by height instead keeps the header exactly the height it was, which
  * is the alignment the rest of the page is built on.
+ *
+ * Nothing here sets `display`: the header carries two copies of the wordmark,
+ * an ink one and a light one, and the site hides whichever the current theme
+ * does not need (`.hidden` / `.dark\:block`). A `display` declaration from this
+ * sheet comes later than the site's own, which put both logos on screen.
  */
 const BRAND_CSS = `<style id="prodops-brand">
-  .ds-wordmark { width: auto !important; height: 26px; display: block; }
+  /* Height only. Setting display here would beat the site's own
+     .hidden { display: none } — the light/dark pair — and show two logos. */
+  .ds-wordmark { width: auto !important; height: 26px; }
   footer .ds-wordmark, .ds-footer .ds-wordmark { height: 30px; }
   .ds-nav > a[aria-label], .ds-footer a[aria-label] { display: inline-flex; align-items: center; }
   /* The author portrait is a mark now, so it sits with the sign-off text. */
   .signoff > img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
   @media (max-width: 640px) { .ds-wordmark { height: 22px; } }
 </style>`
+
+/**
+ * Apply a table to the text of a document, never to its tags.
+ *
+ * `agentcanon` is both a product name and a file name (`agentcanon.html`). A
+ * blind rename turned the link into `Agents canon.html` — a broken link with a
+ * space in it. Text nodes are renamed; attribute values, class names and paths
+ * are left exactly as the capture wrote them.
+ */
+function renameProducts(html: string): string {
+  const inText = (value: string) => {
+    let next = value
+    for (const [pattern, replacement] of PRODUCTS) next = next.replace(pattern, replacement)
+    return next
+  }
+  return html.replace(/(<[^>]*>)|([^<]+)/g, (_match, tag: string | undefined, text: string | undefined) => {
+    if (text) return inText(text)
+    // Inside a tag only the attributes that read as text are renamed: an
+    // `href` is a path, and a path is not a product name.
+    return (tag ?? '').replace(
+      /(\s(?:alt|aria-label|title|content|placeholder|value)=)("[^"]*"|'[^']*')/gi,
+      (_attr, name: string, quoted: string) => `${name}${quoted[0]}${inText(quoted.slice(1, -1))}${quoted[0]}`,
+    )
+  })
+}
 
 /** Put the brand stylesheet in the head, before anything paints. */
 function withBrandCss(html: string): string {
@@ -236,8 +274,7 @@ export function rebrand(html: string, path = '/'): string {
   // Words first, then the handles they produced, and the logo swap last: the
   // replacement is a long base64 string, and running word replacements over it
   // would be replacing inside a data URI.
-  let out = html
-  for (const [pattern, replacement] of PRODUCTS) out = out.replace(pattern, replacement)
+  let out = renameProducts(html)
   for (const [pattern, replacement] of PHRASES) out = out.replace(pattern, replacement)
   for (const [pattern, replacement] of HANDLES) out = out.replace(pattern, replacement)
   return withBrandCss(retitle(swapIcons(swapLogos(out)), path))

@@ -41,6 +41,7 @@ export const PILL = `
  * who asked for reduced motion, sees the plain document.
  */
 const MOTION_CSS = `<style id="prodops-motion">
+  /* ---- 1. the page arrives -------------------------------------------- */
   html.pe-motion main section,
   html.pe-motion main article {
     opacity: 0;
@@ -52,14 +53,201 @@ const MOTION_CSS = `<style id="prodops-motion">
     opacity: 1;
     transform: none;
   }
-  @media (prefers-reduced-motion: reduce) {
-    html.pe-motion main section,
-    html.pe-motion main article { opacity: 1 !important; transform: none !important; transition: none !important; }
+
+  /* ---- 2. colour that moves ------------------------------------------- */
+  /* The capture is a still photograph of a site that breathes: the accent
+     glows behind the hero, the headline carries it in a slow sweep, and the
+     wordmark drifts a few degrees of hue. All of it runs on load, with no
+     interaction and nothing to scroll to — the point is that it is visible
+     immediately, not that it is subtle. Layout never changes: only colour,
+     filter and transform on elements that were already positioned. */
+  .ds-hero { position: relative; isolation: isolate; }
+  .ds-hero::before {
+    content: '';
+    position: absolute;
+    inset: -12% -6% auto -6%;
+    height: 78%;
+    z-index: -1;
+    pointer-events: none;
+    background:
+      radial-gradient(42% 62% at 18% 18%, rgba(255, 92, 26, .28), transparent 70%),
+      radial-gradient(36% 56% at 82% 8%, rgba(255, 154, 92, .22), transparent 72%),
+      radial-gradient(46% 62% at 56% 66%, rgba(216, 60, 11, .18), transparent 74%);
+    animation: prodops-drift 18s ease-in-out infinite alternate;
   }
-  /* The accent answers the pointer, on both of the site's button shapes. */
+  @keyframes prodops-drift {
+    from { transform: translate3d(-3%, -2%, 0) scale(1); filter: blur(4px) hue-rotate(0deg); }
+    to { transform: translate3d(4%, 3%, 0) scale(1.14); filter: blur(12px) hue-rotate(-20deg); }
+  }
+
+  /* The headline keeps its own colour as the gradient's base, so an
+     unsupported background-clip falls back to plain text, not to a blank. */
+  .ds-hero h1 {
+    background-image: linear-gradient(
+      100deg,
+      currentColor 0%, currentColor 34%,
+      #ff5c1a 48%, #ffa06a 56%, #e0500f 64%,
+      currentColor 78%, currentColor 100%
+    );
+    background-size: 260% 100%;
+    -webkit-background-clip: text;
+    background-clip: text;
+    -webkit-text-fill-color: transparent;
+    animation: prodops-sweep 11s ease-in-out infinite;
+  }
+  @keyframes prodops-sweep {
+    0%, 100% { background-position: 0% 0; }
+    50% { background-position: 100% 0; }
+  }
+
+  .kicker, .text-brand, .ds-footer .kicker {
+    animation: prodops-ember 7s ease-in-out infinite alternate;
+  }
+  @keyframes prodops-ember {
+    from { color: #d8430a; }
+    to { color: #ff8a4d; }
+  }
+
+  .ds-wordmark { animation: prodops-mark-hue 14s ease-in-out infinite alternate; }
+  @keyframes prodops-mark-hue {
+    from { filter: hue-rotate(0deg) saturate(1); }
+    to { filter: hue-rotate(-18deg) saturate(1.18); }
+  }
+
+  /* A hairline of the accent under the header that travels as you read. */
+  .ds-public-header::after {
+    content: '';
+    display: block;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, #ff5c1a, #ff9a5c, #d83c0b, transparent);
+    background-size: 240% 100%;
+    animation: prodops-rail 7s linear infinite;
+    opacity: .85;
+  }
+  @keyframes prodops-rail {
+    from { background-position: 0% 0; }
+    to { background-position: 240% 0; }
+  }
+
+  /* ---- 3. the pointer still gets an answer ---------------------------- */
   a[href], button { transition: color .18s ease, background-color .18s ease, border-color .18s ease, transform .18s ease; }
   a[href]:hover, button:hover { color: #ff5c1a; }
   a[href]:active, button:active { transform: translateY(1px); }
+
+  /* ---- 4. the tool browser: tabs, one panel, no page loads ------------- */
+  .prodops-tools { margin: 0; }
+  .prodops-tabstrip {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 2px 0 18px;
+    padding-bottom: 2px;
+  }
+  .prodops-tab {
+    appearance: none;
+    border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
+    background: color-mix(in srgb, currentColor 3%, transparent);
+    color: inherit;
+    border-radius: 999px;
+    padding: 8px 15px;
+    font: 600 13px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+    letter-spacing: -.01em;
+    cursor: pointer;
+    position: relative;
+    overflow: hidden;
+    white-space: nowrap;
+  }
+  .prodops-tab:hover { border-color: color-mix(in srgb, #ff5c1a 55%, transparent); }
+  .prodops-tab[aria-selected="true"] {
+    color: #fff;
+    border-color: transparent;
+    background-image: linear-gradient(100deg, #ff5c1a, #d83c0b 42%, #ff9a5c 58%, #d83c0b 100%);
+    background-size: 240% 100%;
+    animation: prodops-sweep 7s ease-in-out infinite;
+    box-shadow: 0 6px 18px -10px rgba(216, 60, 11, .9);
+  }
+  .prodops-tab small {
+    display: block;
+    font: 500 10.5px/1 ui-monospace, monospace;
+    opacity: .7;
+    margin-top: 4px;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+  }
+  .prodops-toolpanel {
+    border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
+    border-radius: 16px;
+    padding: 20px 22px 24px;
+    background: color-mix(in srgb, currentColor 2.5%, transparent);
+    animation: prodops-fade .28s ease both;
+  }
+  @keyframes prodops-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
+  .prodops-panel-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding-bottom: 14px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+  }
+  .prodops-panel-head h2 { margin: 0; font-size: 22px; letter-spacing: -.02em; }
+  .prodops-panel-kind { font: 600 10.5px/1 ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase;
+    color: #d8430a; }
+  .prodops-toolpanel h3, .prodops-toolpanel h4 { margin: 22px 0 8px; }
+  .prodops-toolpanel p, .prodops-toolpanel li { line-height: 1.65; }
+  .prodops-toolpanel pre { overflow: auto; }
+  .prodops-panel-foot { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px;
+    padding-top: 16px; border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent); }
+  .prodops-panel-loading { font: 500 13px/1.6 system-ui, sans-serif; opacity: .72; }
+
+  /* The gate: the real site trades an email for the download. Here the button
+     keeps its promise and opens the install instructions that ship with the
+     copy — no list, no server, nothing sent. */
+  .prodops-access {
+    appearance: none;
+    border: 0;
+    border-radius: 10px;
+    padding: 11px 18px;
+    font: 600 14px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+    color: #fff;
+    background-image: linear-gradient(100deg, #ff5c1a, #d83c0b 45%, #ff9a5c 60%, #d83c0b 100%);
+    background-size: 240% 100%;
+    animation: prodops-sweep 7s ease-in-out infinite;
+    cursor: pointer;
+  }
+  .prodops-access:hover { filter: brightness(1.06); }
+  .prodops-install {
+    margin-top: 14px;
+    border: 1px dashed color-mix(in srgb, #ff5c1a 45%, transparent);
+    border-radius: 12px;
+    padding: 16px 18px;
+    background: color-mix(in srgb, #ff5c1a 6%, transparent);
+    animation: prodops-fade .28s ease both;
+  }
+  .prodops-install h4 { margin: 0 0 8px; font-size: 15px; }
+  .prodops-install ol { margin: 0 0 10px; padding-left: 20px; }
+  .prodops-install li { margin: 4px 0; }
+  .prodops-install code {
+    font: 500 12px/1.5 ui-monospace, monospace;
+    background: color-mix(in srgb, currentColor 8%, transparent);
+    border-radius: 5px;
+    padding: 1px 5px;
+  }
+  .prodops-install .prodops-install-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px;
+    font: 600 13px/1 system-ui, sans-serif; }
+  .prodops-install .prodops-install-links a { color: #d8430a; text-decoration: none; }
+
+  /* ---- 5. motion is optional ------------------------------------------ */
+  @media (prefers-reduced-motion: reduce) {
+    html.pe-motion main section,
+    html.pe-motion main article { opacity: 1 !important; transform: none !important; transition: none !important; }
+    .ds-hero::before, .ds-hero h1, .kicker, .text-brand, .ds-wordmark,
+    .ds-public-header::after, .prodops-tab, .prodops-access, .prodops-toolpanel, .prodops-install {
+      animation: none !important;
+    }
+  }
 </style>`
 
 /** The tool pages get one extra line: the gate they open with is already satisfied. */
@@ -118,6 +306,25 @@ export function blockedPage(path: string): string {
 </html>`
 }
 
+/**
+ * Two sections of the capture sell a course: "Learn Agent Skills" and "Learn to
+ * build". Both are cross-sells to the old brand's paid programme, which has no
+ * counterpart here — the tools are installed, not sold — so the section, its
+ * sidebar entry and its anchor all go. Nothing else in either article moves.
+ */
+const PROMOS = ['learn-agent-skills', 'learn-to-build']
+
+export function dropCoursePromos(html: string): string {
+  let out = html
+  for (const id of PROMOS) {
+    // the "on this page" entry, in the mobile and the desktop sidebar
+    out = out.replace(new RegExp(`<li>\\s*<a href="#${id}"[\\s\\S]*?</a>\\s*</li>`, 'gi'), '')
+    // the section itself: from its heading to the next heading of the same rank
+    out = out.replace(new RegExp(`<h3 id="${id}"[\\s\\S]*?(?=<h[23][ >])`, 'i'), '')
+  }
+  return out
+}
+
 /** Make a captured page offline and point it at the workspace. */
 /**
  * Teaser clips are megabytes of binary that a text capture never picks up, and
@@ -153,6 +360,7 @@ export function adaptPage(html: string, path: string): string {
     .replace(/(<div id="app"[^>]*?)\sdata-page="[\s\S]*?"/g, '$1')
 
   out = restoreEmails(out)
+  out = dropCoursePromos(out)
   out = replaceVideos(out)
   // The name, the mark, the byline and the handles, on the way out. `site/`
   // itself stays an untouched capture; see scripts/lib/brand.ts.

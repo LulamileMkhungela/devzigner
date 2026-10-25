@@ -1,8 +1,9 @@
+import { useState } from 'react'
 import type { Project } from '../types'
-import { Collapsible, TrackHeader } from '../components/ui'
+import { TrackHeader } from '../components/ui'
 import { Icon } from '../components/Icons'
 import { Link } from '../lib/router'
-import { TOOLS, vendoredFileCount } from '../tools'
+import { TOOLS, vendoredFileCount, type Tool } from '../tools'
 import { TRACK } from './FlowsPage'
 
 const KIND_ICON: Record<string, string> = {
@@ -13,13 +14,116 @@ const KIND_ICON: Record<string, string> = {
 }
 
 /**
- * The eight free tools, with the steps each one
- * actually runs — parsed from the skill's own instruction file, so an eleven-phase
- * skill shows eleven phases, and each one names the step file it lives in. The
- * text is shipped verbatim in the package, so this page is an index of real files
- * rather than a description of them.
+ * One tool, in full: what it is, every step it runs, the file behind each step,
+ * where it ships, and the install path behind "Access free".
+ *
+ * It is its own component because it is the unit the checks render: every tool
+ * in `TOOLS` can be mounted here and read back, which is how "each tool lists
+ * its full step sequence" stays a test rather than a claim.
+ */
+export function ToolPanel({ tool }: { tool: Tool }) {
+  /** The gate is answered locally — press it, get the install path. */
+  const [access, setAccess] = useState(false)
+  const count = vendoredFileCount(tool.id)
+
+  return (
+    <div className="lz-card lz-toolpanel" role="tabpanel" id="tool-panel" aria-labelledby={`tool-tab-${tool.id}`}>
+      <div className="lz-row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
+        <div>
+          <p className="lz-sub" style={{ margin: 0 }}>
+            {tool.kind}
+            {count ? ` · ${count} files` : ''}
+          </p>
+          <h2 style={{ margin: '4px 0 0' }}>{tool.name}</h2>
+        </div>
+        <span className="lz-pill quiet">{count ? `${count} files` : tool.kind}</span>
+      </div>
+
+      <p style={{ marginTop: 12 }}>{tool.blurb}</p>
+
+      <ol className="lz-toolsteps">
+        {tool.steps.map((step, index) => (
+          <li key={`${tool.id}-${index}`}>
+            <span className="lz-toolsteps-n">{index + 1}</span>
+            <span>
+              {step}
+              {/* The file the agent opens for this step, so the count above can
+                  be checked against the package on disk. */}
+              {tool.stepFiles?.[index] && <code className="lz-toolsteps-file">{tool.stepFiles[index]}</code>}
+            </span>
+          </li>
+        ))}
+      </ol>
+
+      <div className="lz-row" style={{ gap: 10, marginTop: 16, flexWrap: 'wrap', alignItems: 'center' }}>
+        <button
+          type="button"
+          className="lz-btn small primary"
+          aria-expanded={access}
+          aria-controls={`tool-access-${tool.id}`}
+          onClick={() => setAccess((open) => !open)}
+        >
+          <Icon name={access ? 'Check' : 'Download'} size={13} /> {access ? 'Access granted' : 'Access free'}
+        </button>
+        <code className="lz-code-line">{tool.ships}</code>
+      </div>
+
+      {access && (
+        <div
+          className="lz-toolaccess"
+          id={`tool-access-${tool.id}`}
+          role="region"
+          aria-label={`Installing ${tool.name}`}
+        >
+          <h3 style={{ marginTop: 0 }}>Access free — nothing to unlock</h3>
+          <p className="lz-sub" style={{ margin: '0 0 10px' }}>
+            There is no email and no key: the tool is already in the package this workspace exports.
+          </p>
+          <ol>
+            <li>
+              It ships at <code>{tool.ships}</code>, exactly where the steps above expect it.
+            </li>
+            <li>
+              Its folder sits under <code>.agents/skills/</code>; <code>CLAUDE.md</code> and{' '}
+              <code>.claude/skills</code> are symlinks to it, so there is one copy to update.
+            </li>
+            <li>
+              Run it with the command its own file names — every step above is a section of <code>SKILL.md</code>.
+            </li>
+          </ol>
+          <div className="lz-row" style={{ gap: 10, marginTop: 12, flexWrap: 'wrap' }}>
+            <Link to="export" className="lz-btn small">
+              <Icon name="Download" size={13} /> Download the package
+            </Link>
+            <Link to="wiki" className="lz-btn small">
+              <Icon name="BookOpen" size={13} /> The canon, explained
+            </Link>
+            <a className="lz-btn small" href="/agentcanon.html" target="_blank" rel="noreferrer">
+              <Icon name="ExternalLink" size={13} /> The canon page
+            </a>
+          </div>
+        </div>
+      )}
+    </div>
+  )
+}
+
+/**
+ * The eight free tools as one browser: a tab per tool and a single panel.
+ *
+ * This page used to be eight cards stacked two-up, so comparing two tools meant
+ * scrolling between them and reading the same header twice. A tab strip puts
+ * every tool one click away and gives the selected one the whole width, which
+ * is where its steps, its files and its install path actually fit.
+ *
+ * Nothing behind the tabs is unreachable: the strip is a real tablist (roles,
+ * `aria-selected`, ids that point at the panel), and the export package carries
+ * the same files whether this page is open or not.
  */
 export function ToolsPage({ project }: { project: Project }) {
+  const [active, setActive] = useState(TOOLS[0].id)
+  const tool = TOOLS.find((entry) => entry.id === active) ?? TOOLS[0]
+
   return (
     <div className="lz-view">
       <TrackHeader
@@ -35,52 +139,31 @@ export function ToolsPage({ project }: { project: Project }) {
         }
       />
 
-      <div className="lz-cols-2">
-        {TOOLS.map((tool) => {
-          const count = vendoredFileCount(tool.id)
+      <div className="lz-tooltabs" role="tablist" aria-label="The eight free tools">
+        {TOOLS.map((entry) => {
+          const on = entry.id === tool.id
           return (
-            <div key={tool.id} className="lz-card">
-              <div className="lz-row" style={{ justifyContent: 'space-between', alignItems: 'flex-start', gap: 12 }}>
-                <div className="lz-row" style={{ gap: 10, alignItems: 'center' }}>
-                  <span className="lz-icon-tile" aria-hidden="true">
-                    <Icon name={KIND_ICON[tool.kind] ?? 'Layers'} size={16} />
-                  </span>
-                  <div>
-                    <h3 style={{ margin: 0 }}>{tool.name}</h3>
-                    <p className="lz-sub" style={{ margin: '2px 0 0' }}>
-                      {tool.kind}
-                      {count ? ` · ${count} files` : ''}
-                    </p>
-                  </div>
-                </div>
-                {/* Nothing to link out to: the tool is in the package. The
-                    count beside the name is the file count on disk. */}
-                <span className="lz-pill quiet">{count ? `${count} files` : tool.kind}</span>
-              </div>
-
-              <p style={{ marginTop: 12 }}>{tool.blurb}</p>
-
-              <ol className="lz-toolsteps">
-                {tool.steps.map((step, index) => (
-                  <li key={`${tool.id}-${index}`}>
-                    <span className="lz-toolsteps-n">{index + 1}</span>
-                    <span>
-                      {step}
-                      {/* The file the agent opens for this step, so the count
-                          above can be checked against the package on disk. */}
-                      {tool.stepFiles?.[index] && <code className="lz-toolsteps-file">{tool.stepFiles[index]}</code>}
-                    </span>
-                  </li>
-                ))}
-              </ol>
-
-              <Collapsible title="Installed at" icon="Folder" count={1}>
-                <code className="lz-code-line">{tool.ships}</code>
-              </Collapsible>
-            </div>
+            <button
+              key={entry.id}
+              type="button"
+              role="tab"
+              id={`tool-tab-${entry.id}`}
+              aria-selected={on}
+              aria-controls="tool-panel"
+              tabIndex={on ? 0 : -1}
+              className={`lz-tooltab${on ? ' is-on' : ''}`}
+              onClick={() => setActive(entry.id)}
+            >
+              <Icon name={KIND_ICON[entry.kind] ?? 'Layers'} size={13} />
+              <span>{entry.name}</span>
+            </button>
           )
         })}
       </div>
+
+      {/* Keyed by tool: switching tabs remounts the panel, so the open
+          "Access free" card never follows you to a different tool. */}
+      <ToolPanel key={tool.id} tool={tool} />
 
       <div className="lz-card">
         <h3>The convention they share</h3>
@@ -90,8 +173,8 @@ export function ToolsPage({ project }: { project: Project }) {
           <code>scripts/link-agents.sh</code>, so there is nothing to keep in sync by hand.
         </p>
         <p className="lz-sub">
-          The fifteen commands live together in <code>.agents/commands/prodops/</code>, one markdown file each,
-          so an agent that reads markdown can run them and nothing else has to be installed.
+          The fifteen commands live together in <code>.agents/commands/prodops/</code>, one markdown file each, so an
+          agent that reads markdown can run them and nothing else has to be installed.
         </p>
         <div className="lz-row" style={{ gap: 8, marginTop: 12 }}>
           <Link to="coverage" className="lz-btn small">

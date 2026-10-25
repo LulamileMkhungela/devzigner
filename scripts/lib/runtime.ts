@@ -123,8 +123,206 @@ export const RUNTIME = `<script id="prodops-runtime">
     });
   }
 
-  /* ---- 2. forms answer locally ---------------------------------------- */
+  /* ---- 2. the tools list becomes a browser ---------------------------- */
+  /**
+   * The captured tools page is a list of eight links: every "what does this
+   * tool actually do" question costs a page load and a scroll. This turns the
+   * list into a tab strip with one panel — click a tool, read its whole page
+   * (all of its content, not a summary) in place, and only open the full page
+   * if you want to keep it.
+   *
+   * The panel is filled from the page it belongs to, fetched once and cached,
+   * so nothing is duplicated in the markup and nothing can drift. No script
+   * means the original list is still there and still clickable.
+   */
+  function escapeHtml(value) {
+    return String(value == null ? '' : value)
+      .replace(/&/g, '&amp;')
+      .replace(/</g, '&lt;')
+      .replace(/>/g, '&gt;')
+      .replace(/"/g, '&quot;');
+  }
+
+  function toolName() {
+    var h1 = document.querySelector('main h1');
+    return h1 ? String(h1.textContent || '').replace(/\\s+/g, ' ').trim() : '';
+  }
+
+  /** The install card, shared by the tool panel and every "Access Free" gate. */
+  function installCard(name) {
+    var box = document.createElement('div');
+    box.className = 'prodops-install';
+    box.setAttribute('role', 'region');
+    box.setAttribute('aria-label', 'How to install ' + (name || 'this tool'));
+    box.innerHTML =
+      '<h4>Access free — it is already installed</h4>' +
+      '<ol>' +
+      '<li>Open <a href="/workspace/">ProdOps</a>, the workspace beside this site.</li>' +
+      '<li>Choose <strong>Tools</strong>, then <strong>' + escapeHtml(name || 'this tool') + '</strong>.</li>' +
+      '<li>Work through its steps. Every file it names ships in the package, under <code>.agents/skills/</code>.</li>' +
+      '</ol>' +
+      '<p style="margin:0">No email, no account, no key: this copy has no server behind it, so nothing is sent.</p>' +
+      '<div class="prodops-install-links">' +
+      '<a href="/workspace/#tools">Open ProdOps →</a>' +
+      '<a href="/agentcanon.html">One canon for skills →</a>' +
+      '<a href="/tools.html">All eight tools →</a>' +
+      '</div>';
+    return box;
+  }
+
+  function wireTools() {
+    var list = document.querySelector('.ds-listings');
+    if (!list || list.getAttribute('data-local-wired')) return;
+    var items = list.querySelectorAll('.ds-listing');
+    if (items.length < 3) return;
+    // .ds-listings is the site's generic listing class — articles, sessions and
+    // the pro page use it too. Only the eight tool pages become tabs.
+    var TOOL_PAGE = /^(prd-creator|skill-builder|ai-design-system|rails-react-template|agentcanon|favicon-creator|agent-os|design-os)(\.html)?$/;
+    for (var check = 0; check < items.length; check++) {
+      var href = String(items[check].getAttribute('href') || '');
+      if (href.indexOf('./') === 0) href = href.slice(2);
+      if (!TOOL_PAGE.test(href)) return;
+    }
+    list.setAttribute('data-local-wired', '1');
+
+    var wrap = document.createElement('div');
+    wrap.className = 'prodops-tools';
+    var strip = document.createElement('div');
+    strip.className = 'prodops-tabstrip';
+    strip.setAttribute('role', 'tablist');
+    strip.setAttribute('aria-label', 'Free tools');
+    var panel = document.createElement('div');
+    panel.className = 'prodops-toolpanel';
+    panel.setAttribute('role', 'tabpanel');
+    panel.setAttribute('tabindex', '0');
+
+    var cache = {};
+    var tabs = [];
+
+    function paint(html) {
+      panel.innerHTML = html;
+      // The fetched page carries its own email gate and its own sidebar; the
+      // panel is already inside a page with both.
+      var forms = panel.querySelectorAll('form');
+      for (var f = 0; f < forms.length; f++) {
+        var card = forms[f].closest ? forms[f].closest('.ds-card') : null;
+        var drop = card || forms[f];
+        if (drop.parentNode) drop.parentNode.removeChild(drop);
+      }
+      var asides = panel.querySelectorAll('.ds-docs-sidebar, .ds-docs-mobile');
+      for (var a = 0; a < asides.length; a++) {
+        if (asides[a].parentNode) asides[a].parentNode.removeChild(asides[a]);
+      }
+      panel.appendChild(installCard(tabTitle()));
+    }
+
+    function fallback(tab) {
+      return '<div class="prodops-panel-head"><h2>' + escapeHtml(tab.getAttribute('data-title')) + '</h2>' +
+        '<a href="' + escapeHtml(tab.getAttribute('data-href')) + '">Full page →</a></div>' +
+        '<p class="prodops-panel-loading">The full page could not be read here. ' +
+        '<a href="' + escapeHtml(tab.getAttribute('data-href')) + '">Open it instead →</a></p>';
+    }
+
+    var current = 0;
+    function tabTitle() {
+      return tabs[current] ? tabs[current].getAttribute('data-title') : toolName();
+    }
+
+    function select(index, focus) {
+      if (!tabs.length) return;
+      current = index;
+      for (var i = 0; i < tabs.length; i++) {
+        tabs[i].setAttribute('aria-selected', i === index ? 'true' : 'false');
+        tabs[i].setAttribute('tabindex', i === index ? '0' : '-1');
+      }
+      if (focus && tabs[index].focus) tabs[index].focus();
+      panel.setAttribute('aria-labelledby', tabs[index].id);
+      var href = tabs[index].getAttribute('data-href');
+      if (cache[href]) {
+        paint(cache[href]);
+        return;
+      }
+      panel.innerHTML = '<p class="prodops-panel-loading">Loading ' +
+        escapeHtml(tabs[index].getAttribute('data-title')) + '…</p>';
+      if (!window.fetch) {
+        panel.innerHTML = fallback(tabs[index]);
+        return;
+      }
+      window
+        .fetch(href)
+        .then(function (response) { return response.text(); })
+        .then(function (html) {
+          var doc = new window.DOMParser().parseFromString(html, 'text/html');
+          var article = doc.querySelector('article .body-content') || doc.querySelector('main article') || doc.querySelector('main');
+          var body = article ? article.innerHTML : '';
+          if (!body) {
+            panel.innerHTML = fallback(tabs[current]);
+            return;
+          }
+          var head =
+            '<div class="prodops-panel-head"><div><p class="prodops-panel-kind">Free tool</p><h2>' +
+            escapeHtml(tabs[current].getAttribute('data-title')) + '</h2></div>' +
+            '<a href="' + escapeHtml(href) + '">Keep this page →</a></div>';
+          cache[href] = head + body;
+          paint(cache[href]);
+        })
+        .catch(function () {
+          panel.innerHTML = fallback(tabs[current]);
+        });
+    }
+
+    for (var i = 0; i < items.length; i++) {
+      (function (item, index) {
+        var title = item.querySelector('h3');
+        var href = item.getAttribute('href');
+        var tab = document.createElement('button');
+        tab.type = 'button';
+        tab.className = 'prodops-tab';
+        tab.id = 'prodops-tab-' + index;
+        tab.setAttribute('role', 'tab');
+        tab.setAttribute('aria-selected', index === 0 ? 'true' : 'false');
+        tab.setAttribute('aria-controls', 'prodops-toolpanel');
+        tab.setAttribute('tabindex', index === 0 ? '0' : '-1');
+        tab.setAttribute('data-href', href);
+        tab.setAttribute('data-title', title ? String(title.textContent || '').trim() : 'Tool ' + (index + 1));
+        tab.textContent = title ? String(title.textContent || '').trim() : 'Tool ' + (index + 1);
+        tab.addEventListener('click', function () { select(index, false); });
+        tab.addEventListener('keydown', function (event) {
+          var key = event.key;
+          if (key !== 'ArrowRight' && key !== 'ArrowLeft' && key !== 'Home' && key !== 'End') return;
+          event.preventDefault();
+          var next = key === 'ArrowRight' ? (index + 1) % tabs.length
+            : key === 'ArrowLeft' ? (index - 1 + tabs.length) % tabs.length
+            : key === 'Home' ? 0 : tabs.length - 1;
+          select(next, true);
+        });
+        strip.appendChild(tab);
+        tabs.push(tab);
+      })(items[i], i);
+    }
+
+    panel.id = 'prodops-toolpanel';
+    wrap.appendChild(strip);
+    wrap.appendChild(panel);
+    list.parentNode.insertBefore(wrap, list);
+    // No script, no change: the list stays the working index.
+    list.style.display = 'none';
+    select(0, false);
+  }
+
+  /* ---- 3. forms answer locally ---------------------------------------- */
   var FORM_NOTE = 'local-form-note';
+
+  /** Is this the "Access Free" gate rather than a newsletter sign-up? */
+  function isGate(form) {
+    var around = String(form.getAttribute('aria-label') || '');
+    var node = form.parentNode;
+    for (var depth = 0; node && depth < 3; depth++) {
+      around += ' ' + String(node.textContent || '');
+      node = node.parentNode;
+    }
+    return /access free|get free access|instant access|installation instructions|free & open source/i.test(around);
+  }
 
   function note(form, message, tone) {
     var existing = form.parentNode.querySelector('.' + FORM_NOTE);
@@ -146,18 +344,33 @@ export const RUNTIME = `<script id="prodops-runtime">
         if (form.getAttribute('data-local-wired')) return;
         form.setAttribute('data-local-wired', '1');
 
-        var gate = /access free|get free access|download|unlock|install/i.test(form.textContent || '');
-        if (gate) {
-          var card = document.createElement('div');
-          card.setAttribute('data-local-gate', '1');
-          card.style.cssText =
-            'margin-top:14px;padding:14px 16px;border:1px dashed #d6cfc4;border-radius:12px;' +
-            'font:500 13.5px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif;color:#4a463f';
-          card.innerHTML =
-            'Installed in this copy — no email, key or account needed. ' +
-            '<a href="/workspace/" style="color:#c4471b;font-weight:600;text-decoration:none">Open the workspace →</a>';
-          form.parentNode.insertBefore(card, form);
-          form.parentNode.removeChild(form);
+        if (isGate(form)) {
+          // The gate is a promise: press it and you get the tool. Keep the
+          // button, keep the promise, drop the email — the instructions are
+          // already in the package.
+          var name = toolName();
+          var submit = form.querySelector('button');
+          var label = (submit && (submit.getAttribute('aria-label') || submit.textContent)) || 'Access Free';
+          var button = document.createElement('button');
+          button.type = 'button';
+          button.className = 'prodops-access';
+          button.textContent = String(label).replace(/\\s+/g, ' ').trim() || 'Access Free';
+          button.setAttribute('aria-expanded', 'false');
+          var card = installCard(name);
+          card.hidden = true;
+          button.addEventListener('click', function () {
+            card.hidden = !card.hidden;
+            button.setAttribute('aria-expanded', card.hidden ? 'false' : 'true');
+            if (!card.hidden) {
+              var first = card.querySelector('a');
+              if (first && first.focus) first.focus();
+            }
+          });
+          var holder = document.createElement('div');
+          holder.className = 'prodops-gate';
+          holder.appendChild(button);
+          holder.appendChild(card);
+          form.parentNode.replaceChild(holder, form);
           return;
         }
 
@@ -279,6 +492,7 @@ export const RUNTIME = `<script id="prodops-runtime">
 
   function boot() {
     buildDrawer();
+    wireTools();
     wireForms();
     wireVideos();
     wireMotion();

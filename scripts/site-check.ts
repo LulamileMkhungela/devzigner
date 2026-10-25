@@ -139,6 +139,43 @@ for (const file of html) {
 
 check(`all ${internal} internal links and images resolve`, broken.length === 0, broken.slice(0, 8).join(' | '))
 
+/**
+ * The scan above reads the capture. The visitor reads the *served* page — after
+ * the brand rewrites have run — so relative links are checked again in what is
+ * actually sent. This is the check that catches a rename landing on a file name
+ * (`agentcanon.html` becoming "Agents canon.html" and taking the link with it).
+ * Absolute paths are the server's to answer, so only relative ones are measured.
+ */
+const servedBroken: string[] = []
+let servedRelative = 0
+for (const file of html) {
+  const page = `/${relative(SITE, file)}`
+  const servedPage = adaptPage(readFileSync(file, 'utf8'), page).replace(/<script[\s\S]*?<\/script>/gi, '')
+  for (const match of servedPage.matchAll(/(?:href|src)="([^"]+)"/g)) {
+    const raw = match[1]
+    if (/^(?:https?:|mailto:|tel:|#|data:|javascript:|\/)/i.test(raw)) continue
+    if (raw.includes('cdn-cgi/')) continue
+    const pathOnly = raw.split('#')[0].split('?')[0]
+    if (!pathOnly || pathOnly.includes('active_storage') || /\.(mp4|webm|mov)$/i.test(pathOnly)) continue
+    servedRelative++
+    let target: string
+    try {
+      target = normalize(join(dirname(file), decodeURIComponent(pathOnly)))
+    } catch {
+      servedBroken.push(`${relative(SITE, file)} → ${raw} (unreadable)`)
+      continue
+    }
+    if (![target, `${target}.html`, join(target, 'index.html')].some((candidate) => exists.has(candidate))) {
+      servedBroken.push(`${relative(SITE, file)} → ${raw}`)
+    }
+  }
+}
+check(
+  `the ${servedRelative} relative links in the served markup resolve`,
+  servedBroken.length === 0,
+  servedBroken.slice(0, 6).join(' | '),
+)
+
 /* ---- teaser videos are replaced, not left as dead players ---------------- */
 {
   const players = clips.map((entry) => entry.split(' → ')[0])
@@ -232,10 +269,32 @@ const tools = new JSDOM(adaptPage(readFileSync(join(SITE, 'tools.html'), 'utf8')
 // The listing was captured from somebody else's site; the names on it are the
 // ProdOps ones, because the served copy is renamed on the way out.
 const toolNames = ['PRD Creator', 'Skill Builder', 'Design System', 'Starter', 'Agents canon', 'Favicon', 'Standards', 'ProdOps']
-const toolsText = tools.window.document.body.textContent ?? ''
+// Visible text only: the injected behaviour layer is an inline script, and its
+// source is part of textContent. What a reader sees is the body minus scripts.
+const toolsBody = tools.window.document.body.cloneNode(true) as HTMLElement
+toolsBody.querySelectorAll('script, style').forEach((node) => node.remove())
+const toolsText = toolsBody.textContent ?? ''
 const missingTools = toolNames.filter((name) => !toolsText.includes(name))
 check('the tools page lists all eight tools', missingTools.length === 0, missingTools.join(', '))
 check('the tools page names them the way ProdOps does', !OLD_PRODUCTS.test(toolsText), toolsText.match(OLD_PRODUCTS)?.[0] ?? '')
+
+
+/* ---- colour that moves, on the site as well as in the workspace --------- */
+
+{
+  const motion = served.match(/<style id="prodops-motion">([\s\S]*?)<\/style>/)?.[1] ?? ''
+  check('the copy carries a motion sheet', motion.length > 500, `${motion.length} chars`)
+  // Three things move on their own, before any interaction: the accent behind
+  // the hero, the sweep across the headline, and the hairline under the header.
+  const moving = [
+    [/\.ds-hero::before\s*\{[^}]*prodops-drift/, 'the hero glow drifts'],
+    [/\.ds-hero h1\s*\{[^}]*prodops-sweep/, 'the headline carries a moving accent'],
+    [/\.ds-public-header::after\s*\{[^}]*prodops-rail/, 'the header hairline travels'],
+    [/prefers-reduced-motion:\s*reduce/, 'reduced motion is honoured'],
+  ] as [RegExp, string][]
+  const still = moving.filter(([pattern]) => !pattern.test(motion)).map(([, label]) => label)
+  check('the accent colour moves without being asked to', still.length === 0, still.join(', '))
+}
 
 /* ---- the parts React used to provide ------------------------------------ */
 
@@ -264,6 +323,19 @@ const live = new JSDOM(adaptPage(home, '/'), {
 await new Promise((resolve) => setTimeout(resolve, 250))
 const liveDoc = live.window.document
 
+// A template literal eats backslashes, so an escape written inside the injected
+// script can reach the browser as a syntax error that silently kills every
+// control on the page. Parse it here, where the failure is one line.
+{
+  const source = served.match(/<script id="prodops-runtime">([\s\S]*?)<\/script>/)?.[1] ?? ''
+  let problem = ''
+  try {
+    new Function(source)
+  } catch (error) {
+    problem = (error as Error).message
+  }
+  check('the behaviour layer parses as JavaScript', source.length > 3000 && !problem, problem || `${source.length} chars`)
+}
 check('the behaviour layer is served with the page', Boolean(liveDoc.getElementById('prodops-runtime')))
 check('the Inertia entrypoint is not served', !liveDoc.querySelector('script[src*="inertia"]'))
 check('no Cloudflare challenge survives', !liveDoc.documentElement.outerHTML.includes('challenge-platform'))
@@ -319,10 +391,27 @@ const gated = new JSDOM(adaptPage(readFileSync(join(SITE, 'prd-creator.html'), '
 })
 await new Promise((resolve) => setTimeout(resolve, 250))
 const gatedDoc = gated.window.document
+// The gate is a promise, not a form: press it and the tool is there.
+const gateButton = gatedDoc.querySelector<HTMLButtonElement>('.prodops-access')
 check(
-  'a tool\'s email gate becomes an installed-in-ProdOps notice',
-  Boolean(gatedDoc.querySelector('[data-local-gate]')) &&
-    /no email, key or account needed/.test(gatedDoc.querySelector('[data-local-gate]')?.textContent ?? ''),
+  'a tool\'s email gate becomes an Access Free button',
+  Boolean(gateButton) && /access free/i.test(gateButton?.textContent ?? ''),
+  gateButton?.textContent ?? 'no button',
+)
+const gateCardBefore = gatedDoc.querySelector('.prodops-install')
+// Read it before the click: the node is the same one the click opens.
+const cardWasHidden = gateCardBefore?.hasAttribute('hidden') ?? false
+gateButton?.click()
+const gateCard = gatedDoc.querySelector('.prodops-install')
+check(
+  'Access Free opens the install instructions that ship with the copy',
+  Boolean(gateCardBefore) &&
+    cardWasHidden &&
+    Boolean(gateCard) &&
+    !gateCard?.hasAttribute('hidden') &&
+    /\.agents\/skills\//.test(gateCard?.textContent ?? '') &&
+    /Open ProdOps/.test(gateCard?.textContent ?? ''),
+  gateCard?.textContent?.replace(/\s+/g, ' ').slice(0, 90) ?? 'no card',
 )
 check(
   'the gate form is gone, not left dead',
@@ -332,6 +421,84 @@ check(
     .join(' | ')}`,
 )
 gated.window.close()
+
+/* ---- the tools list is a browser, not eight page loads ------------------ */
+
+/**
+ * On the tools page every tool is a tab and one panel is filled from that
+ * tool's own page, fetched once. This boots the served page with a fetch that
+ * answers from the capture, clicks through it, and reads the panel: proof that
+ * the tabs are real, not decoration.
+ */
+{
+  const toolsPage = adaptPage(readFileSync(join(SITE, 'tools.html'), 'utf8'), '/tools.html')
+  const live = new JSDOM(toolsPage, {
+    url: 'http://localhost:5173/tools.html',
+    runScripts: 'dangerously',
+    pretendToBeVisual: true,
+    beforeParse: (window) => {
+      stub(window)
+      ;(window as unknown as { fetch: (url: string) => Promise<{ text: () => Promise<string> }> }).fetch = (url: string) => {
+        const file = join(SITE, String(url).replace(/^\.\//, ''))
+        const html = existsSync(file) ? adaptPage(readFileSync(file, 'utf8'), `/${String(url)}`) : ''
+        return Promise.resolve({ text: () => Promise.resolve(html) })
+      }
+    },
+  })
+  await new Promise((resolve) => setTimeout(resolve, 150))
+  const doc = live.window.document
+  const tabs = [...doc.querySelectorAll('[role="tab"]')] as HTMLElement[]
+  const panel = doc.querySelector('[role="tabpanel"]')
+  check(
+    'the tools page lists the eight tools as tabs',
+    tabs.length === 8 && tabs[0].getAttribute('aria-selected') === 'true',
+    `${tabs.length} tabs: ${tabs.map((tab) => tab.textContent).slice(0, 3).join(' · ')}`,
+  )
+  const firstPanel = (panel?.textContent ?? '').replace(/\s+/g, ' ')
+  check(
+    'the first tab already shows that tool\'s own page',
+    /What is PRD Creator\?/.test(firstPanel) && /Installation/i.test(firstPanel),
+    firstPanel.slice(0, 90),
+  )
+  check(
+    'the panel carries the install card, so Access Free is never a dead end',
+    /\.agents\/skills\//.test(firstPanel) && /Open ProdOps/.test(firstPanel),
+  )
+  const second = tabs[1] as HTMLButtonElement
+  second?.click()
+  await new Promise((resolve) => setTimeout(resolve, 150))
+  const secondPanel = (doc.querySelector('[role="tabpanel"]')?.textContent ?? '').replace(/\s+/g, ' ')
+  check(
+    'clicking another tab swaps the panel, with no page load',
+    second?.getAttribute('aria-selected') === 'true' && /Skill Builder/.test(secondPanel) && secondPanel !== firstPanel,
+    secondPanel.slice(0, 90),
+  )
+  const selected = tabs.find((tab) => tab.getAttribute('aria-selected') === 'true')
+  check(
+    'the tab strip is a real tablist: each tab names the panel it drives',
+    tabs.every((tab) => tab.id !== '' && tab.getAttribute('aria-controls') === 'prodops-toolpanel') &&
+      doc.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby') === selected?.id,
+    `selected ${selected?.id ?? 'none'}`,
+  )
+  live.window.close()
+}
+
+{
+  // `.ds-listings` is the site's generic listing class: articles, sessions and
+  // the pro page use it too, and none of those are tools.
+  const articles = new JSDOM(adaptPage(readFileSync(join(SITE, 'articles.html'), 'utf8'), '/articles.html'), {
+    url: 'http://localhost:5173/articles.html',
+    runScripts: 'dangerously',
+    pretendToBeVisual: true,
+    beforeParse: stub,
+  })
+  await new Promise((resolve) => setTimeout(resolve, 120))
+  check(
+    'the tab browser stays on the tools page',
+    articles.window.document.querySelectorAll('[role="tablist"]').length === 0,
+  )
+  articles.window.close()
+}
 
 /* ---- a control with nothing behind it says so --------------------------- */
 
@@ -432,7 +599,13 @@ const bylines: string[] = []
 for (const file of html) {
   const out = adaptPage(readFileSync(file, 'utf8'), `/${relative(SITE, file).replace(/\.html$/, '')}`)
   if (OLD_BRAND.test(out)) offBrand.push(relative(SITE, file))
-  if (OLD_PRODUCTS.test(out.replace(/<script[\s\S]*?<\/script>/g, ''))) offBrand.push(`${relative(SITE, file)} (product name)`)
+  // Visible text only. A slug (`agentcanon.html`), a canonical URL or the
+  // crawler's own comment are paths, not names on the page.
+  const visible = out
+    .replace(/<script[\s\S]*?<\/script>/g, '')
+    .replace(/<!--[\s\S]*?-->/g, '')
+    .replace(/<[^>]*>/g, ' ')
+  if (OLD_PRODUCTS.test(visible)) offBrand.push(`${relative(SITE, file)} (product name)`)
   const title = out.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/\s+/g, ' ').trim() ?? ''
   if (!/ProdOps/.test(title)) untitled.push(`${relative(SITE, file)} (${title || 'no title'})`)
   if (/Lulamile Mkhungela/.test(out)) bylines.push(relative(SITE, file))
@@ -443,6 +616,16 @@ check(
   'the byline credits Lulamile Mkhungela',
   bylines.some((file) => file === 'about.html'),
   `${bylines.length} pages`,
+)
+
+// One logo, not two. The header carries an ink wordmark and a light one and
+// hides whichever the theme does not need; a `display` declaration from the
+// brand sheet would beat the site's own `.hidden` and show both.
+const brandSheet = served.match(/<style id="prodops-brand">([\s\S]*?)<\/style>/)?.[1] ?? ''
+check(
+  'the brand sheet sizes the wordmark without re-showing the hidden twin',
+  /\.ds-wordmark\s*\{[^}]*height:\s*26px/.test(brandSheet) && !/display\s*:/.test(brandSheet.split('.ds-wordmark')[1]?.split('}')[0] ?? ''),
+  brandSheet.split('.ds-wordmark')[1]?.split('}')[0]?.trim() ?? 'no wordmark rule',
 )
 
 // The old wordmarks and portrait are gone from the capture, and their URLs

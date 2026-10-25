@@ -21,7 +21,7 @@ import { PrototypePage } from '../src/views/PrototypePage'
 import { EditorPage } from '../src/views/EditorPage'
 import { WikiPage } from '../src/views/WikiPage'
 import { CoveragePage } from '../src/views/CoveragePage'
-import { ToolsPage } from '../src/views/ToolsPage'
+import { ToolPanel, ToolsPage } from '../src/views/ToolsPage'
 import { TOOLS } from '../src/tools'
 
 const store: Record<string, string> = {}
@@ -150,12 +150,33 @@ const checks = [
   })],
 
   /* ---- the tools page shows every step of every tool --------------------- */
-  ['tools: each tool lists its full step sequence', (() => {
-    const out = wrap(<ToolsPage project={project} />)
+  // The tools page is a tab strip now, so each panel is rendered on its own:
+  // the guarantee is that every tool still lists every step it runs, not that
+  // eight panels are mounted at once.
+  ['tools: every tool lists its full step sequence', (() => {
     // Rendered text escapes ampersands, so compare the way the page contains it.
-    const shown = (text: string) => out.includes(text.replace(/&/g, '&amp;'))
-    const missing = TOOLS.filter((tool) => tool.steps.some((step) => !shown(step)))
-    return missing.length === 0 && TOOLS.every((tool) => tool.steps.length >= 4) && out.includes('steps/write-files.md')
+    const shown = (out: string, text: string) => out.includes(text.replace(/&/g, '&amp;'))
+    const missing = TOOLS.filter((tool) => {
+      const out = wrap(<ToolPanel tool={tool} />)
+      return tool.steps.some((step) => !shown(out, step))
+    })
+    return (
+      missing.length === 0 &&
+      TOOLS.every((tool) => tool.steps.length >= 4) &&
+      shown(wrap(<ToolPanel tool={TOOLS[0]} />), 'steps/write-files.md')
+    )
+  })()],
+  ['tools: all eight tools are one tab strip', (() => {
+    const out = wrap(<ToolsPage project={project} />)
+    const tabs = (out.match(/role="tab"/g) ?? []).length
+    return (
+      tabs === 8 &&
+      out.includes('role="tabpanel"') &&
+      out.includes('aria-selected="true"') &&
+      TOOLS.every((tool) => out.includes(tool.name)) &&
+      // one panel at a time: the first tool is the open one
+      TOOLS.slice(1).every((tool) => !out.includes(`id="tool-tab-${tool.id}" aria-selected="true"`))
+    )
   })()],
 
   /* ---- the shell: a process rail on the left ---------------------------- */
@@ -185,10 +206,18 @@ const checks = [
    */
   ['the shell animates its accent colour', (() => {
     const css = readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8')
-    const frames = ['lz-aurora', 'lz-rail-flow', 'lz-meter-flow', 'lz-pop'].every((name) => css.includes(`@keyframes ${name}`))
-    const used = ['lz-aurora', 'lz-rail-flow', 'lz-meter-flow'].every((name) => new RegExp(`animation:\\s*${name}\\b`).test(css))
+    const frames = ['lz-aurora', 'lz-rail-flow', 'lz-meter-flow', 'lz-pop', 'lz-sweep', 'lz-rail-drop'].every((name) =>
+      css.includes(`@keyframes ${name}`),
+    )
+    const used = ['lz-aurora', 'lz-rail-flow', 'lz-meter-flow', 'lz-sweep', 'lz-rail-drop'].every((name) =>
+      new RegExp(`animation:\\s*${name}\\b`).test(css),
+    )
+    // The colour animation has to be visible without knowing to look for it:
+    // the product name sweeps, the rail edge travels, and the wash is quick.
+    const visible =
+      /\.lz-brand-name\s*\{[^}]*lz-sweep/.test(css) && /\.lz-side::after\s*\{[^}]*lz-rail-drop/.test(css) && /lz-aurora 9s/.test(css)
     const out = renderToString(<StoreProvider><App /></StoreProvider>)
-    return frames && used && out.includes('lz-meter-fill') && out.includes('lz-nav-item is-active')
+    return frames && used && visible && out.includes('lz-meter-fill') && out.includes('lz-nav-item is-active')
   })()],
   ['the animation stops for anyone who asks it to', (() => {
     const css = readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8')

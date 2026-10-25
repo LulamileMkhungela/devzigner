@@ -486,3 +486,18 @@ test('a page with no title is given one that names the product', () => {
   const out = rebrand('<html><head></head><body><p>Nothing yet</p></body></html>', '/tools.html')
   assert.match(out, /<title>Tools — ProdOps<\/title>/)
 })
+
+test('rebranding never renames a path — only the words on the page', () => {
+  const page =
+    '<html><head><title>tools</title><link rel="canonical" href="agentcanon.html"></head><body>' +
+    '<a class="ds-listing" href="agentcanon.html">agentcanon</a>' +
+    '<img src="../images/logos/builder-methods-light.svg" alt="Builder Methods"></body></html>'
+  const out = rebrand(page, '/tools.html')
+  // The link still points at the page it named, and the words are ProdOps's.
+  assert.match(out, /href="agentcanon\.html"/)
+  assert.match(out, />Agents canon</)
+  // A relative wordmark is inlined whole: no "../data:" prefix survives.
+  assert.doesNotMatch(out, /\.\.\/data:/)
+  assert.match(out, /src="data:image\/svg\+xml;base64,/)
+  assert.match(out, /alt="ProdOps"/)
+})

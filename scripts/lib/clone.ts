@@ -517,32 +517,86 @@ cp -r prodops/${folder} ${into}</code></pre>
 </section>`
 }
 
+/** Where this card ends: `<div class="ds-card…">` covers both card shapes. */
+function cardEnd(html: string, start: number): number {
+  const open = /<div\b/gi
+  const close = /<\/div>/gi
+  open.lastIndex = start
+  let depth = 0
+  let at = start
+  for (;;) {
+    open.lastIndex = at
+    close.lastIndex = at
+    const nextOpen = open.exec(html)
+    const nextClose = close.exec(html)
+    if (!nextClose) return -1
+    if (nextOpen && nextOpen.index < nextClose.index) {
+      depth += 1
+      at = nextOpen.index + 4
+      continue
+    }
+    depth -= 1
+    at = nextClose.index + 6
+    if (depth <= 0) return at
+  }
+}
+
+/**
+ * The installation steps, where the page says "Installation".
+ *
+ * The capture keeps the instructions behind an email gate that appears twice:
+ * a card at the top of the document ("Free & open source. Enter your email for
+ * instant access…"), the gate under the Installation heading, and a hero field
+ * above both. This copy has no server and no list, so every gate goes: the
+ * first is replaced by the two commands, the rest are removed, and nothing
+ * promises anything that is not on the page.
+ */
 export function withInstall(html: string, path: string): string {
   const fact = INSTALL[path]
   if (!fact) return html
-  // The gate does not use one shape: some pages put it in a `.ds-card` with a
-  // sentence, others in a plain div under an `<h3>Get free access to …</h3>`.
-  // What both have is the form, and a heading after it — so the instructions go
-  // before that next heading, which is where the site would have put them.
-  const gate = html.indexOf('Get free access to')
-  if (gate === -1) return html
   const block = installBlock(fact)
+  let out = html
 
-  // The gate is a `.ds-card` holding a sentence, a field and a button. There is
-  // nothing nested inside it, so the card is the nearest opening tag before the
-  // sentence and the first closing tag after the form.
-  const cardStart = html.lastIndexOf('<div class="ds-card"', gate)
-  const formEnd = html.indexOf('</form>', gate)
-  if (cardStart !== -1 && formEnd !== -1) {
-    const cardEnd = html.indexOf('</div>', formEnd)
-    if (cardEnd !== -1) {
-      return html.slice(0, cardStart) + block + html.slice(cardEnd + '</div>'.length)
-    }
+  /** Replace the card that holds the gate at `gate` with `replacement`. */
+  const swapCard = (gate: number, replacement: string): boolean => {
+    const cardStart = out.lastIndexOf('<div class="ds-card', gate)
+    const formEnd = out.indexOf('</form>', gate)
+    if (cardStart === -1 || formEnd === -1 || cardStart > gate) return false
+    const end = cardEnd(out, cardStart)
+    if (end === -1) return false
+    out = out.slice(0, cardStart) + replacement + out.slice(end)
+    return true
   }
 
-  // No card: put the steps where the gate was and drop the form.
-  if (formEnd !== -1) return html.slice(0, gate) + block + html.slice(formEnd + '</form>'.length)
-  return html.slice(0, gate) + block + html.slice(gate)
+  // The steps belong under the heading that promises them: the gate whose
+  // sentence ends "…and installation instructions".
+  const promise = out.indexOf('and installation instructions')
+  let placed = false
+  if (promise !== -1) {
+    const gate = out.lastIndexOf('Get free access to', promise)
+    if (gate !== -1) placed = swapCard(gate, block)
+  }
+
+  // Every other gate is the same promise in another shape; none of them can be
+  // kept, because this copy cannot send anything.
+  for (let guard = 0; guard < 8; guard += 1) {
+    const gate = out.indexOf('Get free access to')
+    if (gate === -1) break
+    if (swapCard(gate, '')) continue
+    const formEnd = out.indexOf('</form>', gate)
+    if (formEnd === -1) { out = out.slice(0, gate) + out.slice(gate + 19); continue }
+    out = out.slice(0, gate) + out.slice(formEnd + '</form>'.length)
+  }
+
+  // The hero field above the docs is the same gate in another shape.
+  out = out.replace(/<form class="capture[^"]*"[\s\S]*?<\/form>/g, '')
+
+  if (!placed) {
+    const article = out.lastIndexOf('</article>')
+    if (article === -1) return out
+    out = out.slice(0, article) + block + out.slice(article)
+  }
+  return out
 }
 
 /**

@@ -651,7 +651,15 @@ gated.window.close()
   ]
   const missing = pages.filter((page) => {
     const out = adaptPage(readFileSync(join(SITE, `${page}.html`), 'utf8'), `/${page}.html`)
-    return !/id="prodops-install"/.test(out) || !/git clone https:\/\/github\.com/.test(out) || !/cp -r prodops\//.test(out)
+    const main = out.slice(out.indexOf('<main'), out.indexOf('</main>'))
+    return (
+      !/id="prodops-install"/.test(out) ||
+      !/git clone https:\/\/github\.com/.test(out) ||
+      !/cp -r prodops\//.test(out) ||
+      // no email gate survives anywhere on a tool page
+      /type="email"/.test(main) ||
+      /Access Free/.test(main)
+    )
   })
   check('all eight tool pages carry the installation section', missing.length === 0, missing.join(', '))
   /* The docs are applied, not quoted: every `cp -r prodops/<path>` a page tells

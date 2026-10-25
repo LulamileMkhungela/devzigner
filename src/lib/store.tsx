@@ -40,6 +40,11 @@ interface StoreValue {
   capture: (screenIds: string[]) => void
   clearCaptures: () => void
   reset: () => void
+  /* ---- staged progress ---- */
+  confirmed: string[]
+  confirmStage: (id: string) => void
+  unconfirmStage: (id: string) => void
+  setBrief: (idea: string) => Project
   toast: string
   notify: (message: string) => void
   /* ---- inline design editor ---- */
@@ -124,25 +129,40 @@ function withCustomFlows(next: Project, previous: Project): Project {
   return custom.length ? { ...next, flows: [...next.flows, ...custom] } : next
 }
 
-function compileLikeProject(project: Project, patch: Partial<CompileOptions> = {}): Project {
-  const options: CompileOptions = {
-    idea: project.idea,
-    seed: project.seed,
-    archetypeId: project.archetypeId,
-    genome: project.genome,
-    currency: project.currency,
-    moduleSeeds: { ...project.moduleSeeds },
-    nameOverride: project.name,
-    overrides: { ...(project.overrides ?? {}) },
-    systemOverrides: { ...(project.systemOverrides ?? {}) },
-    createdAt: project.createdAt,
-    ...patch,
-  }
+/**
+ * Recompile the same project with one thing changed.
+ *
+ * `fresh` is for a rewritten description: none of the compiled inputs (seed,
+ * archetype, name, module seeds) survive, because they describe the old idea.
+ * Use it with a new `idea` and the compiler derives everything again.
+ */
+function compileLikeProject(project: Project, patch: Partial<CompileOptions> = {}, fresh = false): Project {
+  const kept: CompileOptions = fresh
+    ? { currency: project.currency, createdAt: project.createdAt }
+    : {
+        idea: project.idea,
+        seed: project.seed,
+        archetypeId: project.archetypeId,
+        genome: project.genome,
+        currency: project.currency,
+        moduleSeeds: { ...project.moduleSeeds },
+        nameOverride: project.name,
+        overrides: { ...(project.overrides ?? {}) },
+        systemOverrides: { ...(project.systemOverrides ?? {}) },
+        createdAt: project.createdAt,
+      }
+  const options: CompileOptions = { ...kept, ...patch }
   const next = compileProject(options)
   next.id = project.id
   next.createdAt = project.createdAt
   next.updatedAt = Date.now()
-  return withCustomFlows(next, project)
+  // A recompile keeps the stages the builder already confirmed — unless the
+  // idea changed, in which case every stage has to be reviewed again.
+  const reworded = patch.idea !== undefined && patch.idea.trim() !== project.idea.trim()
+  next.progress = { confirmed: reworded ? [] : project.progress?.confirmed ?? [] }
+  // Hand-written flows belong to the product that was described; a rewrite
+  // starts without them rather than importing a flow nobody asked for.
+  return reworded ? next : withCustomFlows(next, project)
 }
 
 export function StoreProvider({ children }: { children: ReactNode }) {
@@ -216,25 +236,37 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   }, [])
 
   const regenerate = useCallback((project: Project, module?: ModuleKey, patch: Partial<CompileOptions> = {}) => {
-    const base: CompileOptions = {
-      idea: project.idea,
-      seed: project.seed,
-      archetypeId: project.archetypeId,
-      genome: project.genome,
-      currency: project.currency,
-      moduleSeeds: { ...project.moduleSeeds },
-      nameOverride: project.name,
-      overrides: { ...(project.overrides ?? {}) },
-      systemOverrides: { ...(project.systemOverrides ?? {}) },
-      createdAt: project.createdAt,
-      ...patch,
-    }
+    // A rewritten description is a new product: the archetype it reads as, the
+    // name it earns and the seeds behind it all have to be re-derived, or the
+    // old shape would survive under the new words.
+    const reworded = patch.idea !== undefined && patch.idea.trim() !== project.idea.trim()
+
+    const base: CompileOptions = reworded
+      ? {
+          idea: patch.idea,
+          currency: project.currency,
+          overrides: { ...(project.overrides ?? {}) },
+          systemOverrides: { ...(project.systemOverrides ?? {}) },
+          createdAt: project.createdAt,
+        }
+      : {
+          idea: project.idea,
+          seed: project.seed,
+          archetypeId: project.archetypeId,
+          genome: project.genome,
+          currency: project.currency,
+          moduleSeeds: { ...project.moduleSeeds },
+          nameOverride: project.name,
+          overrides: { ...(project.overrides ?? {}) },
+          systemOverrides: { ...(project.systemOverrides ?? {}) },
+          createdAt: project.createdAt,
+        }
+    const options: CompileOptions = { ...base, ...patch }
     if (module) {
-      base.moduleSeeds = { ...(base.moduleSeeds as Record<ModuleKey, number>) }
-      const current = base.moduleSeeds[module]
-      base.moduleSeeds[module] = remixSeed(current, `${module}`, Math.floor(Math.random() * 9999))
+      options.moduleSeeds = { ...(options.moduleSeeds ?? project.moduleSeeds) } as Record<ModuleKey, number>
+      options.moduleSeeds[module] = remixSeed(options.moduleSeeds[module], `${module}`, Math.floor(Math.random() * 9999))
     }
-    const next = compileLikeProject(project, base)
+    const next = compileLikeProject(project, options, reworded)
     replace(next)
     return next
   }, [replace])
@@ -325,6 +357,34 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       return next
     })
   }, [])
+
+  const confirmStage = useCallback(
+    (id: string) => {
+      if (!active) return
+      const confirmed = active.progress?.confirmed ?? []
+      if (confirmed.includes(id)) return
+      replace({ ...active, progress: { confirmed: [...confirmed, id] } })
+    },
+    [active, replace],
+  )
+
+  const unconfirmStage = useCallback(
+    (id: string) => {
+      if (!active) return
+      const confirmed = (active.progress?.confirmed ?? []).filter((entry) => entry !== id)
+      replace({ ...active, progress: { confirmed } })
+    },
+    [active, replace],
+  )
+
+  /** Rewrite the product from the builder's own description. */
+  const setBrief = useCallback(
+    (idea: string) => {
+      if (!active) return active
+      return regenerate(active, undefined, { idea })
+    },
+    [active, regenerate],
+  )
 
   const setActive = useCallback((id: string) => setActiveId(id), [])
   const setTheme = useCallback((t: Theme) => setThemeState(t), [])
@@ -449,6 +509,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       capture,
       clearCaptures,
       reset,
+    confirmed: active?.progress?.confirmed ?? [],
+    confirmStage,
+    unconfirmStage,
+    setBrief,
       toast,
       notify,
       overrides: active?.overrides ?? {},

@@ -1,4 +1,6 @@
 import { StepGuide } from '../components/StepGuide'
+import { StageConfirm } from '../components/StageConfirm'
+import { useStore } from '../lib/store'
 import { useState } from 'react'
 import type { Entity, Project } from '../types'
 import { Collapsible, NextPhase, PhaseHeader, useFileDownload } from '../components/ui'
@@ -6,6 +8,7 @@ import { Icon } from '../components/Icons'
 import { formatField } from '../lib/format'
 
 export function DataShapePage({ project }: { project: Project }) {
+  const { confirmed } = useStore()
   const data = project.data
   const download = useFileDownload()
   const [openEntity, setOpenEntity] = useState<string | null>(data.entities[0]?.id ?? null)
@@ -13,6 +16,7 @@ export function DataShapePage({ project }: { project: Project }) {
   return (
     <div className="lz-view">
       <StepGuide phase="data-shape" />
+      <StageConfirm phase="data-shape" />
       <PhaseHeader
         project={project}
         current="data-shape"
@@ -85,7 +89,16 @@ export function DataShapePage({ project }: { project: Project }) {
           <pre className="lz-code">{data.sql}</pre>
         </Collapsible>
 
-        <NextPhase to="design" label="Continue to Design" hint="The shape is fixed. Next: the tokens and shell that present it." />
+        <NextPhase
+          to="design"
+          label="Continue to Design"
+          disabled={!confirmed.includes('data-shape')}
+          hint={
+            confirmed.includes('data-shape')
+              ? 'The shape is fixed. Next: the tokens and shell that present it.'
+              : 'Mark Data Shape complete above to unlock Design.'
+          }
+        />
       </div>
     </div>
   )

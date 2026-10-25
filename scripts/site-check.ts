@@ -104,6 +104,7 @@ check('every page the toolkit covers is present and real', missing.length === 0,
 /* ---- links and images resolve ------------------------------------------- */
 
 const broken: string[] = []
+const clips: string[] = []
 let internal = 0
 for (const file of html) {
   const markup = readFileSync(file, 'utf8')
@@ -115,6 +116,12 @@ for (const file of html) {
     const pathOnly = raw.split('#')[0].split('?')[0]
     if (!pathOnly) continue
     if (pathOnly.includes('active_storage')) continue // an image served with an .html name
+    if (/\.(mp4|webm|mov)$/i.test(pathOnly)) {
+      // Teaser clips: binary the capture never downloads. adaptPage() swaps the
+      // player for a labelled panel, checked below rather than resolved here.
+      clips.push(`${relative(SITE, file)} → ${raw}`)
+      continue
+    }
     const target = normalize(join(dirname(file), decodeURIComponent(pathOnly)))
     const candidates = [target, `${target}.html`, join(target, 'index.html')]
     if (!candidates.some((candidate) => exists.has(candidate))) {
@@ -124,6 +131,21 @@ for (const file of html) {
 }
 
 check(`all ${internal} internal links and images resolve`, broken.length === 0, broken.slice(0, 8).join(' | '))
+
+/* ---- teaser videos are replaced, not left as dead players ---------------- */
+{
+  const players = clips.map((entry) => entry.split(' → ')[0])
+  const stillPlayer = [...new Set(players)].filter((page) => /<video\b/i.test(adaptPage(readFileSync(join(SITE, page), 'utf8'), page)))
+  check(
+    `${clips.length} teaser video${clips.length === 1 ? '' : 's'} replaced with a labelled panel`,
+    stillPlayer.length === 0,
+    stillPlayer.join(', '),
+  )
+  const noted = [...new Set(players)].filter((page) =>
+    /not part of the offline copy/.test(adaptPage(readFileSync(join(SITE, page), 'utf8'), page)),
+  )
+  check('every page that lost a video says so', noted.length === new Set(players).size, `${noted.length} of ${new Set(players).size}`)
+}
 
 /* ---- no absolute links that would leave the copy ------------------------ */
 

@@ -191,7 +191,7 @@ for two archetypes on every `npm run check`.
 npm run render-check   # SSR every view; verifies the export contract file by file
 npm run export-check   # writes generated components to disk and typechecks them (3 archetypes)
 npm run test           # unit tests: determinism, data integrity, tools, backend contract
-npm run walkthrough    # jsdom: the five phases, start to finish, with no user input
+npm run walkthrough    # jsdom: the five phases, each confirmed, start to finish
 npm run example-app    # builds the exported package as a real Vite + Tailwind app
 npm run smoke          # jsdom: routes, dialogs, token edits, real form input, breakpoints
 npm run qa             # 12 archetypes × 3 seeds: invariants + audit score

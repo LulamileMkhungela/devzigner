@@ -1,11 +1,14 @@
 import type { Project } from '../types'
 import { StepGuide } from '../components/StepGuide'
+import { StageConfirm } from '../components/StageConfirm'
+import { useStore } from '../lib/store'
 import { Collapsible, NextPhase, PhaseHeader, useFileDownload } from '../components/ui'
 import { Icon } from '../components/Icons'
 import { Link } from '../lib/router'
 import { tokenVars } from '../components/AppPreview'
 
 export function DesignPage({ project }: { project: Project }) {
+  const { confirmed } = useStore()
   const design = project.design
   const download = useFileDownload()
   const primary = design.colors.find((c) => c.role === 'primary') ?? design.colors[0]
@@ -18,6 +21,7 @@ export function DesignPage({ project }: { project: Project }) {
   return (
     <div className="lz-view">
       <StepGuide phase="design" />
+      <StageConfirm phase="design" />
       <PhaseHeader
         project={project}
         current="design"
@@ -196,7 +200,16 @@ export function DesignPage({ project }: { project: Project }) {
           <pre className="lz-code">{design.tokensCss}</pre>
         </Collapsible>
 
-        <NextPhase to="sections" label="Continue to Sections" hint="Tokens and shell locked. Next: the build order." />
+        <NextPhase
+          to="sections"
+          label="Continue to Sections"
+          disabled={!confirmed.includes('design')}
+          hint={
+            confirmed.includes('design')
+              ? 'Tokens and shell locked. Next: the build order.'
+              : 'Mark Design complete above to unlock Sections.'
+          }
+        />
       </div>
     </div>
   )

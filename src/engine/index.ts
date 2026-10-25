@@ -9,6 +9,7 @@ import { compileRoadmap } from './roadmap'
 import { compileAudit } from './audit'
 import { compileFlows } from './flows'
 import { applySystemOverrides, compileSystem } from './system'
+import { profileIdea } from './intake'
 
 export const DEFAULT_CURRENCY = 'ZAR'
 
@@ -62,16 +63,20 @@ export interface CompileOptions {
 
 export function compileProject(opts: CompileOptions = {}): Project {
   const idea = (opts.idea ?? '').trim()
+  // Read the description before anything is compiled: it decides the archetype
+  // and contributes a name. Explicit options still win — a recompile of an
+  // existing project must not silently become a different product.
+  const intake = profileIdea(idea)
   const seed = opts.seed ?? seedFrom(idea || 'lula-devzign')
-  const archetypeId = opts.archetypeId ?? 'marketplace'
+  const archetypeId = opts.archetypeId ?? (intake.archetypeId || 'marketplace')
   const pack = getPack(archetypeId)
   const genome = opts.genome ?? genomeFromSeed(seed)
   const moduleSeeds = opts.moduleSeeds ?? defaultModuleSeeds(seed, archetypeId)
 
   const nameRng = makeRng(hashString(`name:${seed}:${archetypeId}`))
-  const name = opts.nameOverride?.trim() || nameRng.pick(pack.names)
+  const name = opts.nameOverride?.trim() || (intake.name || nameRng.pick(pack.names))
 
-  const brief = compileBrief(pack, makeRng(moduleSeeds.brief), name, idea)
+  const brief = compileBrief(pack, makeRng(moduleSeeds.brief), name, idea, intake)
   const data = compileDataModel(pack, makeRng(moduleSeeds.data))
   const design = compileDesign(pack, makeRng(moduleSeeds.design), genome, name, opts.overrides ?? {})
   const sections = uniqueScreenAddresses(compileSections(pack, data.entities, makeRng(moduleSeeds.sections), opts.currency ?? DEFAULT_CURRENCY))

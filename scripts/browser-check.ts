@@ -117,6 +117,68 @@ for (const scenario of scenarios) {
   check(`${scenario.name} · renders the shell`, /Data Shape|Sections/i.test(text))
   check(`${scenario.name} · no console errors`, problems.length === 0, problems.slice(0, 2).join(' | '))
 
+  // A tick means the stage is done, so a freshly compiled product has none —
+  // artefacts exist, but nobody has reviewed them yet.
+  check(`${scenario.name} · no stage is ticked for free`, root.querySelectorAll('.lz-step.is-done').length === 0)
+
+  if (Object.keys(scenario.storage).length === 0) {
+    // The builder's own words are the first thing on the Product phase.
+    const brief = root.querySelector('textarea') as HTMLTextAreaElement | null
+    check('first visit · the brief field exists', Boolean(brief))
+    check(
+      'first visit · the brief field carries a placeholder',
+      Boolean(brief?.placeholder && brief.placeholder.length > 40),
+      brief?.placeholder?.slice(0, 48),
+    )
+    check('first visit · the brief field is labelled for assistive tech', Boolean(root.querySelector('label .sr-only')))
+
+    check('first visit · nothing is marked complete yet', root.querySelectorAll('.lz-stage-done').length === 0)
+
+    const confirm = [...root.querySelectorAll('button')].find((b) => /mark stage complete/i.test(b.textContent ?? ''))
+    check('first visit · the Product stage can be completed', Boolean(confirm) && !confirm!.disabled)
+    ;(confirm as HTMLElement | undefined)?.click()
+    await new Promise((resolve) => setTimeout(resolve, 250))
+    const done = root.querySelector('.lz-stage-done')
+    check('confirming a stage marks it complete', Boolean(done), done?.textContent?.replace(/\s+/g, ' ').slice(0, 48))
+    check('the completed stage points at the next one', /Next:\s*Data Shape/.test(done?.textContent ?? ''))
+
+    const reopened = [...root.querySelectorAll('button')].find((b) => /reopen/i.test(b.textContent ?? ''))
+    check('a completed stage can be reopened', Boolean(reopened))
+    ;(reopened as HTMLElement | undefined)?.click()
+    await new Promise((resolve) => setTimeout(resolve, 250))
+    check('reopening clears the completion', root.querySelectorAll('.lz-stage-done').length === 0)
+  }
+
+  if (Object.keys(scenario.storage).length === 0) {
+    // Writing your own description is the point of the field: it must rebuild
+    // the product, not decorate the starter.
+    const area = root.querySelector('textarea') as HTMLTextAreaElement
+    const setValue = Object.getOwnPropertyDescriptor(w.HTMLTextAreaElement.prototype, 'value')!.set!
+    setValue.call(area, 'A tool for scheduling volunteer shifts at a food bank')
+    area.dispatchEvent(new w.Event('input', { bubbles: true }))
+    await new Promise((resolve) => setTimeout(resolve, 200))
+
+    const readBack = root.querySelector('.lz-compose-read')?.textContent ?? ''
+    check('the composer reads the description back before compiling', /peopleops/i.test(readBack) && /volunteer shifts/i.test(readBack), readBack.slice(0, 80))
+
+    const build = [...root.querySelectorAll('button')].find((b) => /build from this/i.test(b.textContent ?? ''))
+    check('a rewritten description can be rebuilt', Boolean(build) && !build!.disabled)
+    ;(build as HTMLElement | undefined)?.click()
+    await new Promise((resolve) => setTimeout(resolve, 600))
+
+    const rebuilt = (root.textContent ?? '').replace(/\s+/g, ' ').trim()
+    const saved = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]
+    check('the description is stored verbatim', saved?.idea === 'A tool for scheduling volunteer shifts at a food bank', saved?.idea)
+    check('and it decided the product', saved?.archetypeId === 'peopleops', saved?.archetypeId)
+    check('the name follows the description', /^Shift /.test(saved?.name ?? ''), saved?.name)
+    check('the rebuild clears the ticks it had earned', saved?.progress?.confirmed?.length === 0)
+    check(
+      'the Product page shows the rebuilt product',
+      rebuilt.includes(saved?.name ?? '\u0000') && rebuilt.includes(saved?.archetypeLabel ?? '\u0000'),
+      `${saved?.name} / ${saved?.archetypeLabel}`,
+    )
+  }
+
   w.close()
 }
 

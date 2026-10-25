@@ -1,4 +1,6 @@
 import { StepGuide } from '../components/StepGuide'
+import { BriefComposer } from '../components/BriefComposer'
+import { StageConfirm } from '../components/StageConfirm'
 import { useState } from 'react'
 import type { Project } from '../types'
 import { useStore } from '../lib/store'
@@ -9,7 +11,7 @@ import { buildPackage } from '../export/package'
 import { seedPhrase } from '../engine'
 
 export function ProductPage({ project }: { project: Project }) {
-  const { regenerate, notify } = useStore()
+  const { regenerate, notify, confirmed } = useStore()
   const download = useFileDownload()
   const [busy, setBusy] = useState(false)
   const brief = project.brief
@@ -44,6 +46,8 @@ export function ProductPage({ project }: { project: Project }) {
           </>
         }
       />
+
+      <BriefComposer />
 
       <StepGuide phase="product" />
 
@@ -215,8 +219,18 @@ export function ProductPage({ project }: { project: Project }) {
           <Link to="flows" className="lz-btn small">Open flows <Icon name="ArrowRight" size={13} /></Link>
         </div>
 
-        <NextPhase to="data-shape" label="Continue to Data Shape" hint="The brief is compiled. Next: the records it needs." />
+        <NextPhase
+          to="data-shape"
+          label="Continue to Data Shape"
+          hint={
+            confirmed.includes('product')
+              ? 'The brief is compiled. Next: the records it needs.'
+              : 'Mark Product complete above to unlock Data Shape.'
+          }
+          disabled={!confirmed.includes('product')}
+        />
       </div>
+      <StageConfirm phase="product" />
     </div>
   )
 }

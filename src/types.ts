@@ -440,6 +440,12 @@ export interface Project extends CompileInput {
   system: PrototypeSystem
   audit: Audit
   engineNotes: string[]
+  /**
+   * Stages the builder has confirmed. Artefacts compiling is not the same as the
+   * person having reviewed them, so a tick is earned by confirming a stage whose
+   * artefacts are actually complete — see `phaseReady` in lib/progress.
+   */
+  progress?: { confirmed: string[] }
 }
 
 export interface ArchetypeSummary {

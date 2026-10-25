@@ -1,4 +1,5 @@
 import { StepGuide } from '../components/StepGuide'
+import { StageConfirm } from '../components/StageConfirm'
 import { useMemo, useState } from 'react'
 import type { Project } from '../types'
 import { useStore } from '../lib/store'
@@ -50,6 +51,7 @@ export function ExportPage({ project }: { project: Project }) {
   return (
     <div className="lz-view">
       <StepGuide phase="export" />
+      <StageConfirm phase="export" />
       <PhaseHeader
         project={project}
         current="export"

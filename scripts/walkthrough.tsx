@@ -2,9 +2,10 @@
  * Runs the Design OS process from start to finish, through the real UI.
  *
  * Product Planning → Data Shape → Design System → Section Design → Export.
- * The point is to prove the promise "zero input, complete on first load": the
- * walkthrough never types a product idea, never answers a question, and still
- * ends with a finished handoff package.
+ * The point is to prove the promise "zero input, every artefact on first load":
+ * the walkthrough never types a product idea, never answers a question, and
+ * still ends with a finished handoff package — while every tick in the phase nav
+ * is one it clicked itself, never one the compiler handed out.
  */
 import { JSDOM } from 'jsdom'
 
@@ -79,7 +80,7 @@ const project = (await waitFor(stored)) ?? stored()
 
 step('first load compiles a product with no input', Boolean(project?.name) && project.sections.length >= 5, project?.name)
 step(
-  'all five phases are complete on first paint',
+  'every artefact is compiled on first paint',
   Boolean(project?.brief?.elevator) &&
     project.data.entities.length >= 4 &&
     project.sections.every((s: { screens: unknown[] }) => s.screens.length >= 2) &&
@@ -91,11 +92,42 @@ step(
 
 w.location.hash = '#/'
 await wait()
+
+const ticked = () => $$('.lz-step.is-done').length
+step('no stage is ticked before the builder confirms one', ticked() === 0, `${ticked()} ticked`)
+step(
+  'the product starts with nothing confirmed',
+  (project?.progress?.confirmed ?? []).length === 0,
+  JSON.stringify(project?.progress?.confirmed ?? []),
+)
+
+/** Complete the stage on screen the way a builder does: review, then tick. */
+async function completeStage(label: string) {
+  const button = byText('button', 'Mark stage complete') as HTMLButtonElement | undefined
+  step(`${label} offers its completion control`, Boolean(button), button?.disabled ? 'disabled' : 'enabled')
+  if (!button || button.disabled) return false
+  click(button)
+  await wait(160)
+  return true
+}
 const productHtml = text()
 step('Product Planning shows the vision', productHtml.includes('Value') || productHtml.includes('problem'), '')
 step('Product Planning shows the roadmap', productHtml.includes('Roadmap') || productHtml.includes('Phase'), '')
+// The field that makes the product the builder's own: paste a description,
+// watch the compiler read it back, rebuild — and earn the ticks again.
+const briefField = $('textarea') as HTMLTextAreaElement | undefined
+step('the product page opens on a description field', Boolean(briefField))
+step('the field explains itself with a placeholder', (briefField?.placeholder ?? '').length > 40, briefField?.placeholder?.slice(0, 44))
+const readBack = $('.lz-compose-read')?.textContent ?? ''
+step('the composer predicts what the compiler will read', readBack.length === 0 || readBack.length > 10, readBack.slice(0, 60))
+
+const toDataEarly = byText('.lz-btn.primary, .lz-btn', 'Continue to Data Shape') as HTMLButtonElement | undefined
+step('Data Shape stays locked until Product is complete', Boolean(toDataEarly?.disabled))
+
+await completeStage('Product')
+step('completing Product shows it as done', Boolean($('.lz-stage-done')))
 const toData = byText('.lz-btn.primary, .lz-btn', 'Continue to Data Shape')
-step('Product Planning hands off to Data Shape', Boolean(toData))
+step('Product Planning hands off to Data Shape', Boolean(toData) && !(toData as HTMLButtonElement).disabled)
 
 /* ---- 2. Data Shape ------------------------------------------------------ */
 
@@ -105,6 +137,7 @@ step('Data Shape route', w.location.hash === '#/data-shape', w.location.hash)
 const entityNames = project.data.entities.map((e: { name: string }) => e.name)
 step('every entity is rendered', entityNames.every((name: string) => text().includes(name)), entityNames.join(', '))
 step('the schema is generated', text().includes('schema.sql') || text().includes('create table'), '')
+await completeStage('Data Shape')
 
 /* ---- 3. Design System --------------------------------------------------- */
 
@@ -125,12 +158,14 @@ step(
 step('typography renders', project.design.typography.every((t: { family: string }) => text().includes(t.family)))
 const shellLink = byText('a, button', 'View Shell Design') ?? byText('a, button', 'Shell')
 step('shell design is reachable', Boolean(shellLink))
+await completeStage('Design')
 
 /* ---- 4. Section Design -------------------------------------------------- */
 
 w.location.hash = '#/sections'
 await wait(120)
 step('Sections route lists the build order', entityNames.length > 0 && project.sections.every((s: { name: string }) => text().includes(s.name)))
+await completeStage('Sections')
 
 const first = project.sections[0]
 w.location.hash = `#/sections/${first.id}`
@@ -161,6 +196,15 @@ w.location.hash = '#/export'
 await wait(160)
 const exportHtml = text()
 step('Export route', w.location.hash === '#/export')
+step('four confirmed stages show four ticks', ticked() === 4, `${ticked()} ticked`)
+step('Export itself is not complete yet', !$('.lz-stage-done'))
+await completeStage('Export')
+const confirmedNow = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]?.progress?.confirmed ?? []
+step(
+  'every stage is ticked once all five are confirmed',
+  confirmedNow.length === 5 && Boolean($('.lz-stage-done')),
+  confirmedNow.join(', '),
+)
 step('readiness checklist has no failures', !$('.lz-checkrow-ic.fail'))
 step('audit renders', exportHtml.includes('Audit') || exportHtml.includes('audit'))
 

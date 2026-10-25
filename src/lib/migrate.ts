@@ -92,6 +92,13 @@ export function migrateProject(value: unknown): Project | null {
     if (typeof record.id === 'string') rebuilt.id = record.id
     if (typeof record.createdAt === 'number') rebuilt.createdAt = record.createdAt
 
+    // Confirmations are the builder's own judgement; a rebuild must not hand
+    // them back for free, nor take earned ticks away.
+    const confirmed = Array.isArray(record.progress?.confirmed)
+      ? record.progress!.confirmed.filter((id): id is string => typeof id === 'string')
+      : []
+    rebuilt.progress = { confirmed }
+
     // Hand-written flows are the one thing a rebuild cannot invent.
     const custom = Array.isArray(record.flows) ? (record.flows as UserFlow[]).filter((flow) => flow?.custom) : []
     if (custom.length) rebuilt.flows = [...rebuilt.flows, ...custom]

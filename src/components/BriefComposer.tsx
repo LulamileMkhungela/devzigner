@@ -1,0 +1,145 @@
+/**
+ * Where the builder says what they want built.
+ *
+ * This is the first action in the product, and it is deliberately a plain
+ * textarea rather than a wizard: Design OS's first command asks what the product
+ * is for and who it is for, in prose. The placeholder shows the shape of a good
+ * answer, the checklist says what a complete answer contains, and the reader
+ * underneath says what the compiler understood *before* anything is rebuilt —
+ * so nobody has to guess what the field does.
+ *
+ * Nothing here calls a model. The compiler reads the text by rules, which is why
+ * the answer can be edited and rebuilt as often as you like.
+ */
+import { useMemo, useState } from 'react'
+import { useStore } from '../lib/store'
+import { describeIntake, profileIdea } from '../engine/intake'
+import { Icon } from './Icons'
+
+const EXAMPLES = [
+  'A booking tool for mobile dog groomers: owners pick a slot, groomers see the day route and take payment on arrival.',
+  'A clinic front desk that registers patients, books appointments and keeps each visit’s notes and invoice in one place.',
+  'A marketplace where township artisans list products, buyers pay into escrow, and disputes pause the payout until resolved.',
+  'A tool for scheduling volunteer shifts at a food bank: staff publish the roster, volunteers swap shifts, hours are logged.',
+]
+
+const GUIDANCE = [
+  { do: 'Name the problem', detail: 'what is broken or missing today, and for whom' },
+  { do: 'Say who uses it', detail: 'the one person whose day it changes' },
+  { do: 'State the must-haves', detail: 'the two or three things it has to do to count as working' },
+  { do: 'Mention constraints', detail: 'money, devices, regulation, integrations — only if they change the design' },
+]
+
+export function BriefComposer() {
+  const { active, setBrief, notify } = useStore()
+  const [value, setValue] = useState('')
+  const [busy, setBusy] = useState(false)
+
+  const trimmed = value.trim()
+  const words = trimmed ? trimmed.split(/\s+/).length : 0
+  const ready = trimmed.length >= 24
+  const preview = useMemo(() => profileIdea(trimmed), [trimmed])
+  const current = useMemo(() => profileIdea(active.idea), [active.idea])
+
+  const build = () => {
+    if (!ready || busy) return
+    setBusy(true)
+    try {
+      setBrief(trimmed)
+      notify('Product rebuilt from your description — every stage needs confirming again')
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <section className="lz-card lz-compose" aria-labelledby="compose-title">
+      <div className="lz-compose-head">
+        <div>
+          <p className="lz-compose-kicker">Step 1 · your description</p>
+          <h2 id="compose-title">What do you want built?</h2>
+        </div>
+        <span className="lz-compose-count mono">{words} words</span>
+      </div>
+
+      <p className="lz-compose-lede">
+        Write the problem in your own words — what is broken today, who it is for, and what the solution has to do.
+        Two or three sentences is enough. The compiler turns it into the brief, the data shape, the design system and
+        the sections below, and you can rewrite it as often as you like.
+      </p>
+
+      <p className="lz-compose-current">
+        Currently building <b>{active.name}</b>
+        <span> · {active.archetypeLabel}</span>
+        {active.idea && <span className="lz-compose-current-idea"> — “{active.idea}”</span>}
+      </p>
+
+      <label className="lz-compose-field">
+        <span className="sr-only">Describe the product you want built</span>
+        <textarea
+          className="lz-input"
+          rows={4}
+          value={value}
+          placeholder="e.g. A booking tool for mobile dog groomers — owners choose a slot, the groomer sees the day's route, payment is taken on arrival. It has to work on a phone, offline, and show today's takings."
+          onChange={(event) => setValue(event.target.value)}
+          onKeyDown={(event) => {
+            if ((event.metaKey || event.ctrlKey) && event.key === 'Enter') build()
+          }}
+        />
+      </label>
+
+      <div className="lz-compose-foot">
+        <ul className="lz-compose-guide">
+          {GUIDANCE.map((item) => (
+            <li key={item.do}>
+              <b>{item.do}</b> — {item.detail}
+            </li>
+          ))}
+        </ul>
+        <button
+          className="lz-btn primary"
+          type="button"
+          onClick={build}
+          disabled={!ready || busy}
+          title="Build from this description (⌘↵)"
+        >
+          <Icon name="Sparkles" size={13} />
+          Build from this
+        </button>
+      </div>
+
+      {ready ? (
+        <p className="lz-compose-read">
+          <Icon name="Sparkles" size={12} /> The compiler will read this as: <b>{describeIntake(preview)}</b>
+          {!preview.archetypeId && ' — add what kind of product it is and who it serves.'}
+        </p>
+      ) : (
+        <p className="lz-compose-hint">
+          <Icon name="AlertTriangle" size={12} /> Write at least a sentence — what it is, who it is for, what it must do.
+        </p>
+      )}
+
+      <div className="lz-compose-examples">
+        <span>Or start from an example:</span>
+        {EXAMPLES.map((example) => (
+          <button
+            key={example}
+            type="button"
+            className="lz-compose-example"
+            onClick={() => setValue(example)}
+            title={example}
+          >
+            {example.split(':')[0].replace(/^(A|An)\s+/i, '')}
+          </button>
+        ))}
+      </div>
+
+      {current.used && (
+        <p className="lz-compose-note">
+          The product below came from a description the compiler read as {describeIntake(current).replace(/^reads as a /, '')}.
+          Rewriting the field above replaces it — the name, the data shape and the sections are all derived again.
+        </p>
+      )}
+    </section>
+  )
+}

@@ -11,11 +11,13 @@ import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { ARCHETYPES, compileProject } from '../src/engine'
+import { describeIntake, profileIdea } from '../src/engine/intake'
 import { BLOCK_COMPONENT_NAMES } from '../src/engine/system'
 import { buildPackage } from '../src/export/package'
 import { TOOLS } from '../src/tools'
 import { FRAMEWORKS } from '../src/export/frameworks'
 import { migrateProject, migrateProjects } from '../src/lib/migrate'
+import { PHASES, completedPhases, confirmedPhases, isStageDone, nextStage, phaseBlockers, phaseReady } from '../src/lib/progress'
 
 const input = { archetypeId: 'clinic', seed: 4242, now: 1_760_000_000_000 } as const
 
@@ -287,4 +289,118 @@ test('a project saved by an older version is rebuilt, not trusted', () => {
   assert.equal(migrateProject({ id: 'no-seed' }), null)
   assert.equal(migrateProject('nope'), null)
   assert.deepEqual(migrateProjects([null, 42, { id: 'x' }, legacy]).map((project) => project.id), ['legacy-1'])
+})
+
+/* -------------------------------------------------------------------------
+   a tick means the stage is done
+   ---------------------------------------------------------------------- */
+
+test('a freshly compiled product has no completed stage', () => {
+  const project = compileProject(input as never)
+  const captured = project.sections.flatMap((s) => s.screens.map((x) => x.id))
+  assert.deepEqual(confirmedPhases(project), [], 'nothing is confirmed on a new project')
+  for (const phase of PHASES) {
+    assert.equal(isStageDone(project, captured, phase.id), false, `${phase.id} must not be ticked`)
+  }
+  assert.equal(Object.values(completedPhases(project, captured)).filter(Boolean).length, 0)
+})
+
+test('complete artefacts are not the same as a completed stage', () => {
+  const project = compileProject(input as never)
+  const captured = project.sections.flatMap((s) => s.screens.map((x) => x.id))
+  for (const phase of PHASES) {
+    assert.equal(phaseReady(project, captured, phase.id), true, `${phase.id} artefacts should be complete`)
+    assert.equal(phaseBlockers(project, captured, phase.id).length, 0)
+    assert.equal(isStageDone(project, captured, phase.id), false, `${phase.id} still needs confirming`)
+  }
+})
+
+test('confirming a stage ticks exactly that stage, in order', () => {
+  const project = compileProject(input as never)
+  const captured = project.sections.flatMap((s) => s.screens.map((x) => x.id))
+
+  assert.equal(nextStage(project, captured).id, 'product')
+
+  const confirmed = { ...project, progress: { confirmed: ['product'] } }
+  assert.equal(isStageDone(confirmed, captured, 'product'), true)
+  assert.equal(isStageDone(confirmed, captured, 'data-shape'), false)
+  assert.equal(nextStage(confirmed, captured).id, 'data-shape')
+  assert.equal(Object.values(completedPhases(confirmed, captured)).filter(Boolean).length, 1)
+
+  // A confirmation for a stage whose artefacts are gone does not count.
+  const broken = { ...confirmed, progress: { confirmed: ['data-shape'] }, data: { ...project.data, entities: [] } }
+  assert.equal(isStageDone(broken, captured, 'data-shape'), false, 'an emptied stage loses its tick')
+  assert.deepEqual(phaseBlockers(broken, captured, 'data-shape'), ['no entities yet'])
+})
+
+test('migration keeps earned ticks and never invents new ones', () => {
+  const legacy = {
+    id: 'legacy-2',
+    idea: 'a clinic front desk',
+    seed: 4242,
+    archetypeId: 'clinic',
+    createdAt: 1_700_000_000_000,
+    progress: { confirmed: ['product', 42, null] },
+  }
+  const migrated = migrateProject(legacy)
+  assert.ok(migrated)
+  assert.deepEqual(migrated!.progress?.confirmed, ['product'], 'string confirmations survive, junk is dropped')
+
+  const withoutProgress = migrateProject({ ...legacy, progress: undefined })
+  assert.deepEqual(withoutProgress!.progress?.confirmed, [], 'a record with no confirmations gets none')
+})
+
+/* -------------------------------------------------------------------------
+   the builder's own description drives the build
+   ---------------------------------------------------------------------- */
+
+test('the description decides the archetype', () => {
+  const cases: [string, string][] = [
+    ['A booking tool for mobile dog groomers: owners pick a slot, groomers see the day route.', 'clinic'],
+    ['A clinic front desk that registers patients and keeps each visit notes in one place.', 'clinic'],
+    ['A marketplace where township artisans list products and buyers pay into escrow.', 'marketplace'],
+    ['A tool for scheduling volunteer shifts at a food bank.', 'peopleops'],
+    ['A deliveries tracker for a courier company with drivers on the road all day.', 'logistics'],
+    ['A conference ticketing site for a design events company.', 'events'],
+    ['A learner portal where students follow courses and teachers set assignments.', 'learning'],
+  ]
+  for (const [idea, expected] of cases) {
+    const intake = profileIdea(idea)
+    assert.equal(intake.archetypeId, expected, `${idea} → ${intake.archetypeId}`)
+    assert.equal(compileProject({ idea }).archetypeId, expected, 'the compiler follows the reading')
+  }
+})
+
+test('a product named from the description replaces the stock name', () => {
+  const idea = 'A booking tool for mobile dog groomers: owners pick a slot.'
+  const project = compileProject({ idea })
+  assert.match(project.name, /^Groomer /, `read the name as ${project.name}`)
+  assert.notEqual(project.name, compileProject({ archetypeId: 'clinic', seed: 4242 }).name)
+  assert.equal(project.id.startsWith('groomer-'), true)
+})
+
+test('the brief quotes the description instead of hiding it in a footnote', () => {
+  const idea = 'A booking tool for mobile dog groomers: owners pick a slot, groomers see the day route.'
+  const brief = compileProject({ idea }).brief
+  assert.ok(brief.summary.startsWith('A booking tool for mobile dog groomers'), brief.summary.slice(0, 60))
+  assert.match(brief.elevator, /asked for in these words/)
+  assert.ok(brief.problems[0].detail.includes("In this product's own words"), 'the problem carries the quote')
+  assert.equal(brief.personas[0].segment, 'mobile dog groomers')
+})
+
+test('other archetypes keep their own briefs, untouched', () => {
+  // A pack's objects are shared module state; a project must not mutate them.
+  const before = JSON.stringify(compileProject({ archetypeId: 'clinic', seed: 7 }).brief.problems)
+  compileProject({ idea: 'A clinic front desk that registers patients.' })
+  const after = JSON.stringify(compileProject({ archetypeId: 'clinic', seed: 7 }).brief.problems)
+  assert.equal(before, after)
+})
+
+test('an unreadable description still compiles, and says so', () => {
+  const intake = profileIdea('Something for my team')
+  assert.equal(intake.archetypeId, '')
+  assert.match(describeIntake(intake), /no category words were recognised/)
+  const project = compileProject({ idea: 'Something for my team' })
+  assert.ok(project.sections.length > 0, 'the starter shape is still built')
+  assert.equal(profileIdea('').used, false)
 })

@@ -1,6 +1,7 @@
 import type { Brief, Persona } from '../types'
 import type { Pack } from './packTypes'
 import type { Rng } from './rng'
+import type { Intake } from './intake'
 
 const RISK_TEMPLATES: { risk: string; mitigation: string }[] = [
   {
@@ -71,11 +72,23 @@ function lowerFirst(text: string): string {
   return text.charAt(0).toLowerCase() + text.slice(1)
 }
 
-export function compileBrief(pack: Pack, rng: Rng, name: string, idea: string): Brief {
+export function compileBrief(pack: Pack, rng: Rng, name: string, idea: string, intake?: Intake): Brief {
+  const described = intake?.used ? intake : undefined
+
   const personas: Persona[] = pack.personas.map((p) => ({
     ...p,
     quoteTruth: 'Illustrative persona, synthesised by the compiler. Validate with three real interviews before locking scope.',
   }))
+
+  // The builder's own words come first: the brief is about their product, not
+  // the archetype it was filed under.
+  if (described?.actor) {
+    personas[0] = {
+      ...personas[0],
+      segment: described.actor,
+      quote: `“${described.sentence.replace(/[“”"]/g, '').replace(/\.$/, '')}” — the description this brief was compiled from.`,
+    }
+  }
 
   const jobs = [
     ...(pack.sections[0]?.extraJobs ?? []),
@@ -96,21 +109,36 @@ export function compileBrief(pack: Pack, rng: Rng, name: string, idea: string): 
 
   const principles = [...pack.principles, ...rng.picks(PRINCIPLE_POOL, 2)]
 
-  const elevator =
-    `${name} is a ${pack.category.toLowerCase()} workspace. ${pack.blurb} ` +
-    `It exists because of one expensive failure: ${lowerFirst(pack.problems[0].title)}. ` +
-    `The cost is ${lowerFirst(pack.problems[0].cost)}.`
+  const elevator = described
+    ? `${name} is a ${pack.category.toLowerCase()} workspace built for ${described.actor || 'the people in the description'}. ` +
+      `It was asked for in these words: ${described.sentence.replace(/\.$/, '')}. ` +
+      `The archetype that fits it is ${pack.label}, so the expensive failure to design against is ${lowerFirst(pack.problems[0].title)} — ` +
+      `and the cost of leaving it unsolved is ${lowerFirst(pack.problems[0].cost)}.`
+    : `${name} is a ${pack.category.toLowerCase()} workspace. ${pack.blurb} ` +
+      `It exists because of one expensive failure: ${lowerFirst(pack.problems[0].title)}. ` +
+      `The cost is ${lowerFirst(pack.problems[0].cost)}.`
 
   return {
     name,
     category: pack.category,
     tagline: pack.taglines[rng.int(0, pack.taglines.length - 1)].replace('{object}', pack.objects[0]),
     summary:
+      (described ? `${described.sentence} ` : '') +
       `${pack.blurb} ${name} keeps the work, the money and the exceptions in one traceable surface, ` +
       `so the answer to "what needs attention today" takes one screen instead of five tools.` +
-      (idea.trim() ? ` Seed direction: ${idea.trim().slice(0, 180)}` : ''),
+      (idea.trim() && !described ? ` Seed direction: ${idea.trim().slice(0, 180)}` : ''),
     elevator,
-    problems: pack.problems,
+    // Copy, never the pack's own objects: a brief is per project.
+    problems: described
+      ? pack.problems.map((problem, index) =>
+          index === 0
+            ? {
+                ...problem,
+                detail: `${problem.detail} In this product's own words: ${described.sentence.replace(/\.$/, '')}.`,
+              }
+            : { ...problem },
+        )
+      : pack.problems.map((problem) => ({ ...problem })),
     personas,
     jobs,
     metrics: pack.metrics,

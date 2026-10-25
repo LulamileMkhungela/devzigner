@@ -73,6 +73,21 @@ export function blockedPage(path: string): string {
 }
 
 /** Make a captured page offline and point it at the workspace. */
+/**
+ * Teaser clips are megabytes of binary that a text capture never picks up, and
+ * committing them would bloat the repo. Swap each player for the same 16:9
+ * panel with a note, so the page keeps its shape and says what is missing
+ * instead of showing a dead control.
+ */
+export function replaceVideos(html: string): string {
+  const note = (src: string) =>
+    `<div role="img" aria-label="Teaser video (${src}) is not included in the offline copy" ` +
+    `style="aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;text-align:center;` +
+    `padding:24px;background:#111;color:#b9b2a8;font:500 13px/1.6 system-ui,-apple-system,'Segoe UI',sans-serif">` +
+    `Teaser video — not part of the offline copy</div>`
+  return html.replace(/<video\b[^>]*?\bsrc="([^"]*)"[^>]*>[\s\S]*?<\/video>/g, (_m, src: string) => note(src))
+}
+
 export function adaptPage(html: string, path: string): string {
   if (isBlocked(html)) return blockedPage(path)
 
@@ -82,6 +97,8 @@ export function adaptPage(html: string, path: string): string {
     // neither can work offline, and both cost a failed request on every page.
     .replace(/<script[^>]+src="[^"]*plausible\.io[^"]*"[^>]*><\/script>/g, '')
     .replace(/<script[^>]+src="[^"]*(?:email-decode|challenge-platform)[^"]*"[^>]*><\/script>/g, '')
+
+  out = replaceVideos(out)
 
   if (TOOL_PAGE.test(path)) {
     out = out.replace(

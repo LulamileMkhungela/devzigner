@@ -1,5 +1,6 @@
 import type { Project } from '../types'
 import { StepGuide } from '../components/StepGuide'
+import { StageConfirm } from '../components/StageConfirm'
 import { useStore } from '../lib/store'
 import { NextPhase, PhaseHeader, ProgressDots, WarningBanner } from '../components/ui'
 import { Icon } from '../components/Icons'
@@ -7,13 +8,14 @@ import { Link } from '../lib/router'
 import { completedPhases, sectionProgress, sectionStats } from '../lib/progress'
 
 export function SectionsPage({ project }: { project: Project }) {
-  const { captures } = useStore()
+  const { captures, confirmed } = useStore()
   const stats = sectionStats(project, captures)
   const done = completedPhases(project, captures)
 
   return (
     <div className="lz-view">
       <StepGuide phase="sections" />
+      <StageConfirm phase="sections" />
       <PhaseHeader
         project={project}
         current="sections"
@@ -77,11 +79,13 @@ export function SectionsPage({ project }: { project: Project }) {
           <NextPhase
             to="export"
             label="Continue to Export"
-            disabled={!stats.all}
+            disabled={!stats.all || !confirmed.includes('sections')}
             hint={
-              stats.all
-                ? 'All sections are complete. Build the handoff package.'
-                : 'Capture the remaining screenshots to unlock export.'
+              !stats.all
+                ? 'Capture the remaining screenshots to unlock export.'
+                : confirmed.includes('sections')
+                  ? 'All sections are complete. Build the handoff package.'
+                  : 'Mark Sections complete above to unlock Export.'
             }
           />
           {!stats.all && (

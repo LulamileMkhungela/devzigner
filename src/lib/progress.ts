@@ -45,7 +45,12 @@ export function sectionStats(project: Project, captured: string[]) {
   return { done, total: project.sections.length, all: done === project.sections.length }
 }
 
-export function phaseComplete(project: Project, captured: string[], phaseId: string): boolean {
+/**
+ * Artefacts only: is there enough for the stage to be reviewable?
+ * This is what the readiness checklist and the confirm button's enabled state
+ * ask. It is not what draws the tick.
+ */
+export function phaseReady(project: Project, captured: string[], phaseId: string): boolean {
   switch (phaseId) {
     case 'product':
       return Boolean(project.brief.summary && project.roadmap.phases.length)
@@ -62,8 +67,57 @@ export function phaseComplete(project: Project, captured: string[], phaseId: str
   }
 }
 
+/** What still stands between the artefacts and a stage the builder can confirm. */
+export function phaseBlockers(project: Project, captured: string[], phaseId: string): string[] {
+  const stats = sectionStats(project, captured)
+  switch (phaseId) {
+    case 'product':
+      return [
+        project.brief.summary ? '' : 'the brief needs a summary',
+        project.roadmap.phases.length ? '' : 'the roadmap needs at least one milestone',
+      ].filter(Boolean)
+    case 'data-shape':
+      return [
+        project.data.entities.length ? '' : 'no entities yet',
+        project.data.relationships.length ? '' : 'no relationships yet',
+      ].filter(Boolean)
+    case 'design':
+      return [
+        project.design.colors.length >= 3 ? '' : 'fewer than three colour roles',
+        project.design.typography.length >= 3 ? '' : 'fewer than three type roles',
+        project.design.layout.nav.length ? '' : 'the shell has no navigation',
+      ].filter(Boolean)
+    case 'sections': {
+      const open = stats.total - stats.done
+      return open === 0 ? [] : [`${open} of ${stats.total} sections still have steps open`]
+    }
+    case 'export': {
+      const blockers = phaseBlockers(project, captured, 'sections')
+      const fails = project.audit.checks.filter((check) => check.status === 'fail').length
+      if (fails) blockers.push(`${fails} audit check${fails === 1 ? '' : 's'} failing`)
+      return blockers
+    }
+    default:
+      return []
+  }
+}
+
+/** Ticks the builder has actually earned: artefacts complete *and* confirmed. */
+export function confirmedPhases(project: Project): string[] {
+  return project.progress?.confirmed ?? []
+}
+
+export function isStageDone(project: Project, captured: string[], phaseId: string): boolean {
+  return phaseReady(project, captured, phaseId) && confirmedPhases(project).includes(phaseId)
+}
+
 export function completedPhases(project: Project, captured: string[]): Record<string, boolean> {
-  return Object.fromEntries(PHASES.map((p) => [p.id, phaseComplete(project, captured, p.id)]))
+  return Object.fromEntries(PHASES.map((p) => [p.id, isStageDone(project, captured, p.id)]))
+}
+
+/** The first stage that is not confirmed yet — what the shell points at next. */
+export function nextStage(project: Project, captured: string[]): PhaseDef {
+  return PHASES.find((phase) => !isStageDone(project, captured, phase.id)) ?? PHASES[PHASES.length - 1]
 }
 
 /** Which artefacts exist, used by the Export readiness checklist. */
@@ -77,17 +131,17 @@ export function readiness(project: Project, captured: string[]) {
     {
       label: 'Product brief',
       detail: `${project.brief.problems.length} problems · ${project.brief.personas.length} personas · ${project.brief.metrics.length} success measures`,
-      state: phaseComplete(project, captured, 'product') ? 'pass' : 'fail',
+      state: phaseReady(project, captured, 'product') ? 'pass' : 'fail',
     },
     {
       label: 'Data shape',
       detail: `${project.data.entities.length} entities · ${project.data.relationships.length} relationships · schema.sql`,
-      state: phaseComplete(project, captured, 'data-shape') ? 'pass' : 'fail',
+      state: phaseReady(project, captured, 'data-shape') ? 'pass' : 'fail',
     },
     {
       label: 'Design tokens & shell',
       detail: `${project.design.colors.length} colour roles · ${project.design.typography.length} type roles · ${project.design.layout.shell} shell`,
-      state: phaseComplete(project, captured, 'design') ? 'pass' : 'fail',
+      state: phaseReady(project, captured, 'design') ? 'pass' : 'fail',
     },
     {
       label: `${project.sections.length} sections specified`,

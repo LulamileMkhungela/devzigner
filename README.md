@@ -302,12 +302,16 @@ npm run snapshot       # every page as one static HTML file — no JavaScript at
 
 There is no backend, no database and no network call at runtime. Projects are stored in `localStorage` (with automatic pruning if the quota is reached). Clearing site data clears projects; use **Export → Download package** to keep anything you care about.
 
-The first load compiles the starter product (marketplace, seed `112233`) and captures its screens, so all five phases are complete before you touch anything. The **New product** dialog is optional: one line of description, or none at all.
+The first load compiles the starter product (marketplace, seed `112233`) and captures its screens, so every *artefact* is on screen before you touch anything. There is no "new product" dialog: the Product phase opens on a description field with a placeholder and the four things a complete answer contains, and the compiler reads what you write — the archetype, the name, the brief's problem statement and the persona's segment all come from your words. Underneath the field it says what it will read before you commit, and rewriting it rebuilds the product and clears the ticks.
+
+A tick is earned, not compiled. Artefacts can be complete while a stage is still open; each phase ends with **Mark stage complete**, which stays disabled and lists what is missing until the stage's own artefacts are there. The next phase's button stays locked until the stage before it is confirmed, and completed stages can be reopened.
 
 That claim is executed, not asserted. `npm run walkthrough` renders the app in jsdom, never
-types an idea and never answers a question, and then walks Product Planning → Data Shape →
-Design System → Section Design → Export, checking the package it lands on: the whole Design OS
-file contract, one component per screen, the Agent OS layer, and a screenshot per section.
+uses a model and never asks a question, and then walks Product Planning → Data Shape →
+Design System → Section Design → Export, confirming each stage the way a builder does and
+checking the package it lands on: the whole Design OS file contract, one component per screen,
+the Agent OS layer, and a screenshot per section. `npm run browser-check` types a description
+into the real production bundle and asserts the product changes with it.
 `npm run example-app` goes one step further and treats the package as an app: it copies the
 tokens, shell, sections and data shapes into a scratch Vite project, writes a page per section
 from the exported components and `sample-data.json`, then runs a real `vite build` with
@@ -324,6 +328,7 @@ src/
     packs1.ts packs2.ts  # 12 domain packs (entities, sections, copy, metrics)
     rng.ts               # mulberry32 + hash-based seed derivation
     color.ts             # HSL/hex, WCAG luminance, contrast forcing, ramps
+    intake.ts            # reads the builder's description: archetype, actor, name
     brief.ts             # problems, personas, jobs, metrics, risks
     dataModel.ts         # entities → fields → seeded rows → relationships → SQL
     design.ts            # genome → colours, type, scale, tokens (CSS/Tailwind/JSON)
@@ -337,6 +342,8 @@ src/
   export/agentos.ts      # Agent OS product docs, indexed standards, specs, design skill
   export/screenshots.ts  # deterministic SVG screenshots drawn from the compiled blocks
   components/
+    BriefComposer.tsx    # the description field: placeholder, guidance, read-back
+    StageConfirm.tsx     # "Mark stage complete" — the tick is earned, not compiled
     AppPreview.tsx       # renders a screen using the project's own tokens
     PreviewStage.tsx     # 30/60/100 % device canvas, edge grips, fullscreen
     ui.tsx               # phase header, step rail, collapsibles, empty states, banner

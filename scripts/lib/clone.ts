@@ -85,15 +85,15 @@ const MOTION_CSS = `<style id="prodops-motion">
   .ds-hero h1 {
     background-image: linear-gradient(
       100deg,
-      currentColor 0%, currentColor 34%,
-      #ff5c1a 48%, #ffa06a 56%, #e0500f 64%,
+      currentColor 0%, currentColor 22%,
+      #ff5c1a 38%, #ffb27a 46%, #ff6a24 54%, #d8430a 62%,
       currentColor 78%, currentColor 100%
     );
-    background-size: 260% 100%;
+    background-size: 300% 100%;
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
-    animation: prodops-sweep 11s ease-in-out infinite;
+    animation: prodops-sweep 7s ease-in-out infinite;
   }
   @keyframes prodops-sweep {
     0%, 100% { background-position: 0% 0; }
@@ -101,17 +101,25 @@ const MOTION_CSS = `<style id="prodops-motion">
   }
 
   .kicker, .text-brand, .ds-footer .kicker {
-    animation: prodops-ember 7s ease-in-out infinite alternate;
+    animation: prodops-ember 5s ease-in-out infinite alternate;
   }
   @keyframes prodops-ember {
-    from { color: #d8430a; }
-    to { color: #ff8a4d; }
+    from { color: #c93c07; }
+    to { color: #ffa06a; }
   }
 
-  .ds-wordmark { animation: prodops-mark-hue 14s ease-in-out infinite alternate; }
+  /* The chosen tab and the Access Free button carry the accent in a gradient
+     that drifts, so the colour is moving wherever the reader looks first. */
+  .prodops-tab[aria-selected="true"], .prodops-access {
+    background-image: linear-gradient(100deg, #ff5c1a, #ffb27a 30%, #d8430a 55%, #ff8a4d 78%, #ff5c1a);
+    background-size: 300% 100%;
+    animation: prodops-sweep 6s linear infinite;
+  }
+
+  .ds-wordmark { animation: prodops-mark-hue 8s ease-in-out infinite alternate; }
   @keyframes prodops-mark-hue {
-    from { filter: hue-rotate(0deg) saturate(1); }
-    to { filter: hue-rotate(-18deg) saturate(1.18); }
+    from { filter: hue-rotate(0deg) saturate(1.05); }
+    to { filter: hue-rotate(-30deg) saturate(1.3); }
   }
 
   /* A hairline of the accent under the header that travels as you read. */
@@ -140,14 +148,29 @@ const MOTION_CSS = `<style id="prodops-motion">
      .ds-card (--color-surface, --radius-card, 32px), the button is the site's
      filled .btn. The only liberty is that the selected tab keeps a slow drift
      of the brand colour, because the colour animation was asked for twice. */
-  .prodops-tools { margin: 0; }
-  .prodops-tools-kicker {
-    margin: 0 0 10px;
-    font: 600 11px/1 ui-monospace, mono;
-    letter-spacing: .14em;
-    text-transform: uppercase;
-    color: var(--color-brand);
+  /* The page reads left to right, like the rest of the site: the captured
+     index down the left, the browser beside it. Under 1080px the two columns
+     stack with the index first, which is the page exactly as it was captured. */
+  .prodops-browser {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: 26px;
+    max-width: 1200px;
+    margin: 0 auto;
+    padding: 0 24px;
   }
+  .prodops-index, .prodops-detail { min-width: 0; }
+  .prodops-browser .ds-thin { max-width: none; }
+  @media (min-width: 1080px) {
+    .prodops-browser {
+      grid-template-columns: minmax(300px, 0.86fr) minmax(0, 1.14fr);
+      gap: 48px;
+      align-items: start;
+    }
+    /* The index stays put while the panel scrolls past it. */
+    .prodops-index { position: sticky; top: 96px; }
+  }
+  .prodops-tools { margin: 0; }
   .prodops-tabstrip {
     display: flex;
     flex-wrap: wrap;
@@ -243,14 +266,65 @@ const MOTION_CSS = `<style id="prodops-motion">
     font: 600 13px/1 system-ui, sans-serif; }
   .prodops-install .prodops-install-links a { color: #d8430a; text-decoration: none; }
 
+  /* The instructions behind "Access Free": the section a reader expects to find
+     under Installation, which the live site keeps behind an email and the
+     capture therefore never had. */
+  .prodops-install-section {
+    margin: 18px 0 8px;
+    border: 1px solid var(--color-hairline);
+    border-left: 3px solid var(--color-brand);
+    border-radius: var(--radius-card);
+    padding: 22px 24px 18px;
+    background: var(--color-surface);
+    animation: prodops-fade .3s ease both;
+  }
+  .prodops-install-section h3 { margin: 0 0 10px; }
+  .prodops-install-section h4 { margin: 22px 0 8px; font-size: 15px; }
+  .prodops-install-section p { margin: 0 0 10px; line-height: 1.65; }
+  .prodops-install-section pre {
+    margin: 0 0 6px;
+    padding: 14px 16px;
+    overflow: auto;
+    border-radius: var(--radius-control);
+    background: color-mix(in srgb, var(--color-brand) 7%, transparent);
+    font: 500 12.5px/1.7 ui-monospace, 'SFMono-Regular', Menlo, monospace;
+  }
+  .prodops-install-section code { font: inherit; }
+  .prodops-install-note { margin-top: 14px; font-size: 13px; color: var(--color-muted, #6b6560); }
+  .prodops-install-links { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px;
+    font: 600 13px/1.4 system-ui, sans-serif; }
+  .prodops-install-links a { color: var(--color-brand); text-decoration: none; }
+  .prodops-gate { margin: 4px 0 0; }
+  .prodops-install-section.prodops-flash {
+    animation: prodops-flash 1.5s ease both;
+  }
+  @keyframes prodops-flash {
+    0% { box-shadow: 0 0 0 0 rgba(255, 92, 26, .55); }
+    60% { box-shadow: 0 0 0 10px rgba(255, 92, 26, 0); }
+    100% { box-shadow: 0 0 0 0 rgba(255, 92, 26, 0); }
+  }
+
   /* ---- 5. motion is optional ------------------------------------------ */
   @media (prefers-reduced-motion: reduce) {
+    /* Nothing slides, blurs or travels — but the colour still moves. A reader
+       who asked for less motion did not ask for a grey page, and a hue shift
+       is not a vestibular event. This is also the setting most likely to be on:
+       with macOS "Reduce motion" enabled, the copy would otherwise look like a
+       still photograph and the colour animation would look broken. */
     html.pe-motion main section,
     html.pe-motion main article { opacity: 1 !important; transform: none !important; transition: none !important; }
-    .ds-hero::before, .ds-hero h1, .kicker, .text-brand, .ds-wordmark,
-    .ds-public-header::after, .prodops-tab, .prodops-access, .prodops-toolpanel, .prodops-install {
-      animation: none !important;
+    .ds-hero::before, .ds-public-header::after,
+    .prodops-tab[aria-selected="true"], .prodops-access {
+      animation: prodops-tint 9s ease-in-out infinite alternate !important;
     }
+    .ds-hero h1 { animation: prodops-sweep 16s ease-in-out infinite !important; }
+    .ds-wordmark { animation: prodops-tint 10s ease-in-out infinite alternate !important; }
+    .kicker, .text-brand { animation: prodops-ember 7s ease-in-out infinite alternate !important; }
+    .prodops-toolpanel, .prodops-install, .prodops-install-section { animation: none !important; }
+  }
+  @keyframes prodops-tint {
+    from { filter: hue-rotate(0deg) saturate(1); }
+    to { filter: hue-rotate(-26deg) saturate(1.28); }
   }
 </style>`
 
@@ -311,12 +385,12 @@ export function blockedPage(path: string): string {
 }
 
 /**
- * Two sections of the capture sell a course: "Learn Agent Skills" and "Learn to
- * build". Both are cross-sells to the old brand's paid programme, which has no
- * counterpart here — the tools are installed, not sold — so the section, its
- * sidebar entry and its anchor all go. Nothing else in either article moves.
+ * "Learn Agent Skills" is a cross-sell to the old brand's paid course, which has
+ * no counterpart here. The section, its sidebar entry and its anchor go; every
+ * other section of every tool page stays exactly where the capture put it,
+ * including "Learn to build" and all of its words.
  */
-const PROMOS = ['learn-agent-skills', 'learn-to-build']
+const PROMOS = ['learn-agent-skills']
 
 export function dropCoursePromos(html: string): string {
   let out = html
@@ -330,6 +404,116 @@ export function dropCoursePromos(html: string): string {
 }
 
 /** Make a captured page offline and point it at the workspace. */
+/**
+ * The installation instructions, written for this package.
+ *
+ * The capture's Installation section is a gate and nothing else: the real site
+ * keeps its instructions behind an email, and the crawler saw the wall, not the
+ * words behind it. A reader of this copy is owed both — what the tool is, and
+ * the three ways to get it — so each tool page gets the section the site would
+ * have shown on the other side of the form, written against the files that are
+ * actually in this repository. Nothing here needs a server, a key or an inbox.
+ */
+interface InstallFact {
+  name: string
+  /** The folder this tool writes into, as it exists in the package. */
+  ships: string
+  /** A skill is copied; a workflow is a set of commands in the same repo. */
+  kind: 'skill' | 'template' | 'convention' | 'workflow'
+}
+
+const INSTALL: Record<string, InstallFact> = {
+  '/prd-creator.html': { name: 'PRD Creator', ships: '.agents/skills/prd-creator/', kind: 'skill' },
+  '/skill-builder.html': { name: 'Skill Builder', ships: '.agents/skills/skill-builder/', kind: 'skill' },
+  '/ai-design-system.html': { name: 'Design System', ships: '.agents/skills/design-system/', kind: 'skill' },
+  '/favicon-creator.html': { name: 'Favicon Creator', ships: '.agents/skills/favicon-creator/', kind: 'skill' },
+  '/rails-react-template.html': { name: 'Starter', ships: 'template/starter/', kind: 'template' },
+  '/agentcanon.html': { name: 'Agents canon', ships: '.agents/ + AGENTS.md + scripts/link-agents.sh', kind: 'convention' },
+  '/agent-os.html': { name: 'Standards', ships: 'standards/ + .agents/commands/prodops/', kind: 'workflow' },
+  '/design-os.html': { name: 'ProdOps flow', ships: 'product-plan/ + .agents/commands/prodops/', kind: 'workflow' },
+}
+
+const REPO = 'https://github.com/LulamileMkhungela/devzigner.git'
+
+/** The section a visitor unlocks with "Access Free". */
+function installSection(fact: InstallFact): string {
+  const folder = fact.ships.split(/\s|\+/)[0]
+  const copy =
+    fact.kind === 'skill'
+      ? `<pre><code>git clone ${REPO} prodops
+cp -r prodops/${folder} ~/.agents/skills/                 # global: every project
+# or into one project: cp -r prodops/${folder} your-app/.agents/skills/</code></pre>`
+      : `<pre><code>git clone ${REPO} prodops
+cp -r prodops/${folder} .                                 # into the project it belongs to</code></pre>`
+  // Where the symlink goes depends on what was copied: a skill belongs in the
+  // skills folder, the commands in the commands folder, a template in the app.
+  const leaf = folder.replace(/\/$/, '').split('/').pop() ?? fact.name
+  const link =
+    fact.kind === 'skill'
+      ? `ln -s "$PWD/prodops/${folder}" ~/.agents/skills/${leaf}`
+      : fact.kind === 'workflow'
+        ? `ln -s "$PWD/prodops/.agents/commands/prodops" ~/.agents/commands/prodops`
+        : fact.kind === 'convention'
+          ? `ln -s "$PWD/prodops/.agents" ./.agents && ln -s "$PWD/prodops/AGENTS.md" ./AGENTS.md`
+          : `ln -s "$PWD/prodops/${folder}" ./${leaf}`
+  const what =
+    fact.kind === 'skill'
+      ? 'the skill folder, its <code>SKILL.md</code> and every step file it names'
+      : fact.kind === 'template'
+        ? 'the starter app, its conventions and its setup script'
+        : fact.kind === 'convention'
+          ? '<code>AGENTS.md</code>, the skills folder it points at, and the script that links every agent to it'
+          : 'the commands and the reference files they read'
+  return `<section class="prodops-install-section" id="prodops-install" aria-label="Installation">
+  <h3>Install ${fact.name}</h3>
+  <p>${fact.name} ships in the ProdOps toolkit, built on the open Agent Skills standard, so it works with Claude
+  Code, Codex, Cursor and any agent that reads skills. Three ways to install:</p>
+  <h4>Option 1 — copy it into your project or your skills folder</h4>
+  ${copy}
+  <h4>Option 2 — link it, so one copy stays current</h4>
+  <pre><code>${link}</code></pre>
+  <h4>Option 3 — use it here, with nothing to install</h4>
+  <p>Open ProdOps, choose <strong>Tools</strong>, then <strong>${fact.name}</strong>, and work through the same
+  steps inside the workspace. What you get is ${what}; it ships at <code>${fact.ships}</code>.</p>
+  <div class="prodops-install-links">
+    <a href="/workspace/#tools">Open ProdOps →</a>
+    <a href="/agentcanon.html">One canon for skills →</a>
+    <a href="/tools.html">All eight tools →</a>
+  </div>
+  <p class="prodops-install-note">No email, no account, no key. This copy has no server behind it, so nothing is sent.</p>
+</section>`
+}
+
+/**
+ * Put the instructions where the gate is: the card that says "Get free access to
+ * X and installation instructions" is followed by the instructions themselves.
+ *
+ * They are visible, not hidden behind the button. The point of the page is that
+ * a reader can see all three ways to install without giving anyone an address;
+ * pressing "Access Free" takes them to the section and marks it, which is what
+ * the button promised and more than the email gate ever delivered.
+ */
+export function withInstall(html: string, path: string): string {
+  const fact = INSTALL[path]
+  if (!fact) return html
+  // The gate does not use one shape: some pages put it in a `.ds-card` with a
+  // sentence, others in a plain div under an `<h3>Get free access to …</h3>`.
+  // What both have is the form, and a heading after it — so the instructions go
+  // before that next heading, which is where the site would have put them.
+  const gate = html.indexOf('Get free access to')
+  if (gate === -1) return html
+  const afterForm = html.indexOf('</form>', gate)
+  const from = afterForm === -1 ? gate : afterForm
+  const nextHeading = html.slice(from).search(/<h[23][\s>]/i)
+  if (nextHeading === -1) {
+    const article = html.lastIndexOf('</article>')
+    if (article === -1) return html
+    return html.slice(0, article) + installSection(fact) + html.slice(article)
+  }
+  const at = from + nextHeading
+  return html.slice(0, at) + installSection(fact) + html.slice(at)
+}
+
 /**
  * Teaser clips are megabytes of binary that a text capture never picks up, and
  * committing them would bloat the repo. Swap each player for the same 16:9
@@ -367,6 +551,7 @@ export function adaptPage(html: string, path: string): string {
   // is not part of the site, and the address it names is not this site's.
   out = out.replace(/<!--\s*Mirrored from[\s\S]*?-->/gi, '')
   out = restoreEmails(out)
+  out = withInstall(out, path)
   out = dropCoursePromos(out)
   out = replaceVideos(out)
   // The name, the mark, the byline and the handles, on the way out. `site/`

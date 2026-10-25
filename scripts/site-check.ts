@@ -268,7 +268,7 @@ check(
 const tools = new JSDOM(adaptPage(readFileSync(join(SITE, 'tools.html'), 'utf8'), '/tools.html'))
 // The listing was captured from somebody else's site; the names on it are the
 // ProdOps ones, because the served copy is renamed on the way out.
-const toolNames = ['PRD Creator', 'Skill Builder', 'Design System', 'Starter', 'Agents canon', 'Favicon', 'Standards', 'ProdOps']
+const toolNames = ['PRD Creator', 'Skill Builder', 'Design System', 'Starter', 'Agents canon', 'Favicon Creator', 'Standards', 'ProdOps']
 // Visible text only: the injected behaviour layer is an inline script, and its
 // source is part of textContent. What a reader sees is the body minus scripts.
 const toolsBody = tools.window.document.body.cloneNode(true) as HTMLElement
@@ -398,20 +398,27 @@ check(
   Boolean(gateButton) && /access free/i.test(gateButton?.textContent ?? ''),
   gateButton?.textContent ?? 'no button',
 )
-const gateCardBefore = gatedDoc.querySelector('.prodops-install')
-// Read it before the click: the node is the same one the click opens.
-const cardWasHidden = gateCardBefore?.hasAttribute('hidden') ?? false
-gateButton?.click()
-const gateCard = gatedDoc.querySelector('.prodops-install')
+// Every tool page carries the installation section — the words and the
+// commands — visible, not behind the form the real site hides it behind.
+const installSection = gatedDoc.querySelector('#prodops-install')
+const installText = installSection?.textContent ?? ''
 check(
-  'Access Free opens the install instructions that ship with the copy',
-  Boolean(gateCardBefore) &&
-    cardWasHidden &&
-    Boolean(gateCard) &&
-    !gateCard?.hasAttribute('hidden') &&
-    /\.agents\/skills\//.test(gateCard?.textContent ?? '') &&
-    /Open ProdOps/.test(gateCard?.textContent ?? ''),
-  gateCard?.textContent?.replace(/\s+/g, ' ').slice(0, 90) ?? 'no card',
+  'the Installation section is on the page, with its options and its commands',
+  Boolean(installSection) &&
+    !installSection?.hasAttribute('hidden') &&
+    /Option 1/.test(installText) &&
+    /Option 2/.test(installText) &&
+    /Option 3/.test(installText) &&
+    /git clone https:\/\/github\.com\/LulamileMkhungela\/devzigner/.test(installText) &&
+    /\.agents\/skills\/prd-creator\//.test(installText),
+  installText.replace(/\s+/g, ' ').slice(0, 110) || 'no section',
+)
+gateButton?.click()
+check(
+  'Access Free takes the reader to those instructions',
+  installSection?.classList.contains('prodops-flash') === true ||
+    gateButton?.getAttribute('aria-controls') === 'prodops-install',
+  gateButton?.getAttribute('aria-controls') ?? 'not wired',
 )
 check(
   'the gate form is gone, not left dead',
@@ -421,6 +428,40 @@ check(
     .join(' | ')}`,
 )
 gated.window.close()
+
+/* ---- every tool page carries its installation instructions -------------- */
+
+{
+  const pages = [
+    'prd-creator',
+    'skill-builder',
+    'ai-design-system',
+    'favicon-creator',
+    'rails-react-template',
+    'agentcanon',
+    'agent-os',
+    'design-os',
+  ]
+  const missing = pages.filter((page) => {
+    const out = adaptPage(readFileSync(join(SITE, `${page}.html`), 'utf8'), `/${page}.html`)
+    return !/id="prodops-install"/.test(out) || !/Option 1/.test(out) || !/Option 3/.test(out)
+  })
+  check('all eight tool pages carry the installation section', missing.length === 0, missing.join(', '))
+  // "Learn Agent Skills" was a cross-sell to a paid course; everything else the
+  // capture had — including "Learn to build" — is still there.
+  const promos = pages.filter((page) => {
+    const out = adaptPage(readFileSync(join(SITE, `${page}.html`), 'utf8'), `/${page}.html`)
+    return /id="learn-agent-skills"/.test(out) || />Learn Agent Skills</.test(out)
+  })
+  check('the paid-course cross-sell is gone from every tool page', promos.length === 0, promos.join(', '))
+  // The capture keeps "Learn to build" on the pages that had it; only the
+  // course that had no counterpart here was removed.
+  const kept = ['prd-creator', 'rails-react-template'].filter((page) => {
+    const out = adaptPage(readFileSync(join(SITE, `${page}.html`), 'utf8'), `/${page}.html`)
+    return /Learn to build/.test(out)
+  })
+  check('and nothing else was cut with it', kept.length === 2, kept.join(', '))
+}
 
 /* ---- the tools list is a browser, not eight page loads ------------------ */
 
@@ -486,11 +527,20 @@ gated.window.close()
     Boolean(list) && list?.style.display !== 'none' && (list?.querySelectorAll('.ds-listing').length ?? 0) === 8,
     list ? `${list.querySelectorAll('.ds-listing').length} rows, display: ${list.style.display || 'block'}` : 'no list',
   )
-  const before = doc.querySelector('.prodops-tools')
+  // Two columns: the captured index on the left, the browser on the right.
+  const browser = doc.querySelector('.prodops-browser')
+  const index = doc.querySelector('.prodops-index')
+  const detail = doc.querySelector('.prodops-detail')
   check(
-    'the browser sits above the index, both on the same page',
-    // 4 is DOCUMENT_POSITION_FOLLOWING: the list comes after the browser.
-    Boolean(before && list && (before.compareDocumentPosition(list) & 4) !== 0),
+    'the index keeps the left column and the tabs sit to its right',
+    Boolean(browser && index && detail) &&
+      index?.parentElement?.className === 'prodops-browser' &&
+      detail?.parentElement?.className === 'prodops-browser' &&
+      Boolean(index && detail && (index.compareDocumentPosition(detail) & 4) !== 0) &&
+      Boolean(index?.contains(list)) &&
+      Boolean(detail?.querySelector('.prodops-tabstrip')) &&
+      Boolean(detail?.querySelector('#prodops-toolpanel')),
+    browser ? `columns: ${[...browser.children].map((child) => child.className).join(' | ')}` : 'no grid',
   )
   live.window.close()
 }

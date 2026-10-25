@@ -302,15 +302,24 @@ export const RUNTIME = `<script id="prodops-runtime">
     }
 
     panel.id = 'prodops-toolpanel';
-    var kicker = document.createElement('p');
-    kicker.className = 'prodops-tools-kicker';
-    kicker.textContent = 'Read a tool here, without leaving the page';
-    wrap.appendChild(kicker);
     wrap.appendChild(strip);
     wrap.appendChild(panel);
-    // The captured list stays exactly where it was, below the browser: the
-    // tabs save the page load, they do not replace the index.
-    list.parentNode.insertBefore(wrap, list);
+
+    // Two columns, the way the rest of the site reads: the captured index on
+    // the left, untouched, and the browser to its right. Below 1080px they
+    // stack, index first, which is the page as the crawler found it.
+    var browser = document.createElement('div');
+    browser.className = 'prodops-browser';
+    var index = document.createElement('div');
+    index.className = 'prodops-index';
+    var detail = document.createElement('div');
+    detail.className = 'prodops-detail';
+    list.parentNode.insertBefore(browser, list);
+    index.appendChild(list);
+    detail.appendChild(wrap);
+    browser.appendChild(index);
+    browser.appendChild(detail);
+    list.setAttribute('aria-label', 'The eight tools, one per row');
     select(0, false);
   }
 
@@ -351,18 +360,37 @@ export const RUNTIME = `<script id="prodops-runtime">
         if (isGate(form)) {
           // The gate is a promise: press it and you get the tool. Keep the
           // button, keep the promise, drop the email — the instructions are
-          // already in the package.
+          // already on the page, and this reveals them.
           var name = toolName();
           var submit = form.querySelector('button');
           var label = (submit && (submit.getAttribute('aria-label') || submit.textContent)) || 'Access Free';
           var button = document.createElement('button');
           button.type = 'button';
           button.className = 'prodops-access';
+          // The capture's own label is "Access Free"; an icon-only button has no
+          // words of its own, so the label comes from the sentence above it.
           button.textContent = String(label).replace(/\\s+/g, ' ').trim() || 'Access Free';
           button.setAttribute('aria-expanded', 'false');
           var card = installCard(name);
           card.hidden = true;
+          // The full instructions are further down the page, written for this
+          // package. They are always visible; the button takes the reader there
+          // and marks the section, instead of promising a download that this
+          // copy cannot serve.
+          var full = document.getElementById('prodops-install');
+          if (full) button.setAttribute('aria-controls', 'prodops-install');
           button.addEventListener('click', function () {
+            if (full) {
+              try { full.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (error) { full.scrollIntoView(); }
+              full.classList.remove('prodops-flash');
+              // Force a reflow so the animation restarts on a second press.
+              void full.offsetWidth;
+              full.classList.add('prodops-flash');
+              var head = full.querySelector('h3') || full;
+              if (head.setAttribute) head.setAttribute('tabindex', '-1');
+              if (head.focus) head.focus();
+              return;
+            }
             card.hidden = !card.hidden;
             button.setAttribute('aria-expanded', card.hidden ? 'false' : 'true');
             if (!card.hidden) {
@@ -373,7 +401,7 @@ export const RUNTIME = `<script id="prodops-runtime">
           var holder = document.createElement('div');
           holder.className = 'prodops-gate';
           holder.appendChild(button);
-          holder.appendChild(card);
+          if (!full) holder.appendChild(card);
           form.parentNode.replaceChild(holder, form);
           return;
         }

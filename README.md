@@ -196,11 +196,17 @@ Attribution is not lost with the branding: the MIT notices for the work this bui
 | `/prodops-standalone.html` | the workspace as one file, no server |
 | `/prodops-snapshot.html` | every workspace page as static markup, no JavaScript |
 
-On `/tools.html` the eight tools are a tab strip: each tab reads that tool's real page in the panel
-below it, without a page load. The captured index of the same eight tools stays exactly where it
-was, underneath — the tabs are quicker, they do not replace what was there. `npm run site-check`
-asserts both: eight tabs that swap the panel, and the original eight-row list still on the page and
-still displayed.
+On `/tools.html` the page reads left to right: the captured index of the eight tools in the left
+column, exactly as it was, and a tab strip with one panel in the right column. Each tab reads that
+tool's real page into the panel without a page load, so comparing two tools costs one click instead
+of two page loads. `npm run site-check` asserts both halves: eight tabs that swap the panel and the
+original eight-row list still in the left column and still displayed.
+
+Every tool page carries its Installation section: the three ways to install it, the commands, and
+where the files ship. That section is written against this repository, because the live site keeps
+its own instructions behind an email gate and the crawler only ever saw the gate — the captured page
+has the form and none of the words behind it. "Access free" takes the reader to that section instead
+of promising a download this copy cannot serve.
 
 `npm run site-check` also counts the pages, reads every internal link and image, and operates the
 served copy the way a visitor does — opens the mobile drawer, submits the newsletter form, opens a

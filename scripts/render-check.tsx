@@ -264,6 +264,22 @@ const checks = [
       css.includes(".lz-app[data-theme='dark']")
     )
   })()],
+  /* A light theme with a near-black page behind it shows as a dark band on
+     overscroll and before the first paint. The body has to follow the theme. */
+  ['the page behind the app follows the theme', (() => {
+    const css = readFileSync(join(root, 'src/styles/app.css'), 'utf8')
+    const light = css.match(/html\[data-app-theme='light'\] body \{([^}]*)\}/)
+    return Boolean(light) && /#fafaf9/.test(light?.[1] ?? '') && !/#0a0a0a/.test(light?.[1] ?? '')
+  })()],
+  /* The accent is the site's own two brand tokens, not a third orange. */
+  ['the app accent is the site\'s brand tokens', (() => {
+    const css = readFileSync(join(root, 'src/styles/app.css'), 'utf8')
+    return (
+      css.includes('--accent: #f0621a') &&
+      css.includes('--accent: #ea580c') &&
+      !/#ff5c1a|#d8430a/i.test(css)
+    )
+  })()],
   /**
    * After a rebuild the builder is told what to do next, in the page rather than
    * in a sentence that disappears: which stage, how far along, and one button.

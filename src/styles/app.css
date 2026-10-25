@@ -69,14 +69,20 @@ body {
   text-rendering: optimizeLegibility;
 }
 
-html[data-app-theme='dark'] body,
-html[data-app-theme='light'] body {
+/* The page behind the app follows the theme too. Both used to be near-black,
+   which showed as a dark band under the light theme wherever the app did not
+   reach — on overscroll, and in the moment before the first paint. */
+html[data-app-theme='dark'] body {
   background: #0a0a0a;
+}
+html[data-app-theme='light'] body {
+  background: #fafaf9;
+  color: #1c1917;
 }
 
 ::selection {
-  background: rgba(255, 92, 26, 0.35);
-  color: #fafafa;
+  background: color-mix(in srgb, var(--accent, #f0621a) 35%, transparent);
+  color: inherit;
 }
 
 a {
@@ -959,6 +965,11 @@ pre {
 }
 .lz-app[data-theme='dark'] .lz-btn.primary {
   color: #0a0a0a;
+}
+/* Light theme: the accent is the site's darker #ea580c, so the label stays white
+   (contrast against #ea580c is 4.8:1; against #0a0a0a it would be 4.1:1). */
+.lz-app[data-theme='light'] .lz-btn.primary {
+  color: #fff;
 }
 .lz-btn.quiet {
   background: var(--hover);

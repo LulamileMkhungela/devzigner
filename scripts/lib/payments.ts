@@ -176,6 +176,86 @@ export function withRandPrices(html: string): string {
   return out
 }
 
+/**
+ * Booking the founder, paid the same way.
+ *
+ * The contact page is where somebody asks for coaching, a workshop, a talk or a
+ * build. Asking is free; booking is not, and the page used to stop at the form.
+ * This adds the other half: the three ways to pay for the time once the scope
+ * and the amount are agreed in the note — PayShap, instant EFT, or an invoice.
+ *
+ * No price is printed here, deliberately: a talk and a three-day build do not
+ * cost the same, and inventing a number would be worse than asking. The
+ * reference (`BOOKING`) is what ties a payment to a person either way.
+ */
+export function bookingSection(): string {
+  const shap = MERCHANT.payShap
+    ? `<li>Pay by <strong>PayShap</strong> to
+        <code class="prodops-pay-id">${escapeHtml(MERCHANT.payShap as string)}</code>
+        <button type="button" class="prodops-pay-copy" data-copy="${escapeHtml(MERCHANT.payShap as string)}">Copy</button>
+        once the amount is agreed.</li>`
+    : `<li>Pay by <strong>PayShap</strong> once the amount is agreed: a request arrives on your phone and you
+        approve it in your banking app. No card, no fee, either side.</li>`
+  const eft = MERCHANT.bank && MERCHANT.account && MERCHANT.branch
+    ? `<dl class="prodops-pay-eft">
+        <div><dt>Bank</dt><dd>${escapeHtml(MERCHANT.bank)}</dd></div>
+        <div><dt>Account name</dt><dd>${escapeHtml(MERCHANT.name)}</dd></div>
+        <div><dt>Account number</dt><dd>${escapeHtml(MERCHANT.account)}</dd></div>
+        <div><dt>Branch code</dt><dd>${escapeHtml(MERCHANT.branch)}</dd></div>
+        <div><dt>Reference</dt><dd><code>BOOKING</code></dd></div>
+      </dl>`
+    : `<p>Instant EFT costs nothing either way: <a href="${mailto('Bank details — booking')}">ask for the banking
+        details</a> and they arrive with the amount and the reference.</p>`
+
+  return `<section class="ds-marketing-section prodops-book" aria-label="Book a session">
+    <div class="ds-thin">
+      <p class="kicker">Book me</p>
+      <h2>Book a session.</h2>
+      <p class="lede text-pretty">Coaching, a workshop for your team, a talk, or a build. Send the note below with
+      what you have in mind and when — the scope and the amount come back to you in writing, and then you pay the way
+      that suits you.</p>
+
+      <div class="prodops-pay" style="margin-top:24px">
+        <div class="prodops-pay-head">
+          <p class="kicker">How booking works</p>
+          <h3>Pay in rand, with no fee on either side</h3>
+        </div>
+        <ol class="prodops-pay-steps">
+          <li>Send the note: the topic, roughly how long, and a date or two that work.</li>
+          <li>You get the scope, the amount and a reference — <code>BOOKING</code> — in writing.</li>
+          ${shap}
+          <li>Send the confirmation to <a href="${mailto('Booked — ProdOps')}">${MERCHANT.email}</a> and the
+          calendar invitation follows.</li>
+        </ol>
+
+        <h4>Or pay by instant EFT</h4>
+        ${eft}
+
+        <h4>Or ask for an invoice</h4>
+        <p>For a company, a purchase order or an employer who pays:
+        <a href="${mailto('Invoice — booking')}">ask for an invoice</a>.</p>
+
+        <p class="prodops-pay-note">Nothing is charged by this page. No card details, no processor, no fee — the
+        amount is agreed in writing first.</p>
+      </div>
+    </div>
+  </section>`
+}
+
+/** The booking section goes after the form it belongs to, before the footer. */
+export function withBooking(html: string, path: string): string {
+  if (!/^\/contact(\.html)?$/.test(path) || html.includes('prodops-book')) return html
+  // The form's own topic list gains the one topic that has a price: somebody
+  // asking to book should see it among the reasons to write.
+  let out = html.replace(
+    '<option value="Something else...">Something else...</option>',
+    '<option value="Booking a session">Booking a session</option><option value="Something else...">Something else...</option>',
+  )
+  const at = out.lastIndexOf('</main>')
+  if (at === -1) return out
+  return out.slice(0, at) + bookingSection() + out.slice(at)
+}
+
 /** For the checks: what a page says it costs. */
 export function priceFor(path: string): Sale {
   return SALES[path] ?? DEFAULT_SALE

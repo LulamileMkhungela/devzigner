@@ -300,6 +300,42 @@ check(
   (sessions.match(/[\d]{1,2} [A-Z][a-z]+ 20\d\d/g) ?? []).slice(0, 2).join(' · '),
 )
 
+/* ---- booking, paid the same way ---------------------------------------- */
+
+const contact = adaptPage(readFileSync(join(SITE, 'contact.html'), 'utf8'), '/contact.html')
+check(
+  'the contact page takes a booking, and says how to pay for the time',
+  contact.includes('prodops-book') &&
+    /Book a session/.test(contact) &&
+    /PayShap/.test(contact) &&
+    /BOOKING/.test(contact) &&
+    /instant EFT/i.test(contact) &&
+    /invoice/i.test(contact) &&
+    // The topic list names it, so nobody has to guess which option to pick.
+    /<option value="Booking a session">Booking a session<\/option>/.test(contact),
+  (contact.match(/<h3>[^<]*<\/h3>/g) ?? []).slice(-2).join(' · ') || 'no heading',
+)
+
+/* ---- one brand orange, in both themes ---------------------------------- */
+
+const themed = ['index.html', 'about.html', 'tools.html', 'prd-creator.html', 'contact.html'].map((page) =>
+  adaptPage(readFileSync(join(SITE, page), 'utf8'), `/${page}`),
+)
+check(
+  'nothing the site injects is drawn in a second orange',
+  themed.every((out) => !/#ff5c1a|#d8430a|#ffb27a|#ff9a5c|#c93c07|#ffa06a/i.test(out)) &&
+    // and what it does inject reads from the capture's own tokens
+    themed.every((out) => out.includes('var(--color-brand)') && out.includes('var(--color-hairline)')),
+  'tokens only',
+)
+check(
+  'the toolbar and the panels follow the theme instead of pinning a dark bar',
+  themed.every((out) => !/background:#111|color:#fafafa/.test(out)) &&
+    /background:var\(--color-surface\);color:var\(--color-body\)/.test(
+      adaptPage(readFileSync(join(SITE, 'prd-creator.html'), 'utf8'), '/prd-creator.html'),
+    ),
+)
+
 /* ---- the founder ------------------------------------------------------- */
 
 const about = adaptPage(readFileSync(join(SITE, 'about.html'), 'utf8'), '/about.html')

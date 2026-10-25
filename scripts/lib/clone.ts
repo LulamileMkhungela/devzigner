@@ -19,7 +19,7 @@
 import { RUNTIME, restoreEmails } from './runtime'
 import { rebrand } from './brand'
 import { withFounder } from './founder'
-import { withPayment, withRandPrices } from './payments'
+import { withBooking, withPayment, withRandPrices } from './payments'
 import { southAfricanTime } from './sast'
 
 export const isBlocked = (html: string): boolean =>
@@ -128,7 +128,10 @@ const MOTION_CSS = `<style id="prodops-motion">
     background-image: linear-gradient(
       100deg,
       currentColor 0%, currentColor 22%,
-      #ff5c1a 38%, #ffb27a 46%, #ff6a24 54%, #d8430a 62%,
+      var(--color-brand) 38%,
+      color-mix(in srgb, var(--color-brand) 45%, #fff) 46%,
+      color-mix(in srgb, var(--color-brand) 82%, #ffb020) 54%,
+      color-mix(in srgb, var(--color-brand) 74%, #1c1917) 62%,
       currentColor 78%, currentColor 100%
     );
     background-size: 300% 100%;
@@ -146,14 +149,21 @@ const MOTION_CSS = `<style id="prodops-motion">
     animation: prodops-ember 5s ease-in-out infinite alternate;
   }
   @keyframes prodops-ember {
-    from { color: #c93c07; }
-    to { color: #ffa06a; }
+    from { color: color-mix(in srgb, var(--color-brand) 82%, #1c1917); }
+    to { color: color-mix(in srgb, var(--color-brand) 55%, #fff); }
   }
 
   /* The chosen tab and the Access Free button carry the accent in a gradient
      that drifts, so the colour is moving wherever the reader looks first. */
   .prodops-tab[aria-selected="true"], .prodops-access {
-    background-image: linear-gradient(100deg, #ff5c1a, #ffb27a 30%, #d8430a 55%, #ff8a4d 78%, #ff5c1a);
+    background-image: linear-gradient(
+      100deg,
+      var(--color-brand),
+      color-mix(in srgb, var(--color-brand) 45%, #fff) 30%,
+      color-mix(in srgb, var(--color-brand) 74%, #1c1917) 55%,
+      color-mix(in srgb, var(--color-brand) 72%, #ffb020) 78%,
+      var(--color-brand)
+    );
     background-size: 300% 100%;
     animation: prodops-sweep 6s linear infinite;
   }
@@ -169,7 +179,14 @@ const MOTION_CSS = `<style id="prodops-motion">
     content: '';
     display: block;
     height: 2px;
-    background: linear-gradient(90deg, transparent, #ff5c1a, #ff9a5c, #d83c0b, transparent);
+    background: linear-gradient(
+      90deg,
+      transparent,
+      var(--color-brand),
+      color-mix(in srgb, var(--color-brand) 60%, #fff),
+      color-mix(in srgb, var(--color-brand) 78%, #1c1917),
+      transparent
+    );
     background-size: 240% 100%;
     animation: prodops-rail 7s linear infinite;
     opacity: .85;
@@ -181,7 +198,9 @@ const MOTION_CSS = `<style id="prodops-motion">
 
   /* ---- 3. the pointer still gets an answer ---------------------------- */
   a[href], button { transition: color .18s ease, background-color .18s ease, border-color .18s ease, transform .18s ease; }
-  a[href]:hover, button:hover { color: #ff5c1a; }
+  /* Text links warm to the brand on hover; filled controls keep the colour
+     their own rule gives them, or the label would vanish into the fill. */
+  a[href]:not(.btn):not(.prodops-open):not(.ds-listing):hover { color: var(--color-brand); }
   a[href]:active, button:active { transform: translateY(1px); }
 
   /* ---- 4. the tool browser: tabs, one panel, no page loads ------------- */
@@ -268,7 +287,13 @@ const MOTION_CSS = `<style id="prodops-motion">
     padding: 13px 22px;
     font: 600 15px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
     color: #fff;
-    background-image: linear-gradient(100deg, var(--color-brand), #d8430a 45%, #f97333 62%, var(--color-brand));
+    background-image: linear-gradient(
+      100deg,
+      var(--color-brand),
+      color-mix(in srgb, var(--color-brand) 78%, #1c1917) 45%,
+      color-mix(in srgb, var(--color-brand) 72%, #ffb020) 62%,
+      var(--color-brand)
+    );
     background-size: 220% 100%;
     animation: prodops-sweep 9s ease-in-out infinite;
     cursor: pointer;
@@ -293,7 +318,7 @@ const MOTION_CSS = `<style id="prodops-motion">
   }
   .prodops-install .prodops-install-links { display: flex; flex-wrap: wrap; gap: 12px; margin-top: 10px;
     font: 600 13px/1 system-ui, sans-serif; }
-  .prodops-install .prodops-install-links a { color: #d8430a; text-decoration: none; }
+  .prodops-install .prodops-install-links a { color: var(--color-brand); text-decoration: none; }
 
   /* The instructions behind "Access Free": the section a reader expects to find
      under Installation, which the live site keeps behind an email and the
@@ -328,9 +353,9 @@ const MOTION_CSS = `<style id="prodops-motion">
     animation: prodops-flash 1.5s ease both;
   }
   @keyframes prodops-flash {
-    0% { box-shadow: 0 0 0 0 rgba(255, 92, 26, .55); }
-    60% { box-shadow: 0 0 0 10px rgba(255, 92, 26, 0); }
-    100% { box-shadow: 0 0 0 0 rgba(255, 92, 26, 0); }
+    0% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-brand) 55%, transparent); }
+    60% { box-shadow: 0 0 0 10px color-mix(in srgb, var(--color-brand) 0%, transparent); }
+    100% { box-shadow: 0 0 0 0 color-mix(in srgb, var(--color-brand) 0%, transparent); }
   }
 
   /* ---- 5. motion is optional ------------------------------------------ */
@@ -358,10 +383,11 @@ const MOTION_CSS = `<style id="prodops-motion">
 </style>`
 
 /** The tool pages get one extra line: the gate they open with is already satisfied. */
-const TOOLBAR = `<div id="prodops-toolbar" style="padding:10px 16px;border-bottom:1px solid #2b2b2b;background:#111;color:#fafafa;
-  font:500 12.5px/1.4 system-ui,-apple-system,'Segoe UI',sans-serif">
+const TOOLBAR = `<div id="prodops-toolbar" style="padding:10px 16px;border-bottom:1px solid var(--color-hairline);
+  background:var(--color-surface);color:var(--color-body);
+  font:500 12.5px/1.4 var(--font-sans)">
   This tool is installed in ProdOps — it runs locally, with no email, model or key.
-  <a href="/workspace/" style="color:#ff5c1a;margin-left:6px">Open it →</a>
+  <a href="/workspace/" style="color:var(--color-brand);margin-left:6px;text-decoration:none;font-weight:600">Open it →</a>
 </div>`
 
 const TOOL_PAGE = /^\/(tools|prd-creator|skill-builder|ai-design-system|favicon-creator|agentcanon|starter|rails-react-template|design-os|agent-os)(\/|\.html$|$)/
@@ -379,13 +405,13 @@ export function blockedPage(path: string): string {
     body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0a0a0a; color: #fafafa;
       font: 400 15px/1.6 system-ui, -apple-system, 'Segoe UI', sans-serif; }
     .card { max-width: 560px; padding: 28px; border: 1px solid #2b2b2b; border-radius: 14px; background: #121212 }
-    p.kicker { margin: 0 0 6px; font: 600 11px/1 ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: #ff5c1a }
+    p.kicker { margin: 0 0 6px; font: 600 11px/1 ui-monospace, monospace; letter-spacing: .14em; text-transform: uppercase; color: #f0621a }
     h1 { margin: 0 0 10px; font-size: 20px; font-weight: 600 }
     p { margin: 0 0 12px; color: #a3a3a3 }
     code { color: #e5e5e5; font-family: ui-monospace, monospace; font-size: 12.5px }
     a.btn { display: inline-block; margin-right: 8px; padding: 8px 14px; border-radius: 9px; text-decoration: none;
       font-weight: 600; font-size: 13px }
-    a.primary { background: #ff5c1a; color: #0a0a0a }
+    a.primary { background: #f0621a; color: #fff }
     a.quiet { border: 1px solid #3a3a3a; color: #fafafa }
   </style>
 </head>
@@ -555,7 +581,9 @@ export function replaceVideos(html: string): string {
   const note = (src: string) =>
     `<div class="prodops-video-note" role="img" aria-label="Teaser video (${src}) is not included in the offline copy" ` +
     `style="aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;text-align:center;` +
-    `padding:24px;background:#111;color:#b9b2a8;font:500 13px/1.6 system-ui,-apple-system,'Segoe UI',sans-serif">` +
+    `padding:24px;background:color-mix(in srgb, var(--color-display) 7%, transparent);` +
+    `color:var(--color-muted);border:1px solid var(--color-hairline);border-radius:var(--radius-card);` +
+    `font:500 13px/1.6 var(--font-sans)">` +
     `Teaser video — not part of the offline copy</div>`
   return html.replace(/<video\b[^>]*?\bsrc="([^"]*)"[^>]*>[\s\S]*?<\/video>/g, (_m, src: string) => note(src))
 }
@@ -586,6 +614,7 @@ export function adaptPage(html: string, path: string): string {
   out = withNav(out)
   out = withInstall(out, path)
   out = withPayment(out, path)
+  out = withBooking(out, path)
   out = dropCoursePromos(out)
   out = replaceVideos(out)
   // The name, the mark, the byline and the handles, on the way out. `site/`

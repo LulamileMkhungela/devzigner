@@ -81,8 +81,7 @@ export function ScopeReview({ project }: { project: Project }) {
             ))}
           </ul>
           <p className="lz-scope-ask-note">
-            Answer these in the description above and recompile — the brief, the data shape and the sections all
-            change with them. Nothing here was filled in with a guess.
+            Answer these above, then recompile. All five stages change with them.
           </p>
         </div>
       )}

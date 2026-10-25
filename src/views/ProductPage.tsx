@@ -41,10 +41,7 @@ export function ProductPage({ project }: { project: Project }) {
         <BriefComposer />
         <div className="lz-card lz-what-next">
           <h2>What happens when you build</h2>
-          <p>
-            The compiler reads your description and writes five stages. Nothing is pre-filled, and nothing is
-            invented: if a stage needs something you have not said yet, it asks rather than guessing.
-          </p>
+          <p>One description, five stages. If something is missing it asks — it never invents it.</p>
           <ol className="lz-what-next-list">
             {PHASES.map((phase, index) => (
               <li key={phase.id}>

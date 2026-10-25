@@ -275,7 +275,11 @@ export function App() {
           </div>
 
           <p className="lz-nav-label">Workspace</p>
-          {TRACK_NAV.map((item) => (
+          {/* Tools are real files and always open. The rest of the track —
+              personas, flows, tech stack, prototype, token editor, wiki,
+              coverage — is derived from a product, so it is not offered until
+              a product has been described. An empty page is not a feature. */}
+          {TRACK_NAV.filter((item) => item.path === 'tools' || started(active)).map((item) => (
             <Link
               key={item.path}
               to={item.path}

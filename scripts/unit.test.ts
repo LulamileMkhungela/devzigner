@@ -428,8 +428,10 @@ test('the brief quotes the description instead of hiding it in a footnote', () =
   const idea = 'A booking tool for mobile dog groomers: owners pick a slot, groomers see the day route.'
   const brief = compileProject({ idea }).brief
   assert.ok(brief.summary.startsWith('A booking tool for mobile dog groomers'), brief.summary.slice(0, 60))
-  assert.match(brief.elevator, /asked for in these words/)
-  assert.ok(brief.problems[0].detail.includes("In this product's own words"), 'the problem carries the quote')
+  // Quoted once, at the top. The elevator and the problems are copy, not the
+  // builder's paragraph pasted back at them a second and third time.
+  assert.equal(brief.elevator.split('. ').length <= 3, true, brief.elevator)
+  assert.ok(!brief.problems[0].detail.includes('own words'), 'the problem does not re-quote the brief')
   assert.equal(brief.personas[0].segment, 'mobile dog groomers')
 })
 

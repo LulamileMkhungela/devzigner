@@ -1752,6 +1752,27 @@ pre {
    empty state + command box
    -------------------------------------------------------------------------- */
 
+/* A stage waiting for a description: one card, one line, one way forward. */
+.lz-empty-stage {
+  display: grid;
+  gap: 14px;
+  justify-items: start;
+  padding: 28px 24px;
+  margin: 0 0 20px;
+}
+.lz-empty-stage h2 {
+  font: 600 17px/1.3 var(--font);
+  color: var(--ink);
+}
+.lz-empty-stage p {
+  margin: 0;
+  max-width: 62ch;
+  color: var(--muted);
+  line-height: 1.55;
+}
+.lz-empty-stage .lz-btn {
+  margin-top: 4px;
+}
 .lz-empty {
   background: var(--card);
   border: 1px dashed var(--line-strong);

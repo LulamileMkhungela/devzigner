@@ -592,6 +592,11 @@ export function withInstall(html: string, path: string): string {
   out = out.replace(/<form class="capture[^"]*"[\s\S]*?<\/form>/g, '')
 
   if (!placed) {
+    // No "…and installation instructions" promise on this page: put the steps
+    // directly under the page title, where a reader looks for them. Only if the
+    // page has no heading at all do they go at the end of the article.
+    const heading = out.indexOf('</h1>')
+    if (heading !== -1) return out.slice(0, heading + 5) + block + out.slice(heading + 5)
     const article = out.lastIndexOf('</article>')
     if (article === -1) return out
     out = out.slice(0, article) + block + out.slice(article)

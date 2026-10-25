@@ -49,10 +49,9 @@ const EXAMPLES: { label: string; text: string }[] = [
 ]
 
 const GUIDANCE = [
-  { do: 'Name the problem', detail: 'what is broken or missing today, and for whom' },
+  { do: 'Name the problem', detail: 'what is broken today, and for whom' },
   { do: 'Say who uses it', detail: 'the one person whose day it changes' },
-  { do: 'State the must-haves', detail: 'the two or three things it has to do to count as working' },
-  { do: 'Mention constraints', detail: 'money, devices, regulation, integrations — only if they change the design' },
+  { do: 'State the must-haves', detail: 'the two or three things it has to do' },
 ]
 
 export function BriefComposer() {
@@ -99,22 +98,22 @@ export function BriefComposer() {
       </div>
 
       <p className="lz-compose-lede">
-        Write the problem in your own words — what is broken today, who it is for, and what the solution has to do.
-        Two or three sentences is enough. The compiler turns it into the brief, the data shape, the design system and
-        the sections below, and you can rewrite it as often as you like.
+        The problem in your own words: what is broken, who it is for, what it must do. Two sentences is enough.
       </p>
 
-      <p className="lz-compose-current">
-        Currently building <b>{active.name}</b>
-        <span> · {active.archetypeLabel}</span>
-        {active.idea && (
+      {/* Nothing to report before the first build: "Currently building Untitled
+          product · Not started" was a line of noise above an empty field. */}
+      {active.idea && (
+        <p className="lz-compose-current">
+          Building <b>{active.name}</b>
+          <span> · {active.archetypeLabel}</span>
           <span className="lz-compose-current-idea" title={active.idea}>
             {' — “'}
             {active.idea.length > 96 ? `${active.idea.slice(0, 93).trimEnd()}…` : active.idea}
             {'”'}
           </span>
-        )}
-      </p>
+        </p>
+      )}
 
       <label className="lz-compose-field">
         <span className="sr-only">Describe the product you want built</span>

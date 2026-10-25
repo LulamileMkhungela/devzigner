@@ -163,7 +163,7 @@ const checks = [
     const out = wrap(<ProductPage project={project} />)
     return (
       /placeholder="e\.g\. A booking tool/.test(out) &&
-      ['Name the problem', 'Say who uses it', 'State the must-haves', 'Mention constraints'].every((line) => out.includes(line)) &&
+      ['Name the problem', 'Say who uses it', 'State the must-haves'].every((line) => out.includes(line)) &&
       out.includes('Or start from an example') &&
       out.includes('Write at least a sentence')
     )
@@ -407,12 +407,12 @@ const checks = [
 
   /* ---- scope: what the compiler read, and what it left out -------------- */
   ['the brief shows what the compiler read', (() => {
-    const out = wrap(<ProductPage project={project} />)
-    return out.includes('What the compiler read') && out.includes('lz-scope') && out.includes('Currently building')
+    const out = withActive(<ProductPage project={project} />)
+    return out.includes('What the compiler read') && out.includes('lz-scope') && out.includes('lz-compose-current')
   })()],
   ['sections the description did not ask for are listed, not compiled', (() => {
     // SSR escapes `&`, so compare against a decoded copy of the markup.
-    const out = wrap(<ProductPage project={project} />).replace(/&amp;/g, '&')
+    const out = withActive(<ProductPage project={project} />).replace(/&amp;/g, '&')
     const dropped = (project.scope ?? []).filter((decision) => !decision.included)
     return dropped.length > 0 && out.includes('Not in your brief') && dropped.every((d) => out.includes(d.name))
   })()],

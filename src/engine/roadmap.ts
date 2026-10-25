@@ -69,9 +69,9 @@ export function compileRoadmap(sections: Section[], rngSeedNote: string): Roadma
   return {
     phases,
     sequencingNote:
-      `Sections are sequenced by dependency and revenue impact, not by effort. ` +
-      `Foundation must land before ${phase2[0]?.name ?? 'the next phase'} because every later screen reads the same records. ` +
-      `Each phase ships with its own tests; a phase is done when its sections are usable with real data and no manual data fixing. ` +
+      // One line, because the phases underneath already say the rest.
+      `Ordered by dependency: foundation first, then ${phase2[0]?.name ?? 'the core loop'}. ` +
+      `A phase is done when its sections are usable with real data. ` +
       rngSeedNote,
   }
 }

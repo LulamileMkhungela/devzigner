@@ -109,36 +109,28 @@ export function compileBrief(pack: Pack, rng: Rng, name: string, idea: string, i
 
   const principles = [...pack.principles, ...rng.picks(PRINCIPLE_POOL, 2)]
 
+  // One sentence each. The builder's own description sits directly above this
+  // line on the page, so quoting it back made the page twice as long and taught
+  // them nothing they had not just typed.
   const elevator = described
-    ? `${name} is a ${pack.category.toLowerCase()} workspace built for ${described.actor || 'the people in the description'}. ` +
-      `It was asked for in these words: ${asSentence(described.sentence).replace(/\.$/, '')}. ` +
-      `The archetype that fits it is ${pack.label}, so the expensive failure to design against is ${lowerFirst(pack.problems[0].title)} — ` +
-      `and the cost of leaving it unsolved is ${lowerFirst(pack.problems[0].cost)}.`
-    : `${name} is a ${pack.category.toLowerCase()} workspace. ${pack.blurb} ` +
-      `It exists because of one expensive failure: ${lowerFirst(pack.problems[0].title)}. ` +
-      `The cost is ${lowerFirst(pack.problems[0].cost)}.`
+    ? `${name} is a ${pack.category.toLowerCase()} workspace for ${described.actor || 'the people in the description'}. ` +
+      `The failure it is built to stop: ${lowerFirst(pack.problems[0].title)}.`
+    : `${name} is a ${pack.category.toLowerCase()} workspace. ` +
+      `The failure it is built to stop: ${lowerFirst(pack.problems[0].title)}.`
 
   return {
     name,
     category: pack.category,
     tagline: pack.taglines[rng.int(0, pack.taglines.length - 1)].replace('{object}', pack.objects[0]),
+    // The description is the first line of the brief — once, at the top. It is
+    // not quoted again inside the problems or the elevator.
     summary:
       (described ? `${asSentence(described.sentence)} ` : '') +
-      `${pack.blurb} ${name} keeps the work, the money and the exceptions in one traceable surface, ` +
-      `so the answer to "what needs attention today" takes one screen instead of five tools.` +
-      (idea.trim() && !described ? ` Seed direction: ${idea.trim().slice(0, 180)}` : ''),
+      `${pack.blurb} ` +
+      (idea.trim() && !described ? `Seed direction: ${idea.trim().slice(0, 180)}` : ''),
     elevator,
     // Copy, never the pack's own objects: a brief is per project.
-    problems: described
-      ? pack.problems.map((problem, index) =>
-          index === 0
-            ? {
-                ...problem,
-                detail: `${problem.detail} In this product's own words: ${asSentence(described.sentence).replace(/\.$/, '')}.`,
-              }
-            : { ...problem },
-        )
-      : pack.problems.map((problem) => ({ ...problem })),
+    problems: pack.problems.map((problem) => ({ ...problem })),
     personas,
     jobs,
     metrics: pack.metrics,

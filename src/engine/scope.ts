@@ -133,7 +133,7 @@ export function readScope(pack: Pack, idea: string, options: ScopeOptions = {}):
         id: section.id,
         name: section.name,
         included: true,
-        why: `Nothing of this kind works without ${section.name.toLowerCase()}.`,
+        why: `Every ${pack.label.toLowerCase()} needs it.`,
       }
     }
     const words = sectionWords(pack, section.id)

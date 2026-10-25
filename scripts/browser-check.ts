@@ -191,6 +191,19 @@ for (const scenario of scenarios) {
       navLabels.join(', '),
     )
     check('first visit · the tools stay open', navLabels.some((label) => /Tools/i.test(label)), navLabels.join(', '))
+
+    // Design, data shape and the rest are derived. Before a description they
+    // must not show the archetype's own tokens as if they were this product's.
+    w.location.hash = '#/design'
+    await new Promise((resolve) => setTimeout(resolve, 160))
+    const designText = (root.textContent ?? '').replace(/\s+/g, ' ')
+    check(
+      'first visit · Design shows no system until one is compiled',
+      /Nothing here yet/i.test(designText) && !/tokens\.css|Draftline|#[0-9a-f]{6}/i.test(designText),
+      designText.slice(0, 70),
+    )
+    w.location.hash = '#/'
+    await new Promise((resolve) => setTimeout(resolve, 120))
   }
 
   if (Object.keys(scenario.storage).length === 0) {

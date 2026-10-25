@@ -3,8 +3,6 @@ import { StepGuide } from '../components/StepGuide'
 import { StageConfirm } from '../components/StageConfirm'
 import { useStore } from '../lib/store'
 import { NextPhase, PhaseHeader, ProgressDots, WarningBanner } from '../components/ui'
-import { EmptyStage } from '../components/EmptyStage'
-import { started } from '../lib/state'
 import { Icon } from '../components/Icons'
 import { Link } from '../lib/router'
 import { completedPhases, sectionProgress, sectionStats } from '../lib/progress'
@@ -15,16 +13,6 @@ export function SectionsPage({ project }: { project: Project }) {
   const stats = sectionStats(project, captures)
   const done = completedPhases(project, captures)
 
-  if (!started(project)) {
-    return (
-      <EmptyStage
-        project={project}
-        current="sections"
-        title="Sections"
-        waiting="Sections come from what you asked for: the ones your description supports, in build order. Describe the product and the list appears."
-      />
-    )
-  }
 
   return (
     <div className="lz-view">

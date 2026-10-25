@@ -4,8 +4,6 @@ import { useStore } from '../lib/store'
 import { useState } from 'react'
 import type { Entity, Project } from '../types'
 import { Collapsible, NextPhase, PhaseHeader, useFileDownload } from '../components/ui'
-import { EmptyStage } from '../components/EmptyStage'
-import { started } from '../lib/state'
 import { Icon } from '../components/Icons'
 import { formatField } from '../lib/format'
 
@@ -15,16 +13,6 @@ export function DataShapePage({ project }: { project: Project }) {
   const download = useFileDownload()
   const [openEntity, setOpenEntity] = useState<string | null>(data.entities[0]?.id ?? null)
 
-  if (!started(project)) {
-    return (
-      <EmptyStage
-        project={project}
-        current="data-shape"
-        title="Data Shape"
-        waiting="The entities, their fields and the schema are compiled from your description. Nothing is stored until you describe the product."
-      />
-    )
-  }
 
   return (
     <div className="lz-view">

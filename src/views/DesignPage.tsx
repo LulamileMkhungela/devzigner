@@ -3,8 +3,6 @@ import { StepGuide } from '../components/StepGuide'
 import { StageConfirm } from '../components/StageConfirm'
 import { useStore } from '../lib/store'
 import { Collapsible, NextPhase, PhaseHeader, useFileDownload } from '../components/ui'
-import { EmptyStage } from '../components/EmptyStage'
-import { started } from '../lib/state'
 import { Icon } from '../components/Icons'
 import { Link } from '../lib/router'
 import { tokenVars } from '../components/AppPreview'
@@ -20,16 +18,6 @@ export function DesignPage({ project }: { project: Project }) {
   const body = design.typography.find((t) => t.role === 'body') ?? design.typography[1]
   const mono = design.typography.find((t) => t.role === 'mono') ?? design.typography[2]
 
-  if (!started(project)) {
-    return (
-      <EmptyStage
-        project={project}
-        current="design"
-        title="Design"
-        waiting="Colour, type and the shell are chosen for the product you describe. There are no tokens before there is a product."
-      />
-    )
-  }
 
   return (
     <div className="lz-view">

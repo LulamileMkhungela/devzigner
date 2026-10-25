@@ -4,8 +4,6 @@ import { useMemo, useState } from 'react'
 import type { Project } from '../types'
 import { useStore } from '../lib/store'
 import { CheckRow, Collapsible, CommandBox, PhaseHeader, useCopy } from '../components/ui'
-import { EmptyStage } from '../components/EmptyStage'
-import { started } from '../lib/state'
 import { Icon } from '../components/Icons'
 import { buildPackage, packageSizeKb } from '../export/package'
 import { downloadProjectZip } from '../lib/download'
@@ -40,16 +38,6 @@ export function ExportPage({ project }: { project: Project }) {
     return Array.from(map.entries())
   }, [project.audit.checks])
 
-  if (!started(project)) {
-    return (
-      <EmptyStage
-        project={project}
-        current="export"
-        title="Export"
-        waiting="The handoff package is built from your brief, schema, tokens and sections. Describe the product and it is ready to download."
-      />
-    )
-  }
 
   const download = async () => {
     setZipping(true)

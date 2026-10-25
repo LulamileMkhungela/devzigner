@@ -4,16 +4,13 @@
 //
 // The workspace used to open on a finished sample product, so every stage was
 // full of somebody else's artefacts: six sections, a design system, screens,
-// sample rows, a prototype. The complaint was exact — "I don't want dummy, it
-// must be items I have requested" — so a stage with no product in it now says
-// what it will hold and where the product comes from, and shows nothing else.
-//
-// It is deliberately not an error and not a spinner: this is the true state of
-// a workspace with no description in it, so the page names the stage, lists the
-// artefacts it will write, and offers the one action that fills it.
+// sample rows, a prototype. A stage with no product in it now says what it will
+// hold and where the product comes from — in one line, not a paragraph — and
+// keeps its how-to steps, because the steps are how the stage gets filled.
 
 import { Link } from '../lib/router'
-import { useStore } from '../lib/store'
+import { StepGuide } from './StepGuide'
+import type { GuidePhase } from './StepGuide'
 import { Icon } from './Icons'
 
 export function AwaitingDescription({
@@ -21,6 +18,7 @@ export function AwaitingDescription({
   title,
   subtitle,
   willHold,
+  guide,
 }: {
   /** The stage's name, for the header. */
   stage: string
@@ -28,9 +26,9 @@ export function AwaitingDescription({
   subtitle: string
   /** What this stage writes, once there is a product to write it for. */
   willHold: string[]
+  /** The stage's how-to, so the page still teaches the work. */
+  guide?: GuidePhase
 }) {
-  const { active } = useStore()
-
   return (
     <div className="lz-view">
       <div className="lz-pagehead">
@@ -48,13 +46,8 @@ export function AwaitingDescription({
           <Icon name="PenLine" size={20} />
         </div>
         <div>
-          <h2>Nothing here yet — and nothing invented to fill it.</h2>
-          <p>
-            ProdOps writes this stage from the product you describe. There is no sample to browse, because a
-            sample is not your product: every row, section and screen you see from here on comes from your own
-            words.
-          </p>
-          <p className="lz-awaiting-label">Once you describe the product, this stage holds:</p>
+          <h2>Nothing here yet</h2>
+          <p>This stage is written from your description. Nothing is stored until you write it.</p>
           <ul className="lz-awaiting-list">
             {willHold.map((item) => (
               <li key={item}>
@@ -67,17 +60,11 @@ export function AwaitingDescription({
             <Link to="" className="lz-btn primary">
               <Icon name="Sparkles" size={13} /> Describe the product
             </Link>
-            <Link to="tools" className="lz-btn small">
-              <Icon name="Sparkles" size={13} /> Or start from the toolkit
-            </Link>
           </div>
-          <p className="lz-awaiting-note">
-            {active.idea
-              ? 'You have written a description; it is on the Product stage.'
-              : 'Nothing is stored for this stage until then, and nothing is sent anywhere.'}
-          </p>
         </div>
       </div>
+
+      {guide && <StepGuide phase={guide} />}
     </div>
   )
 }

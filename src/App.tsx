@@ -28,6 +28,7 @@ import { WikiPage } from './views/WikiPage'
 import { CoveragePage } from './views/CoveragePage'
 import { ToolsPage } from './views/ToolsPage'
 import { AwaitingDescription } from './components/AwaitingDescription'
+import type { GuidePhase } from './components/StepGuide'
 import { started } from './lib/state'
 
 /**
@@ -37,7 +38,10 @@ import { started } from './lib/state'
  * gives — so a page that has nothing in it is still teaching what will be here,
  * instead of showing a sample that is not the builder's.
  */
-const STAGE_INTRO: Record<string, { stage: string; title: string; subtitle: string; willHold: string[] }> = {
+const STAGE_INTRO: Record<
+  string,
+  { stage: string; title: string; subtitle: string; willHold: string[]; guide?: GuidePhase }
+> = {
   'data-shape': {
     stage: 'Data Shape',
     title: 'Data Shape',
@@ -178,7 +182,7 @@ export function App() {
     const stage = path[0] ?? ''
     if (!started(active) && stage !== '' && stage !== 'tools') {
       const intro = STAGE_INTRO[stage] ?? STAGE_INTRO['data-shape']
-      return <AwaitingDescription {...intro} />
+      return <AwaitingDescription {...intro} guide={stage as GuidePhase} />
     }
     if (path[0] === 'data-shape') return <DataShapePage project={active} />
     if (path[0] === 'design') return <DesignPage project={active} />

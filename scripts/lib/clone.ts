@@ -135,95 +135,99 @@ const MOTION_CSS = `<style id="prodops-motion">
   a[href]:active, button:active { transform: translateY(1px); }
 
   /* ---- 4. the tool browser: tabs, one panel, no page loads ------------- */
+  /* These are the capture's own tokens, not a second design language: the tab
+     is a .ds-docs-link (hairline border, --radius-control), the panel is a
+     .ds-card (--color-surface, --radius-card, 32px), the button is the site's
+     filled .btn. The only liberty is that the selected tab keeps a slow drift
+     of the brand colour, because the colour animation was asked for twice. */
   .prodops-tools { margin: 0; }
+  .prodops-tools-kicker {
+    margin: 0 0 10px;
+    font: 600 11px/1 ui-monospace, mono;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--color-brand);
+  }
   .prodops-tabstrip {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin: 2px 0 18px;
-    padding-bottom: 2px;
+    margin: 0 0 22px;
   }
   .prodops-tab {
     appearance: none;
-    border: 1px solid color-mix(in srgb, currentColor 18%, transparent);
-    background: color-mix(in srgb, currentColor 3%, transparent);
-    color: inherit;
-    border-radius: 999px;
-    padding: 8px 15px;
-    font: 600 13px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+    border: 1px solid var(--color-hairline);
+    background: transparent;
+    color: var(--color-body);
+    border-radius: var(--radius-control);
+    padding: 9px 15px;
+    font: 500 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
     letter-spacing: -.01em;
     cursor: pointer;
-    position: relative;
-    overflow: hidden;
     white-space: nowrap;
+    transition: border-color .18s ease, color .18s ease, background .18s ease;
   }
-  .prodops-tab:hover { border-color: color-mix(in srgb, #ff5c1a 55%, transparent); }
+  .prodops-tab:hover { border-color: var(--color-brand); color: var(--color-brand); }
   .prodops-tab[aria-selected="true"] {
     color: #fff;
     border-color: transparent;
-    background-image: linear-gradient(100deg, #ff5c1a, #d83c0b 42%, #ff9a5c 58%, #d83c0b 100%);
-    background-size: 240% 100%;
-    animation: prodops-sweep 7s ease-in-out infinite;
-    box-shadow: 0 6px 18px -10px rgba(216, 60, 11, .9);
-  }
-  .prodops-tab small {
-    display: block;
-    font: 500 10.5px/1 ui-monospace, monospace;
-    opacity: .7;
-    margin-top: 4px;
-    letter-spacing: .04em;
-    text-transform: uppercase;
+    background-image: linear-gradient(100deg, var(--color-brand), #d8430a 45%, #f97333 62%, var(--color-brand));
+    background-size: 220% 100%;
+    animation: prodops-sweep 9s ease-in-out infinite;
   }
   .prodops-toolpanel {
-    border: 1px solid color-mix(in srgb, currentColor 14%, transparent);
-    border-radius: 16px;
-    padding: 20px 22px 24px;
-    background: color-mix(in srgb, currentColor 2.5%, transparent);
+    background: var(--color-surface);
+    border: 1px solid var(--color-hairline);
+    border-radius: var(--radius-card);
+    padding: 30px 32px 32px;
     animation: prodops-fade .28s ease both;
   }
   @keyframes prodops-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   .prodops-panel-head {
     display: flex;
     flex-wrap: wrap;
-    align-items: center;
+    align-items: baseline;
     justify-content: space-between;
     gap: 10px;
     padding-bottom: 14px;
-    margin-bottom: 6px;
-    border-bottom: 1px solid color-mix(in srgb, currentColor 12%, transparent);
+    margin-bottom: 4px;
+    border-bottom: 1px solid var(--color-hairline);
   }
-  .prodops-panel-head h2 { margin: 0; font-size: 22px; letter-spacing: -.02em; }
-  .prodops-panel-kind { font: 600 10.5px/1 ui-monospace, monospace; letter-spacing: .12em; text-transform: uppercase;
-    color: #d8430a; }
-  .prodops-toolpanel h3, .prodops-toolpanel h4 { margin: 22px 0 8px; }
+  .prodops-panel-head h2 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+  .prodops-panel-kind {
+    margin: 0 0 6px;
+    font: 600 10.5px/1 ui-monospace, mono;
+    letter-spacing: .14em;
+    text-transform: uppercase;
+    color: var(--color-brand);
+  }
+  .prodops-toolpanel h3 { margin: 26px 0 8px; }
   .prodops-toolpanel p, .prodops-toolpanel li { line-height: 1.65; }
   .prodops-toolpanel pre { overflow: auto; }
-  .prodops-panel-foot { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 22px;
-    padding-top: 16px; border-top: 1px solid color-mix(in srgb, currentColor 12%, transparent); }
-  .prodops-panel-loading { font: 500 13px/1.6 system-ui, sans-serif; opacity: .72; }
+  .prodops-panel-loading { font: 500 14px/1.6 system-ui, sans-serif; color: var(--color-muted, #6b6560); }
 
   /* The gate: the real site trades an email for the download. Here the button
      keeps its promise and opens the install instructions that ship with the
      copy — no list, no server, nothing sent. */
   .prodops-access {
     appearance: none;
-    border: 0;
-    border-radius: 10px;
-    padding: 11px 18px;
-    font: 600 14px/1 system-ui, -apple-system, 'Segoe UI', sans-serif;
+    border: 1px solid transparent;
+    border-radius: var(--radius-control);
+    padding: 13px 22px;
+    font: 600 15px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
     color: #fff;
-    background-image: linear-gradient(100deg, #ff5c1a, #d83c0b 45%, #ff9a5c 60%, #d83c0b 100%);
-    background-size: 240% 100%;
-    animation: prodops-sweep 7s ease-in-out infinite;
+    background-image: linear-gradient(100deg, var(--color-brand), #d8430a 45%, #f97333 62%, var(--color-brand));
+    background-size: 220% 100%;
+    animation: prodops-sweep 9s ease-in-out infinite;
     cursor: pointer;
   }
   .prodops-access:hover { filter: brightness(1.06); }
   .prodops-install {
     margin-top: 14px;
-    border: 1px dashed color-mix(in srgb, #ff5c1a 45%, transparent);
-    border-radius: 12px;
+    border: 1px dashed color-mix(in srgb, var(--color-brand) 45%, transparent);
+    border-radius: var(--radius-control);
     padding: 16px 18px;
-    background: color-mix(in srgb, #ff5c1a 6%, transparent);
+    background: color-mix(in srgb, var(--color-brand) 6%, transparent);
     animation: prodops-fade .28s ease both;
   }
   .prodops-install h4 { margin: 0 0 8px; font-size: 15px; }
@@ -359,6 +363,9 @@ export function adaptPage(html: string, path: string): string {
     // reCAPTCHA key and canonical URLs that point at the live site.
     .replace(/(<div id="app"[^>]*?)\sdata-page="[\s\S]*?"/g, '$1')
 
+  // The crawler leaves a "Mirrored from https://…" comment on every page. It
+  // is not part of the site, and the address it names is not this site's.
+  out = out.replace(/<!--\s*Mirrored from[\s\S]*?-->/gi, '')
   out = restoreEmails(out)
   out = dropCoursePromos(out)
   out = replaceVideos(out)

@@ -37,15 +37,16 @@ function dataUri(name: string): string {
 }
 
 /**
- * Files removed from the capture with the rest of the old brand: two wordmark
- * SVGs and the previous author's portrait. Their URLs still resolve — the
- * server answers them with the ProdOps mark — so a bookmark or a cached page
- * is not a 404, and the capture keeps no file named after someone else.
+ * The capture's wordmarks and its author portrait were deleted with the rest of
+ * the old brand, and their image URLs were rewritten on disk to ProdOps names
+ * (`images/logos/prodops-wordmark.svg`, `images/marks/prodops-mark.svg`), so no
+ * page — mirrored or served — asks for a file named after someone else.
+ *
+ * What is left here is the favicon set: the capture had three raster icons, the
+ * site ships one SVG mark, and these aliases keep the old URLs answering
+ * instead of 404ing for a browser with a cached icon.
  */
 export const LEGACY_ASSETS: Record<string, string> = {
-  '/images/logos/builder-methods.svg': 'public/prodops-wordmark.svg',
-  '/images/logos/builder-methods-light.svg': 'public/prodops-wordmark-light.svg',
-  '/images/design-system/brian-casel.jpg': 'public/prodops-mark.svg',
   '/favicon/favicon.ico': 'site/favicon/icon.svg',
   '/favicon/icon-192.png': 'site/favicon/icon.svg',
   '/favicon/apple-touch-icon.png': 'site/favicon/icon.svg',
@@ -55,6 +56,17 @@ let cached: { light: string; dark: string } | null = null
 function marks() {
   if (!cached) cached = { light: dataUri('prodops-wordmark-light.svg'), dark: dataUri('prodops-wordmark.svg') }
   return cached
+}
+
+/**
+ * The square mark, for the places the capture used a photograph: a 40px avatar
+ * in the sign-off, an author portrait, a blurred hero. A wordmark would be
+ * unreadable at that size, so those slots get the mark instead.
+ */
+let markUri: string | null = null
+function mark() {
+  if (!markUri) markUri = dataUri('prodops-mark.svg')
+  return markUri
 }
 
 /** The old brand and everybody it named, in the order they must be replaced. */
@@ -115,8 +127,10 @@ const PHRASES: [RegExp, string][] = [
  */
 const PRODUCTS: [RegExp, string][] = [
   [/Agent OS’s/g, 'Standards’'],
+  [/Agent OS's/g, 'Standards’'],
   [/Agent OS/g, 'Standards'],
   [/Design OS’s/g, 'ProdOps’'],
+  [/Design OS's/g, 'ProdOps’'],
   [/Design OS/g, 'ProdOps'],
   [/Build New/g, 'Starter'],
   [/bm-skills/g, 'ProdOps skills'],
@@ -130,6 +144,19 @@ const PRODUCTS: [RegExp, string][] = [
  * JSON-LD with no whitespace after them, and a greedy `\S*` eats the closing
  * quote, then the tag, then the rest of the document.
  */
+/**
+ * Clean-up passes that only exist because two renames can meet in the middle.
+ *
+ * "Running Design OS" and the sentence after it both become ProdOps, and a
+ * heading that reads "Pro" followed by "Pro renews automatically" becomes
+ * "ProdOps Pro Pro renews". These run last, on the finished text.
+ */
+const CLEANUP: [RegExp, string][] = [
+  [/ProdOps Pro Pro\b/g, 'ProdOps Pro'],
+  [/ProdOps ProdOps\b/g, 'ProdOps'],
+  [/\bProdOps Pro ProdOps Pro\b/g, 'ProdOps Pro'],
+]
+
 const HANDLES: [RegExp, string][] = [
   [/https:\/\/(?:www\.)?youtube\.com\/@lulamilemkhungela[^"'\s<>]*/g, 'https://github.com/LulamileMkhungela'],
   [/https:\/\/x\.com\/lulamilemkhungela[^"'\s<>]*/g, 'https://github.com/LulamileMkhungela'],
@@ -147,14 +174,14 @@ function swapLogos(html: string): string {
   // store and are not part of the capture. Preloading them is pointless, and a
   // remote URL keeps the old brand in the markup; the mark stands in instead.
   html = html.replace(/<link[^>]+rel="preload"[^>]+as="image"[^>]*buildermethods[^>]*>/gi, '')
-  html = html.replace(/https:\/\/buildermethods[^"'\s<>]*/g, light)
-  // The portrait on the about page is the previous author's; the mark stands in
-  // for it rather than showing a stranger on this product's page.
-  html = html.replace(new RegExp('(?:\.\.\/)*images/design-system/brian-casel\.jpg', 'g'), light)
+  html = html.replace(/https:\/\/buildermethods[^"'\s<>]*/g, mark())
+  // The portrait and the author avatar are a photograph of somebody who has
+  // nothing to do with this product; the mark stands in for both.
+  html = html.replace(new RegExp('(?:\.\.\/)*images/marks/prodops-mark\.svg', 'g'), mark())
   // The reference may be relative — nested pages write ../images/logos/… — and
   // the prefix has to go with the path, or the data URI becomes "../data:".
   // The pattern is built from a string so the escape level is stated once.
-  const logoRef = new RegExp('(?:\.\.\/)*images/logos/builder-methods(-light)?\.svg', 'g')
+  const logoRef = new RegExp('(?:\.\.\/)*images/logos/prodops-wordmark(-light)?\.svg', 'g')
   return html.replace(logoRef, (match: string) => (match.includes('-light') ? light : dark))
 }
 
@@ -229,13 +256,16 @@ function retitle(html: string, path: string): string {
  */
 const BRAND_CSS = `<style id="prodops-brand">
   /* Height only. Setting display here would beat the site's own
-     .hidden { display: none } — the light/dark pair — and show two logos. */
-  .ds-wordmark { width: auto !important; height: 26px; }
-  footer .ds-wordmark, .ds-footer .ds-wordmark { height: 30px; }
+     .hidden { display: none } — the light/dark pair — and show two logos.
+     The ProdOps lockup is 320x96 with the mark in a 64px square, so 38px keeps
+     the word at roughly the weight of the 16px nav links beside it and the
+     lockup about as wide as the one it replaces; --nav-height is 84px. */
+  .ds-wordmark { width: auto !important; height: 38px; vertical-align: middle; }
+  footer .ds-wordmark, .ds-footer .ds-wordmark { height: 34px; }
   .ds-nav > a[aria-label], .ds-footer a[aria-label] { display: inline-flex; align-items: center; }
   /* The author portrait is a mark now, so it sits with the sign-off text. */
   .signoff > img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-  @media (max-width: 640px) { .ds-wordmark { height: 22px; } }
+  @media (max-width: 640px) { .ds-wordmark { height: 32px; } }
 </style>`
 
 /**
@@ -274,9 +304,15 @@ export function rebrand(html: string, path = '/'): string {
   // Words first, then the handles they produced, and the logo swap last: the
   // replacement is a long base64 string, and running word replacements over it
   // would be replacing inside a data URI.
-  let out = renameProducts(html)
+  // React's server renderer writes empty comments between adjacent text nodes,
+  // so a sentence can be "Design OS<!-- --> runs". They are invisible, but they
+  // stop a phrase match from seeing the sentence a reader sees, so they go
+  // first and the rules see the same words the page will show.
+  let out = html.replace(/<!--\s*-->/g, '')
+  out = renameProducts(out)
   for (const [pattern, replacement] of PHRASES) out = out.replace(pattern, replacement)
   for (const [pattern, replacement] of HANDLES) out = out.replace(pattern, replacement)
+  for (const [pattern, replacement] of CLEANUP) out = out.replace(pattern, replacement)
   return withBrandCss(retitle(swapIcons(swapLogos(out)), path))
 }
 

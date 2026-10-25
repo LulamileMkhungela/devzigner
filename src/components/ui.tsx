@@ -431,8 +431,17 @@ export function CheckRow({ state, label, detail }: { state: 'pass' | 'warn' | 'f
 }
 
 export function Toast() {
-  const { toast } = useStore()
-  return <div className={`lz-toast${toast ? ' show' : ''}`} role="status" aria-live="polite">{toast}</div>
+  const { toast, toastAction } = useStore()
+  return (
+    <div className={`lz-toast${toast ? ' show' : ''}`} role="status" aria-live="polite">
+      <span>{toast}</span>
+      {toast && toastAction && (
+        <button type="button" className="lz-toast-action" onClick={() => navigate(toastAction.to)}>
+          {toastAction.label} <Icon name="ArrowRight" size={12} />
+        </button>
+      )}
+    </div>
+  )
 }
 
 /** Downloads a single generated file without touching the zip machinery. */

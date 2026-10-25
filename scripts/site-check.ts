@@ -480,6 +480,18 @@ gated.window.close()
       doc.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby') === selected?.id,
     `selected ${selected?.id ?? 'none'}`,
   )
+  const list = doc.querySelector('.ds-listings') as HTMLElement | null
+  check(
+    'the captured tools list is still there, not replaced by the tabs',
+    Boolean(list) && list?.style.display !== 'none' && (list?.querySelectorAll('.ds-listing').length ?? 0) === 8,
+    list ? `${list.querySelectorAll('.ds-listing').length} rows, display: ${list.style.display || 'block'}` : 'no list',
+  )
+  const before = doc.querySelector('.prodops-tools')
+  check(
+    'the browser sits above the index, both on the same page',
+    // 4 is DOCUMENT_POSITION_FOLLOWING: the list comes after the browser.
+    Boolean(before && list && (before.compareDocumentPosition(list) & 4) !== 0),
+  )
   live.window.close()
 }
 
@@ -611,6 +623,13 @@ for (const file of html) {
   if (/Lulamile Mkhungela/.test(out)) bylines.push(relative(SITE, file))
 }
 check('no served page carries the old brand', offBrand.length === 0, offBrand.slice(0, 6).join(', '))
+// Not even as a URL, a comment, a canonical link or a structured-data id.
+const oldHost = html.filter((file) => /buildermethods/i.test(adaptPage(readFileSync(file, 'utf8'), `/${relative(SITE, file)}`)))
+check(
+  'no served page carries the old host, anywhere',
+  oldHost.length === 0,
+  oldHost.slice(0, 5).map((file) => relative(SITE, file)).join(', '),
+)
 check('every served page is titled ProdOps', untitled.length === 0, untitled.slice(0, 6).join(', '))
 check(
   'the byline credits Lulamile Mkhungela',
@@ -624,7 +643,7 @@ check(
 const brandSheet = served.match(/<style id="prodops-brand">([\s\S]*?)<\/style>/)?.[1] ?? ''
 check(
   'the brand sheet sizes the wordmark without re-showing the hidden twin',
-  /\.ds-wordmark\s*\{[^}]*height:\s*26px/.test(brandSheet) && !/display\s*:/.test(brandSheet.split('.ds-wordmark')[1]?.split('}')[0] ?? ''),
+  /\.ds-wordmark\s*\{[^}]*height:\s*38px/.test(brandSheet) && !/display\s*:/.test(brandSheet.split('.ds-wordmark')[1]?.split('}')[0] ?? ''),
   brandSheet.split('.ds-wordmark')[1]?.split('}')[0]?.trim() ?? 'no wordmark rule',
 )
 

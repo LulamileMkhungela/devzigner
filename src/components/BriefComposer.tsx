@@ -10,11 +10,19 @@
  *
  * Nothing here calls a model. The compiler reads the text by rules, which is why
  * the answer can be edited and rebuilt as often as you like.
+ *
+ * Rebuilding resets the five confirmations, which used to be announced by a
+ * toast that vanished before anyone could act on it: the builder was told that
+ * something had changed and nothing about what to do. So a build now leaves a
+ * receipt in place — what was read, what the next stage is, and the button that
+ * goes there — which stays until it is used or dismissed.
  */
 import { useMemo, useState } from 'react'
 import { useStore } from '../lib/store'
+import { nextStage } from '../lib/progress'
 import { describeIntake, profileIdea } from '../engine/intake'
 import { Icon } from './Icons'
+import { NextStepGuide } from './NextStepGuide'
 
 /**
  * Four starting points, each an example of a *complete* answer rather than a
@@ -51,6 +59,8 @@ export function BriefComposer() {
   const { active, setBrief, notify } = useStore()
   const [value, setValue] = useState('')
   const [busy, setBusy] = useState(false)
+  /** Set by a successful build; cleared by going to the next stage or closing it. */
+  const [built, setBuilt] = useState(false)
 
   const trimmed = value.trim()
   const words = trimmed ? trimmed.split(/\s+/).length : 0
@@ -62,8 +72,17 @@ export function BriefComposer() {
     if (!ready || busy) return
     setBusy(true)
     try {
-      setBrief(trimmed)
-      notify('Product rebuilt from your description — every stage needs confirming again')
+      const rebuilt = setBrief(trimmed)
+      setBuilt(true)
+      // The card below is the lasting answer; the toast is the short version of
+      // it. Both point at the same stage, computed from the *rebuilt* project
+      // and an empty capture list — the rebuild cleared every confirmation, so
+      // the next stage is the first one, and the button says so.
+      const first = nextStage(rebuilt, [])
+      notify('Brief rebuilt — confirm the stages, starting with ' + first.label, {
+        label: 'Open ' + first.label,
+        to: `/p/${rebuilt.id}${first.path ? `/${first.path}` : ''}`,
+      })
     } finally {
       setBusy(false)
     }
@@ -156,6 +175,8 @@ export function BriefComposer() {
           </button>
         ))}
       </div>
+
+      {built && <NextStepGuide onDismiss={() => setBuilt(false)} />}
 
       {current.used && (
         <p className="lz-compose-note">

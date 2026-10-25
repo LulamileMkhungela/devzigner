@@ -162,22 +162,29 @@ the handoff could not be compiled, that build fails.
 
 ## The site at `/`
 
-`site/` is a captured copy of the public site this workspace was modelled on: 152 files, 92 pages
-with real server-rendered content, served offline with absolute links rewritten to local paths and
-no analytics. The capture is kept untouched — it is the evidence the information architecture was
-copied from something real, not invented for a demo — and everything that makes it *ProdOps's* site
-rather than somebody else's happens on the way out, in `scripts/lib/brand.ts`:
+`site/` is a captured copy of the public site this workspace was modelled on: 147 files, 112 pages,
+91 of them with real server-rendered content, served offline with absolute links rewritten to local paths and
+no analytics. It is the evidence the information architecture was copied from something real rather
+than invented for a demo, so it is edited only where it named the old brand: the wordmarks, the
+author portrait, the social cards, the object-store images, the absolute canonicals and two crawler
+artefacts were renamed in place, and every reference followed, so the mirror's own links still
+resolve to real files. Everything else that makes the site *ProdOps's* rather than somebody else's
+happens on the way out, in `scripts/lib/brand.ts`:
 
 - the name, the byline, the handles and the social links are rewritten;
 - the five products in the copy are renamed to ProdOps's eight tools;
-- the two wordmarks are replaced with the ProdOps mark, inlined as data URIs so the logo needs no
+- the two wordmarks are replaced with the ProdOps lockup, inlined as data URIs so the logo needs no
   request at all and still shows when a page is opened from disk;
 - every page is re-titled, and pages whose title never carried a brand get one.
 
-The old wordmark files and the previous author's portrait are gone from the tree; their URLs still
-answer with the ProdOps mark, so a bookmark is never a 404. `npm run site-check` fails if any served
-page still carries the old brand or the old product names, if a page is not titled ProdOps, if the
-byline is missing, or if the logo needs a request to appear.
+Nothing in the tree is named after the old brand any more, and no URL points at it: the wordmark and
+portrait files were renamed inside the capture (`images/logos/prodops-wordmark.svg`,
+`images/marks/prodops-mark.svg`) and the references followed, so the mirror's own links still resolve
+to real files rather than depending on a redirect. Photograph slots get the square mark instead of a
+wordmark, because a lockup is unreadable at 40px. `npm run site-check` fails if any served or
+mirrored page still carries the old brand, the old host in *any* position — text, comment, canonical
+or structured data — or the old product names, if a page is not titled ProdOps, if the byline is
+missing, or if the logo needs a request to appear.
 
 Attribution is not lost with the branding: the MIT notices for the work this builds on live in
 `docs/LICENSES.md`, which is where a licence requires them — on the package, not on the storefront.
@@ -188,6 +195,12 @@ Attribution is not lost with the branding: the MIT notices for the work this bui
 | `/workspace/` | ProdOps itself — the five stages, the eight tools, the export |
 | `/prodops-standalone.html` | the workspace as one file, no server |
 | `/prodops-snapshot.html` | every workspace page as static markup, no JavaScript |
+
+On `/tools.html` the eight tools are a tab strip: each tab reads that tool's real page in the panel
+below it, without a page load. The captured index of the same eight tools stays exactly where it
+was, underneath — the tabs are quicker, they do not replace what was there. `npm run site-check`
+asserts both: eight tabs that swap the panel, and the original eight-row list still on the page and
+still displayed.
 
 `npm run site-check` also counts the pages, reads every internal link and image, and operates the
 served copy the way a visitor does — opens the mobile drawer, submits the newsletter form, opens a

@@ -22,6 +22,8 @@ import { EditorPage } from '../src/views/EditorPage'
 import { WikiPage } from '../src/views/WikiPage'
 import { CoveragePage } from '../src/views/CoveragePage'
 import { ToolPanel, ToolsPage } from '../src/views/ToolsPage'
+import { NextStepGuide } from '../src/components/NextStepGuide'
+import { Toast } from '../src/components/ui'
 import { TOOLS } from '../src/tools'
 
 const store: Record<string, string> = {}
@@ -233,6 +235,32 @@ const checks = [
   ['the credit is in the document', (() => {
     const app = renderToString(<StoreProvider><App /></StoreProvider>)
     return app.includes('developed by') && app.includes('Lulamile Mkhungela')
+  })()],
+  /**
+   * After a rebuild the builder is told what to do next, in the page rather than
+   * in a sentence that disappears: which stage, how far along, and one button.
+   */
+  ['a rebuild leaves a next step on the page, not a vanishing toast', (() => {
+    // Server rendering separates interpolated numbers with comment markers, so
+    // "0 of 5 confirmed" arrives as "0<!-- --> of <!-- -->5…".
+    const guide = renderToString(<StoreProvider><NextStepGuide onDismiss={() => {}} /></StoreProvider>).replace(
+      /<!-- -->/g,
+      '',
+    )
+    const names = ['Product', 'Data Shape', 'Design', 'Sections', 'Export']
+    return (
+      guide.includes('lz-guide') &&
+      guide.includes('0 of 5 confirmed') &&
+      guide.includes('Confirm Product') &&
+      names.every((name) => guide.includes(name))
+    )
+  })()],
+  ['the toast can carry the button it talks about', (() => {
+    const css = readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8')
+    const toast = renderToString(<StoreProvider><Toast /></StoreProvider>)
+    // The component renders the action only when a message set one; the host
+    // and its styling are what a build has to leave in place.
+    return toast.includes('lz-toast') && /\.lz-toast-action\s*\{/.test(css) && /\.lz-toast\s*\{[^}]*display:\s*flex/.test(css)
   })()],
   ['the starter shows no earned tick', (starterHtml.match(/lz-step is-done/g) ?? []).length === 0],
 

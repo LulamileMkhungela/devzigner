@@ -54,7 +54,13 @@ interface StoreValue {
   unconfirmStage: (id: string) => void
   setBrief: (idea: string) => Project
   toast: string
-  notify: (message: string) => void
+  /**
+   * A message, and — when there is an obvious next thing to do — the button
+   * that does it. "Rebuilt" alone tells the builder nothing; "Rebuilt" with a
+   * way back to the first stage tells them exactly where to go.
+   */
+  toastAction: { label: string; to: string } | null
+  notify: (message: string, action?: { label: string; to: string }) => void
   /* ---- inline design editor ---- */
   overrides: DesignOverrides
   setOverride: (key: keyof DesignOverrides, value: DesignOverrides[keyof DesignOverrides] | undefined) => void
@@ -183,6 +189,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     return first ? { [first.id]: { branch: 'main', versions: [initialVersion(first)] } } : {}
   })
   const [toast, setToast] = useState('')
+  const [toastAction, setToastAction] = useState<{ label: string; to: string } | null>(null)
 
   const active = projects.find((p) => p.id === activeId) ?? projects[0]
   const book: VersionBook = (active && books[active.id]) || { branch: 'main', versions: [] }
@@ -206,11 +213,18 @@ export function StoreProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     if (!toast) return
-    const t = window.setTimeout(() => setToast(''), 2600)
+    // Long enough to read a sentence and reach the button.
+    const t = window.setTimeout(() => {
+      setToast('')
+      setToastAction(null)
+    }, 6000)
     return () => window.clearTimeout(t)
   }, [toast])
 
-  const notify = useCallback((message: string) => setToast(message), [])
+  const notify = useCallback((message: string, action?: { label: string; to: string }) => {
+    setToast(message)
+    setToastAction(action ?? null)
+  }, [])
 
   const replace = useCallback((next: Project) => {
     setProjects((prev) => prev.map((p) => (p.id === next.id ? next : p)))
@@ -505,6 +519,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     setBrief,
       toast,
       notify,
+      toastAction,
       overrides: active?.overrides ?? {},
       setOverride,
       clearOverrides,

@@ -812,6 +812,12 @@ pre {
 }
 /* The stage name is spoken, not printed, in the strip: the number is enough
    once the rail carries the labels. */
+/* A `mono` class is used on figures, counts and stage numbers throughout the
+   app; it had no rule, so those numbers were rendering in DM Sans. */
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
 .lz-sr {
   position: absolute;
   width: 1px;
@@ -2035,7 +2041,13 @@ pre {
   gap: 9px;
   margin-top: 16px;
 }
+/* A toast that can carry its own answer: the message, then the one button that
+   takes the builder where the message is talking about. Tokens only — the same
+   --line/--ink/--accent the rest of the shell uses, in both themes. */
 .lz-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
   position: fixed;
   left: 50%;
   bottom: 22px;
@@ -2051,9 +2063,105 @@ pre {
   transition: opacity 0.2s, transform 0.2s;
   max-width: min(92vw, 520px);
 }
-.lz-toast.show {
-  opacity: 1;
-  transform: translate(-50%, 0);
+.lz-toast > span {
+  min-width: 0;
+}
+.lz-toast-action {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 7px;
+  padding: 6px 10px;
+  font: 600 12px/1 var(--font);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.lz-toast-action:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* --------------------------------------------------------------------------
+   the post-build guide
+   A rebuild resets five confirmations. Instead of a sentence that disappears,
+   the composer leaves a receipt: how far along the product is, the five stages
+   in order with the current one lit, and the single next action. It sits in the
+   composer and borrows the composer's own surface, so it reads as part of the
+   form rather than a new kind of panel.
+   -------------------------------------------------------------------------- */
+.lz-guide {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 16px 14px;
+  background: var(--card-soft);
+}
+.lz-guide-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.lz-guide-head p {
+  margin: 0;
+  font: 400 13.5px/1.55 var(--font);
+  color: var(--muted);
+}
+.lz-guide-head b {
+  color: var(--ink);
+}
+.lz-guide-step {
+  flex: none;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--accent);
+}
+.lz-guide-road {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 13px 0 0;
+  padding: 0;
+}
+.lz-guide-road li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font: 500 11.5px/1.5 var(--font);
+  color: var(--faint);
+}
+.lz-guide-road li.done {
+  color: var(--ink-2);
+  border-color: var(--line-strong);
+}
+.lz-guide-road li.now {
+  color: #fff;
+  border-color: transparent;
+  background: var(--accent);
+}
+.lz-guide-road .mono {
+  font-size: 10px;
+  opacity: 0.7;
+}
+.lz-guide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.lz-guide-actions .lz-btn {
+  margin: 0;
 }
 
 /* --------------------------------------------------------------------------

@@ -10,6 +10,7 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
+import { readFileSync } from 'node:fs'
 import { ARCHETYPES, compileProject } from '../src/engine'
 import { describeIntake, profileIdea } from '../src/engine/intake'
 import { BLOCK_COMPONENT_NAMES } from '../src/engine/system'
@@ -453,7 +454,7 @@ test('an unreadable description still compiles, and says so', () => {
 test('rebranding a served page leaves no trace of the site it was captured from', () => {
   const page = [
     '<html><head><title inertia>Builder Methods | Stay ahead</title></head><body>',
-    '<a href="/about" aria-label="Builder Methods"><img src="images/logos/builder-methods.svg" alt=""></a>',
+    '<a href="/about" aria-label="Builder Methods"><img src="images/logos/prodops-wordmark.svg" alt=""></a>',
     '<p>Brian Casel writes about Agent OS at buildermethods.com.</p>',
     '<script type="application/ld+json">{"@type":"Person","name":"Brian Casel","url":"https://briancasel.com"}</script>',
     '</body></html>',
@@ -466,6 +467,8 @@ test('rebranding a served page leaves no trace of the site it was captured from'
   // The wordmark is inlined, so the logo costs no request and survives file://
   assert.match(out, /src="data:image\/svg\+xml;base64,/)
   assert.doesNotMatch(out, /images\/logos\//)
+  // Not just the words: no URL in the page may still name the old brand.
+  assert.doesNotMatch(out, /buildermethods/i)
 })
 
 test('rebranding renames the products but never rewrites the capture’s own links', () => {
@@ -482,6 +485,22 @@ test('rebranding renames the products but never rewrites the capture’s own lin
   assert.match(out, /agent-os\/standards\/index\.yml/)
 })
 
+test('a photograph slot gets the square mark, not a wordmark', () => {
+  const page =
+    '<html><head><title>About</title></head><body>' +
+    '<img class="avatar" src="../images/marks/prodops-mark.svg" alt="">' +
+    '<img class="hero" src="https://buildermethods-production.s3.us-east-2.amazonaws.com/abc"></body></html>'
+  const out = rebrand(page, '/articles/one.html')
+  const sources = [...out.matchAll(/src="(data:image\/svg\+xml;base64,[^"]+)"/g)].map((m) => m[1])
+  const mark = `data:image/svg+xml;base64,${readFileSync(new URL('../public/prodops-mark.svg', import.meta.url)).toString('base64')}`
+  const wordmark = `data:image/svg+xml;base64,${readFileSync(new URL('../public/prodops-wordmark.svg', import.meta.url)).toString('base64')}`
+  assert.equal(sources.length, 2)
+  // Both slots are 40px circles or blurred heroes: a wordmark would be unreadable.
+  assert.ok(sources.every((src) => src === mark))
+  assert.ok(!out.includes(wordmark))
+  assert.doesNotMatch(out, /\.\.\/data:/)
+})
+
 test('a page with no title is given one that names the product', () => {
   const out = rebrand('<html><head></head><body><p>Nothing yet</p></body></html>', '/tools.html')
   assert.match(out, /<title>Tools — ProdOps<\/title>/)
@@ -491,7 +510,7 @@ test('rebranding never renames a path — only the words on the page', () => {
   const page =
     '<html><head><title>tools</title><link rel="canonical" href="agentcanon.html"></head><body>' +
     '<a class="ds-listing" href="agentcanon.html">agentcanon</a>' +
-    '<img src="../images/logos/builder-methods-light.svg" alt="Builder Methods"></body></html>'
+    '<img src="../images/logos/prodops-wordmark-light.svg" alt="Builder Methods"></body></html>'
   const out = rebrand(page, '/tools.html')
   // The link still points at the page it named, and the words are ProdOps's.
   assert.match(out, /href="agentcanon\.html"/)

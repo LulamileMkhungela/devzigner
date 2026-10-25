@@ -302,11 +302,15 @@ export const RUNTIME = `<script id="prodops-runtime">
     }
 
     panel.id = 'prodops-toolpanel';
+    var kicker = document.createElement('p');
+    kicker.className = 'prodops-tools-kicker';
+    kicker.textContent = 'Read a tool here, without leaving the page';
+    wrap.appendChild(kicker);
     wrap.appendChild(strip);
     wrap.appendChild(panel);
+    // The captured list stays exactly where it was, below the browser: the
+    // tabs save the page load, they do not replace the index.
     list.parentNode.insertBefore(wrap, list);
-    // No script, no change: the list stays the working index.
-    list.style.display = 'none';
     select(0, false);
   }
 

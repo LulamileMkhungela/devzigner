@@ -295,6 +295,15 @@ check(
   (detail.match(/<time[^>]*>[^<]*<\/time>/) ?? ['none'])[0],
 )
 check(
+  'the page says which zone it is in, and what it is in GMT',
+  /SAST, GMT\+2/.test(sessions) &&
+    /SAST, GMT\+2/.test(detail) &&
+    // once per page, not once per row (the stylesheet's own class name is the
+    // other mention, so the count is of the note's element)
+    (sessions.match(/class="form-help prodops-tz"/g) ?? []).length === 1,
+  (sessions.match(/All times are[^<]*/) ?? ['none'])[0],
+)
+check(
   'dates read the South African way, day first',
   /3 November 2026/.test(sessions) && !/[A-Z][a-z]+ \d{1,2}, 20\d\d/.test(sessions),
   (sessions.match(/[\d]{1,2} [A-Z][a-z]+ 20\d\d/g) ?? []).slice(0, 2).join(' · '),

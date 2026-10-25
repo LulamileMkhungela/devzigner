@@ -20,7 +20,7 @@ import { RUNTIME, restoreEmails } from './runtime'
 import { rebrand } from './brand'
 import { withFounder } from './founder'
 import { withBooking, withPayment, withRandPrices } from './payments'
-import { southAfricanTime } from './sast'
+import { southAfricanTime, withTimeNote } from './sast'
 
 export const isBlocked = (html: string): boolean =>
   html.includes('challenges.cloudflare.com') || /<title>\s*Just a moment/i.test(html)
@@ -624,6 +624,7 @@ export function adaptPage(html: string, path: string): string {
   // in this site's words, and the dates are still in the shape the capture's
   // own props use.
   out = southAfricanTime(out)
+  out = withTimeNote(out, path)
   // Prices again: React splits "$" and "299" with an empty comment, and the
   // rebrand is what removes those. This pass is idempotent.
   out = withRandPrices(out)

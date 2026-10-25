@@ -356,6 +356,7 @@ const BRAND_CSS = `<style id="prodops-brand">
   .prodops-pay-eft > div:last-child { border-bottom: 0; padding-bottom: 0; }
   .prodops-pay-eft dt { color: var(--color-muted); font-size: 14px; margin: 0; }
   .prodops-pay-eft dd { margin: 0; color: var(--color-display); font-size: 14px; text-align: right; }
+  .prodops-tz { margin: 10px 0 0; }
   .prodops-pay-note {
     margin: 20px 0 0; padding-top: 14px; border-top: 1px solid var(--color-hairline);
     font-size: 13px; color: var(--color-muted);

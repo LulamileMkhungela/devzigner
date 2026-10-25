@@ -258,7 +258,13 @@ light and dark themes are both real themes rather than one theme and an inversio
   "2:00 PM ET"; each is now "21:00 SAST". Eastern Time is UTC−5 outside American daylight saving and
   UTC−4 inside it, and South Africa is UTC+2 all year, so 2:00 PM ET is 20:00 SAST in April and 21:00
   in November. `scripts/lib/sast.ts` computes the rule from the session's own date, and dates are
-  written day-first (`3 November 2026`).
+  written day-first (`3 November 2026`). Each session page says the zone once — *SAST, GMT+2, all
+  year* — because SAST is two hours ahead of GMT, not equal to it, and a reader who thinks in GMT
+  should know that before they plan an evening.
+- **Booking the founder is paid the same way.** The contact page gained *Book a session*: send the
+  note, the scope and amount come back in writing, then PayShap, instant EFT or an invoice, with the
+  reference `BOOKING`. No price is printed for a booking — a talk and a three-day build do not cost
+  the same, and a made-up number would be worse than a question.
 - **Payment is PayShap, an instant EFT, or an invoice** — none of which charges a fee to the payer or
   the seller, and none of which needs a card. The captured checkout step was a hand-off to a card
   processor; the payment block replaces that step on all three checkout pages. The PayShap ID and the

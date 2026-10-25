@@ -183,3 +183,35 @@ export function southAfricanTime(html: string): string {
 
   return out
 }
+
+/**
+ * Say which zone the times are in.
+ *
+ * "21:00 SAST" is unambiguous to a South African and opaque to anyone else, and
+ * the reader who asked for local times asked because they think in GMT. One
+ * line under the first time on the page settles it: SAST is GMT+2, all year,
+ * with no daylight saving — which is also why the conversion is not a fixed
+ * number of hours away from Eastern Time.
+ */
+const TZ_NOTE =
+  '<p class="form-help prodops-tz">All times are South African Standard Time — SAST, GMT+2, all year, with no daylight saving.</p>'
+
+export function withTimeNote(html: string, path: string): string {
+  // The brand stylesheet also mentions .prodops-tz, so the guard looks for the
+  // note itself rather than for the class name.
+  if (html.includes('class="form-help prodops-tz"')) return html
+  if (!/^\/sessions(\/|\.html|$)/.test(path)) return html
+
+  // A session's own page states its time once, in a `time` element.
+  if (html.includes('</time></span></p>')) {
+    return html.replace('</time></span></p>', `</time></span></p>${TZ_NOTE}`)
+  }
+
+  // The listing states it per row, so the note goes under the hero's lede.
+  const lede = html.indexOf('class="lede')
+  if (lede !== -1) {
+    const close = html.indexOf('</p>', lede)
+    if (close !== -1) return html.slice(0, close + 4) + TZ_NOTE + html.slice(close + 4)
+  }
+  return html
+}

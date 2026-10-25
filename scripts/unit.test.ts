@@ -17,6 +17,7 @@ import { buildPackage } from '../src/export/package'
 import { TOOLS } from '../src/tools'
 import { FRAMEWORKS } from '../src/export/frameworks'
 import { migrateProject, migrateProjects } from '../src/lib/migrate'
+import { OLD_BRAND, rebrand } from './lib/brand'
 import { PHASES, completedPhases, confirmedPhases, isStageDone, nextStage, phaseBlockers, phaseReady } from '../src/lib/progress'
 
 const input = { archetypeId: 'clinic', seed: 4242, now: 1_760_000_000_000 } as const
@@ -445,4 +446,43 @@ test('an unreadable description still compiles, and says so', () => {
   const project = compileProject({ idea: 'Something for my team' })
   assert.ok(project.sections.length > 0, 'the starter shape is still built')
   assert.equal(profileIdea('').used, false)
+})
+
+/* ---- branding the captured site ------------------------------------------ */
+
+test('rebranding a served page leaves no trace of the site it was captured from', () => {
+  const page = [
+    '<html><head><title inertia>Builder Methods | Stay ahead</title></head><body>',
+    '<a href="/about" aria-label="Builder Methods"><img src="images/logos/builder-methods.svg" alt=""></a>',
+    '<p>Brian Casel writes about Agent OS at buildermethods.com.</p>',
+    '<script type="application/ld+json">{"@type":"Person","name":"Brian Casel","url":"https://briancasel.com"}</script>',
+    '</body></html>',
+  ].join('\n')
+  const out = rebrand(page, '/')
+  assert.doesNotMatch(out, OLD_BRAND)
+  assert.doesNotMatch(out, /Agent OS/)
+  assert.match(out, /ProdOps/)
+  assert.match(out, /Lulamile Mkhungela/)
+  // The wordmark is inlined, so the logo costs no request and survives file://
+  assert.match(out, /src="data:image\/svg\+xml;base64,/)
+  assert.doesNotMatch(out, /images\/logos\//)
+})
+
+test('rebranding renames the products but never rewrites the capture’s own links', () => {
+  const page =
+    '<html><head><title>Design OS</title></head><body>' +
+    '<a href="/agent-os/installation">Agent OS installation</a>' +
+    '<code>~/agent-os/standards/index.yml</code></body></html>'
+  const out = rebrand(page, '/agent-os/installation')
+  // Display names are ProdOps's.
+  assert.match(out, /<title>ProdOps<\/title>/)
+  assert.match(out, /Standards installation/)
+  // Slugs are the mirror's own paths: every link in the capture points at them.
+  assert.match(out, /href="\/agent-os\/installation"/)
+  assert.match(out, /agent-os\/standards\/index\.yml/)
+})
+
+test('a page with no title is given one that names the product', () => {
+  const out = rebrand('<html><head></head><body><p>Nothing yet</p></body></html>', '/tools.html')
+  assert.match(out, /<title>Tools — ProdOps<\/title>/)
 })

@@ -1,7 +1,27 @@
-<svg width="80" height="80" viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-  <g transform="translate(3 2)" fill="#1B9EC4">
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M16.524 4.37277C16.5315 1.95009 18.4637 -0.00763827 20.8397 2.24059e-05L69.76 0.170966C71.8819 0.178153 73.6818 1.76137 74 3.90055L74 55.1855C74 57.7177 72.2841 58.9303 69.9057 58.9303C67.5274 58.9302 66.0451 57.3135 66.0451 55.1855L66.0451 8.9326L20.8124 8.77339C18.4364 8.76569 16.5164 6.79545 16.524 4.37277Z"/>
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M15.1652 34.0047C15.1727 31.582 17.105 29.6242 19.4809 29.6319L40.6543 29.8029C42.7762 29.8101 44.5761 31.3933 44.8942 33.5325L44.7486 55.7165C44.7486 58.2486 43.0326 59.4612 40.6543 59.4612C38.276 59.4612 36.7936 57.8445 36.7936 55.7165L36.9393 38.5645L19.4536 38.4053C17.0776 38.3976 15.1577 36.4273 15.1652 34.0047Z"/>
-    <path fill-rule="evenodd" clip-rule="evenodd" d="M29.7256 71.6002C29.7328 74.0229 27.8124 75.9927 25.4364 76L4.26242 75.9621C2.14052 75.9683 0.331105 74.3964 0 72.2593L0.0115248 50.0748C-0.00378777 47.5427 1.70479 46.3193 4.08307 46.3044C6.46135 46.2895 7.95341 47.8968 7.96628 50.0248L7.92432 67.1773L25.4107 67.2266C27.7867 67.2194 29.7185 69.1775 29.7256 71.6002Z"/>
-  </g>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="prodops-mark-title">
+  <title id="prodops-mark-title">ProdOps</title>
+  <!--
+    ProdOps — the mark.
+
+    The accent square is the workspace; the check is the one thing ProdOps
+    insists on: a stage is done when the builder says it is, not when the
+    compiler finishes. Drawn on a 64 grid so it stays legible at 16px (favicon)
+    and at 512px (app icon); no strokes thinner than 6 units.
+  -->
+  <defs>
+    <linearGradient id="prodops-accent" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff7a3d" />
+      <stop offset="1" stop-color="#d83c0b" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#prodops-accent)" />
+  <rect x="1" y="1" width="62" height="62" rx="14" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="1.5" />
+  <path
+    d="M17 33.5 L27.5 44 L47.5 20.5"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="7.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
 </svg>

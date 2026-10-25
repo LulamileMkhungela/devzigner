@@ -160,28 +160,42 @@ the handoff could not be compiled, that build fails.
 
 ---
 
-## The reference site copy
+## The site at `/`
 
-`site/` holds a captured copy of the public site this workspace was modelled on — 155 files, 92
-pages with real server-rendered content, served offline with absolute links rewritten to local
-paths and no analytics. It is kept because the workspace is meant to be judged against a real
-site's information architecture, tool pages and documentation, not against a mock.
+`site/` is a captured copy of the public site this workspace was modelled on: 152 files, 92 pages
+with real server-rendered content, served offline with absolute links rewritten to local paths and
+no analytics. The capture is kept untouched — it is the evidence the information architecture was
+copied from something real, not invented for a demo — and everything that makes it *ProdOps's* site
+rather than somebody else's happens on the way out, in `scripts/lib/brand.ts`:
+
+- the name, the byline, the handles and the social links are rewritten;
+- the five products in the copy are renamed to ProdOps's eight tools;
+- the two wordmarks are replaced with the ProdOps mark, inlined as data URIs so the logo needs no
+  request at all and still shows when a page is opened from disk;
+- every page is re-titled, and pages whose title never carried a brand get one.
+
+The old wordmark files and the previous author's portrait are gone from the tree; their URLs still
+answer with the ProdOps mark, so a bookmark is never a 404. `npm run site-check` fails if any served
+page still carries the old brand or the old product names, if a page is not titled ProdOps, if the
+byline is missing, or if the logo needs a request to appear.
+
+Attribution is not lost with the branding: the MIT notices for the work this builds on live in
+`docs/LICENSES.md`, which is where a licence requires them — on the package, not on the storefront.
 
 | URL | What you get |
 | --- | --- |
-| `/` | the reference copy: home, tools, the tool pages, articles, sessions, pro |
+| `/` | the copy: home, tools, the tool pages, articles, sessions, pro |
 | `/workspace/` | ProdOps itself — the five stages, the eight tools, the export |
 | `/prodops-standalone.html` | the workspace as one file, no server |
 | `/prodops-snapshot.html` | every workspace page as static markup, no JavaScript |
 
-`npm run site-check` walks the copy: it counts the pages, reads every internal link and image,
-and fails if a page is an empty shell or a link points at a file that was never captured. It
-also operates the served copy the way a visitor does — opens the mobile drawer, submits the
-newsletter form, opens a tool page — so "interactive" is a test result, not a claim.
+`npm run site-check` also counts the pages, reads every internal link and image, and operates the
+served copy the way a visitor does — opens the mobile drawer, submits the newsletter form, opens a
+tool page — so "interactive" is a test result, not a claim.
 
-21 URLs came back as a bot challenge and are replaced at serve time with a local notice that
-says so and links back to the workspace. Teaser videos were never captured, so each player
-becomes a labelled panel and its play button is marked unavailable instead of doing nothing.
+21 URLs came back as a bot challenge and are replaced at serve time with a local notice that says so
+and links back to the workspace. Teaser videos were never captured, so each player becomes a
+labelled panel and its play button is marked unavailable instead of doing nothing.
 
 ---
 
@@ -226,6 +240,7 @@ src/views/         one file per route
 src/components/    the shell, the guide, the stage confirm, the registry previews
 src/lib/           router, store, storage, progress, migrations
 scripts/           the checks: render, export, walkthrough, qa, smoke, browser, site
+scripts/lib/       serve-time repairs: the clone adapter, its runtime, its branding
 ```
 
 The data layer is separated from the UI in the app and in the export. Tokens are W3C DTCG. Every

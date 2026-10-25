@@ -7,12 +7,14 @@
  * back online. This walks every captured page and every link in it, so the
  * answer is a count, not a claim.
  */
-import { readFileSync, readdirSync, statSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, normalize, relative, sep } from 'node:path'
 import { JSDOM } from 'jsdom'
 import { adaptPage, blockedPage, isBlocked } from './lib/clone'
+import { LEGACY_ASSETS, OLD_BRAND, OLD_PRODUCTS } from './lib/brand'
 import { decodeCfEmail, restoreEmails } from './lib/runtime'
 
+const ROOT = process.cwd()
 const SITE = 'site'
 
 function walk(dir: string): string[] {
@@ -117,6 +119,10 @@ for (const file of html) {
     const pathOnly = raw.split('#')[0].split('?')[0]
     if (!pathOnly) continue
     if (pathOnly.includes('active_storage')) continue // an image served with an .html name
+    // Files removed with the old brand. Served pages point at the inline
+    // ProdOps mark, and the server still answers these URLs (see LEGACY_ASSETS).
+    const sitePath = '/' + relative(SITE, normalize(join(dirname(file), decodeURIComponent(pathOnly))))
+    if (sitePath in LEGACY_ASSETS) continue
     if (/\.(mp4|webm|mov)$/i.test(pathOnly)) {
       // Teaser clips: binary the capture never downloads. adaptPage() swaps the
       // player for a labelled panel, checked below rather than resolved here.
@@ -203,19 +209,33 @@ check(
   ['Workshops', 'Community', 'Tools'].every((label) => bodyText.includes(label)),
   navLinks.slice(0, 6).join(' · '),
 )
-check('the logo image is served locally', doc.querySelectorAll('img[src^="images/"]').length > 0)
+// The wordmark is inlined as a data URI: the logo needs no request at all, and
+// it still shows if the page is opened from disk.
+const brandLink = doc.querySelector('a[href="index.html"], a[href="/"]')
+check(
+  'the logo is inlined, so it needs no request',
+  [...doc.querySelectorAll('img')].some((img) => img.getAttribute('src')?.startsWith('data:image/svg+xml')) &&
+    !served.includes('images/logos/'),
+  `${doc.querySelectorAll('img[src^="data:image/svg+xml"]').length} inline marks`,
+)
+check(
+  'the header names the product',
+  /ProdOps/.test(brandLink?.getAttribute('aria-label') ?? ''),
+  brandLink?.getAttribute('aria-label') ?? 'no brand link',
+)
 check(
   'nothing on the page reaches the network',
   !doc.documentElement.outerHTML.includes('buildermethods.com/'),
 )
 
 const tools = new JSDOM(adaptPage(readFileSync(join(SITE, 'tools.html'), 'utf8'), '/tools.html'))
-// The captured page is buildermethods.com's own listing, so these are its
-// tool names as they appear on that page.
-const toolNames = ['PRD Creator', 'Skill Builder', 'Design System', 'Build New', 'agentcanon', 'Favicon', 'Agent OS', 'Design OS']
+// The listing was captured from somebody else's site; the names on it are the
+// ProdOps ones, because the served copy is renamed on the way out.
+const toolNames = ['PRD Creator', 'Skill Builder', 'Design System', 'Starter', 'Agents canon', 'Favicon', 'Standards', 'ProdOps']
 const toolsText = tools.window.document.body.textContent ?? ''
 const missingTools = toolNames.filter((name) => !toolsText.includes(name))
 check('the tools page lists all eight tools', missingTools.length === 0, missingTools.join(', '))
+check('the tools page names them the way ProdOps does', !OLD_PRODUCTS.test(toolsText), toolsText.match(OLD_PRODUCTS)?.[0] ?? '')
 
 /* ---- the parts React used to provide ------------------------------------ */
 
@@ -398,6 +418,48 @@ check(
   'a page that shipped `[email protected]` now shows the address',
   restoreEmails(privacy).includes('mailto:') && !restoreEmails(privacy).includes('[email&#160;protected]'),
 )
+
+/* ---- the site is ProdOps's site, whoever it was captured from ----------- */
+
+/**
+ * `site/` is somebody else's site, captured. Branding is applied on the way out
+ * (scripts/lib/brand.ts), and this is the proof: no served page — not the
+ * homepage, not a licence page, not a 404 — may still read as the old brand.
+ */
+const offBrand: string[] = []
+const untitled: string[] = []
+const bylines: string[] = []
+for (const file of html) {
+  const out = adaptPage(readFileSync(file, 'utf8'), `/${relative(SITE, file).replace(/\.html$/, '')}`)
+  if (OLD_BRAND.test(out)) offBrand.push(relative(SITE, file))
+  if (OLD_PRODUCTS.test(out.replace(/<script[\s\S]*?<\/script>/g, ''))) offBrand.push(`${relative(SITE, file)} (product name)`)
+  const title = out.match(/<title[^>]*>([\s\S]*?)<\/title>/i)?.[1]?.replace(/\s+/g, ' ').trim() ?? ''
+  if (!/ProdOps/.test(title)) untitled.push(`${relative(SITE, file)} (${title || 'no title'})`)
+  if (/Lulamile Mkhungela/.test(out)) bylines.push(relative(SITE, file))
+}
+check('no served page carries the old brand', offBrand.length === 0, offBrand.slice(0, 6).join(', '))
+check('every served page is titled ProdOps', untitled.length === 0, untitled.slice(0, 6).join(', '))
+check(
+  'the byline credits Lulamile Mkhungela',
+  bylines.some((file) => file === 'about.html'),
+  `${bylines.length} pages`,
+)
+
+// The old wordmarks and portrait are gone from the capture, and their URLs
+// still answer with the ProdOps mark — a rename, not a broken link.
+const legacyMissing = Object.keys(LEGACY_ASSETS).filter((path) => exists.has(join(SITE, path)))
+const markMissing = Object.values(LEGACY_ASSETS).filter((file) => !existsSync(join(ROOT, file)))
+check('the old brand\'s files are gone from the capture', legacyMissing.length === 0, legacyMissing.join(', '))
+check('their URLs are answered by the ProdOps mark', markMissing.length === 0, markMissing.join(', '))
+
+// One tab icon, the ProdOps mark, referenced absolutely so it works at any depth.
+const iconLinks = [...served.matchAll(/<link[^>]+rel="(?:shortcut )?icon"[^>]*>/gi)].map((m) => m[0])
+check(
+  'the tab icon is the ProdOps mark, at an absolute path',
+  iconLinks.length === 1 && iconLinks[0].includes('href="/favicon/icon.svg"'),
+  iconLinks.join(' | ') || 'no icon',
+)
+check('the tab icon is not the old artwork', !/favicon\.ico|icon-192|apple-touch-icon/.test(served))
 
 /* ---- every page gets the same repairs ---------------------------------- */
 

@@ -20,6 +20,7 @@ import { createServer } from 'node:http'
 import { readFile, stat } from 'node:fs/promises'
 import { extname, join, normalize, sep } from 'node:path'
 import { adaptPage, blockedPage, isBlocked } from './lib/clone'
+import { LEGACY_ASSETS } from './lib/brand'
 
 const ROOT = process.cwd()
 const SITE = join(ROOT, 'site')
@@ -85,6 +86,15 @@ const server = createServer(async (request, response) => {
     }
   }
 
+  const legacy = LEGACY_ASSETS[path]
+  if (legacy) {
+    try {
+      return sendFile(response, join(ROOT, legacy))
+    } catch {
+      /* fall through: the mark is normally served as a data URI anyway */
+    }
+  }
+
   // The cloned site. A directory means its index.html.
   const clean = path.endsWith('/') ? `${path}index.html` : path
   for (const candidatePath of [clean, `${clean}.html`, `${clean}/index.html`]) {
@@ -118,10 +128,11 @@ const server = createServer(async (request, response) => {
 
   response.writeHead(404, { 'content-type': 'text/html; charset=utf-8' })
   response.end(
-    `<!doctype html><meta charset="utf-8"><title>Not found</title>
-     <div style="font:14px/1.6 system-ui;padding:40px">
-       <p><strong>${path}</strong> is not in the cloned site.</p>
-       <p><a href="/">Home</a> · <a href="/workspace/">Workspace</a></p>
+    `<!doctype html><meta charset="utf-8"><title>Not found — ProdOps</title>
+     <meta name="viewport" content="width=device-width,initial-scale=1">
+     <div style="font:14px/1.6 system-ui;padding:40px;max-width:42rem">
+       <p><strong>${path}</strong> is not in the site.</p>
+       <p><a href="/">Home</a> · <a href="/tools.html">Tools</a> · <a href="/workspace/">Workspace</a></p>
      </div>`,
   )
 })

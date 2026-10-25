@@ -17,6 +17,7 @@
  * thing in both places.
  */
 import { RUNTIME, restoreEmails } from './runtime'
+import { rebrand } from './brand'
 
 export const isBlocked = (html: string): boolean =>
   html.includes('challenges.cloudflare.com') || /<title>\s*Just a moment/i.test(html)
@@ -77,7 +78,7 @@ export function blockedPage(path: string): string {
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
-  <title>Not captured — ${path}</title>
+  <title>Not captured — ${path} · ProdOps</title>
   <style>
     :root { color-scheme: dark }
     body { margin: 0; min-height: 100vh; display: grid; place-items: center; background: #0a0a0a; color: #fafafa;
@@ -104,8 +105,8 @@ export function blockedPage(path: string): string {
     </p>
     <p><code>${path}</code></p>
     <p>
-      The eight free tools are not affected: they are installed in ProdOps, along with
-      ProdOps's ten commands, Standards's five and the four toolkit.
+      The eight free tools are not affected: they are installed in ProdOps, together
+      with the ProdOps commands, the Standards commands and the toolkit.
     </p>
     <p>
       <a class="btn primary" href="/workspace/">Open ProdOps</a>
@@ -153,6 +154,9 @@ export function adaptPage(html: string, path: string): string {
 
   out = restoreEmails(out)
   out = replaceVideos(out)
+  // The name, the mark, the byline and the handles, on the way out. `site/`
+  // itself stays an untouched capture; see scripts/lib/brand.ts.
+  out = rebrand(out, path)
 
   if (TOOL_PAGE.test(path)) {
     out = out.replace('<body>', `<body>\n${TOOLBAR}`)

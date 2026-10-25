@@ -662,6 +662,18 @@ gated.window.close()
     )
   })
   check('all eight tool pages carry the installation section', missing.length === 0, missing.join(', '))
+
+  /* A promise of "installation instructions" is kept by instructions: numbered
+     steps that get the files in, put them where the agent looks, check they
+     landed, and say how to undo it. Two commands is a hint, not a manual. */
+  const thin = pages.filter((page) => {
+    const out = adaptPage(readFileSync(join(SITE, `${page}.html`), 'utf8'), `/${page}.html`)
+    const section = out.slice(out.indexOf('id="prodops-install"'))
+    const text = section.slice(0, section.indexOf('</section>'))
+    const steps = (text.match(/<li>/g) ?? []).length
+    return steps < 4 || !/Check (it|they) landed/.test(text) || !/Remove/.test(text) || !(/Update/.test(text))
+  })
+  check('every installation section is the full set of steps, not a hint', thin.length === 0, thin.join(', '))
   /* The docs are applied, not quoted: every `cp -r prodops/<path>` a page tells
      the reader to run must name a path that exists in this checkout. A page that
      promises a folder the repository does not have is a broken install, however

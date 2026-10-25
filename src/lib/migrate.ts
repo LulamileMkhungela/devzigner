@@ -12,6 +12,7 @@
  */
 import type { Project, UserFlow } from '../types'
 import { COMPILER_VERSION, compileProject, type CompileOptions } from '../engine'
+import { started } from './state'
 
 /** Every array the views and the export iterate over. Missing one is a crash. */
 function isComplete(value: Partial<Project>): boolean {
@@ -103,6 +104,13 @@ export function migrateProject(value: unknown): Project | null {
   const record = value as Partial<Project>
   // Never the builder's own words: an auto-seeded sample is not a product.
   if (wasTheSample(record)) return null
+
+  // A described product must carry proof that a description produced it. Every
+  // record from before this flag existed is dropped, because those records came
+  // from the sample the workspace used to open on — the product the builder
+  // never asked for. Undescribed records are kept: they are empty anyway, and
+  // dropping them would churn the id on every reload.
+  if (record.described !== true && started(record as Project)) return null
 
   // A complete record is only trusted if *this* compiler built it. The shape can
   // be right and the content stale: a product compiled before sections were

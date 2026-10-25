@@ -200,6 +200,9 @@ export function compileProject(opts: CompileOptions = {}): Project {
   return {
     ...input,
     compiler: COMPILER_VERSION,
+    // Provenance, not decoration: see `migrateProject`. A record is only
+    // reopened on a later visit if a description produced it.
+    described: idea.length >= 8,
     id: `${slugify(name)}-${seed.toString(36).slice(0, 6)}`,
     name,
     archetypeLabel: pack.label,

@@ -357,6 +357,18 @@ const MOTION_CSS = `<style id="prodops-motion">
     font: 500 12.5px/1.7 ui-monospace, 'SFMono-Regular', Menlo, monospace;
   }
   .prodops-install-section code { font: inherit; }
+  /* Numbered steps: a wall of commands is a list, so it is written as one. */
+  .prodops-install-section ol { list-style: none counter-reset: step; margin: 4px 0 0; padding: 0; }
+  .prodops-install-section ol > li { counter-increment: step; position: relative; padding: 0 0 0 34px; margin: 0 0 16px; }
+  .prodops-install-section ol > li::before {
+    content: counter(step); position: absolute; left: 0; top: -1px;
+    width: 22px; height: 22px; border-radius: 50%;
+    display: grid; place-items: center;
+    font: 600 11px/1 ui-monospace, 'SFMono-Regular', Menlo, monospace;
+    color: var(--color-brand); background: color-mix(in srgb, var(--color-brand) 12%, transparent);
+  }
+  .prodops-install-section ol > li > b { display: block; margin: 0 0 7px; font-size: 14px; }
+  .prodops-install-section ol > li > pre + * { margin-top: 4px; }
   .prodops-install-note { margin-top: 14px; font-size: 13px; color: var(--color-muted, #6b6560); }
   .prodops-install-links { display: flex; flex-wrap: wrap; gap: 16px; margin-top: 12px;
     font: 600 13px/1.4 system-ui, sans-serif; }
@@ -500,20 +512,93 @@ const REPO = 'https://github.com/LulamileMkhungela/devzigner.git'
  * The installation steps, where the page says "Installation".
  *
  * The capture put an email gate there: one sentence promising "installation
- * instructions", a field, and a button. This copy has no server and no list, so
- * the promise is kept by writing the instructions out — two lines a builder can
- * paste, then the sentence that tells their agent to run the tool. Nothing else:
- * the page already explains what the tool does and the steps it runs.
+ * instructions", a field, and a button — so the crawler saved the promise and
+ * not the instructions. This copy has no server, no list and no inbox, so the
+ * promise is kept by writing the steps out in full: get the files, put them
+ * where the agent looks, check they landed, then the sentence that runs the
+ * tool. Update and remove are one line each, because a tool you cannot take out
+ * is not installed, it is stuck.
+ *
+ * Every path below is checked against this repository: `.agents/skills/<name>`
+ * holds a SKILL.md, `.agents/commands/prodops` holds the flow's commands, and
+ * `scripts/link-agents.sh` is the script that points Claude at `AGENTS.md`.
  */
-function installBlock(fact: InstallFact): string {
+function installBlock(fact: InstallFact, withTitle: boolean): string {
   const folder = fact.ships.split(/\s|\+/)[0]
-  const into = fact.kind === 'skill' ? '~/.agents/skills/' : '.'
-  const run = fact.kind === 'skill' ? `Use the ${fact.name} skill.` : `Use ${fact.name}.`
-  return `<section class="prodops-install-section" id="prodops-install" aria-label="Install ${fact.name}">
-<pre><code>git clone ${REPO} prodops
-cp -r prodops/${folder} ${into}</code></pre>
-<p class="prodops-install-note">Then ask your agent: “${run}” No email, no key, no account.</p>
-<p class="prodops-install-note"><a href="/workspace/#tools">Or run it in ProdOps →</a></p>
+  const name = fact.name
+  const heading = withTitle ? '<h3>Installation</h3>' : ''
+
+  if (fact.kind === 'skill') {
+    // One folder, one SKILL.md, in one of two places. Option one is global, so
+    // the skill is there in every project; option two is local, so it travels
+    // with the repository it belongs to.
+    return `<section class="prodops-install-section" id="prodops-install" aria-label="Install ${name}">
+${heading}<p>${name} is an Agent Skill: one folder your agent reads. No email, no key, no account.</p>
+<ol>
+<li><b>Get the files</b><pre><code>git clone ${REPO} prodops</code></pre></li>
+<li><b>Put the skill where your agent looks</b><pre><code># every project on this machine
+mkdir -p ~/.agents/skills && cp -r prodops/${folder} ~/.agents/skills/
+# or only this project
+mkdir -p .agents/skills && cp -r prodops/${folder} .agents/skills/</code></pre></li>
+<li><b>Check it landed</b><pre><code>ls ~/.agents/skills/${folder.replace(/^.*skills\//, '').replace(/\/$/, '')}/SKILL.md</code></pre>
+That file is the skill. If it is there, the agent can read it.</li>
+<li><b>Ask for it</b> In Claude Code, Cursor, Codex or any host that reads <code>.agents/skills/</code>: “Use the ${name} skill.”</li>
+</ol>
+<p class="prodops-install-note">Update: <code>git -C prodops pull</code>, then copy the folder again. Remove: <code>rm -rf ~/.agents/skills/${folder.replace(/^.*skills\//, '').replace(/\/$/, '')}</code>.</p>
+<p class="prodops-install-links"><a href="/workspace/#tools">Or run it in ProdOps →</a></p>
+</section>`
+  }
+
+  if (fact.kind === 'workflow') {
+    // Commands are read from the project that is being built, so this copy is
+    // local by design: the flow runs on the builder's repo, not on the machine.
+    const extras = folder === 'standards/'
+      ? `<pre><code>cp -r prodops/standards .</code></pre>`
+      : ''
+    return `<section class="prodops-install-section" id="prodops-install" aria-label="Install ${name}">
+${heading}<p>${name} is a set of commands that run in the project you are building. No email, no key, no account.</p>
+<ol>
+<li><b>Get the files</b><pre><code>git clone ${REPO} prodops</code></pre></li>
+<li><b>Copy the commands into your project</b><pre><code>mkdir -p .agents/commands && cp -r prodops/.agents/commands/prodops .agents/commands/</code></pre>${extras}</li>
+<li><b>Check they landed</b><pre><code>ls .agents/commands/prodops</code></pre>
+You should see the flow's commands, starting with <code>plan-product</code>.</li>
+<li><b>Run the first one</b> In your agent: “/prodops:plan-product” — or “Use the ProdOps flow.” It asks before it writes.</li>
+</ol>
+<p class="prodops-install-note">Update: <code>git -C prodops pull</code>, then copy the commands again. Remove: <code>rm -rf .agents/commands/prodops</code>.</p>
+<p class="prodops-install-links"><a href="/workspace/#tools">Or run it in ProdOps →</a></p>
+</section>`
+  }
+
+  if (fact.kind === 'convention') {
+    // The canon is the repository's own agent conventions: one skills home, one
+    // instructions file, and a script that points every tool at both.
+    return `<section class="prodops-install-section" id="prodops-install" aria-label="Install ${name}">
+${heading}<p>${name} is a convention, not a package: one folder of skills, one instructions file, one script that links them. No email, no key, no account.</p>
+<ol>
+<li><b>Get the files</b><pre><code>git clone ${REPO} prodops</code></pre></li>
+<li><b>Copy the canon into your project</b><pre><code>cp -r prodops/.agents prodops/AGENTS.md prodops/scripts .</code></pre></li>
+<li><b>Point every tool at it</b><pre><code>./scripts/link-agents.sh</code></pre>
+It links <code>.claude/skills</code> to <code>.agents/skills</code> and <code>CLAUDE.md</code> to <code>AGENTS.md</code>. Re-running it is safe.</li>
+<li><b>Check it landed</b><pre><code>ls -l CLAUDE.md .claude/skills && head -20 AGENTS.md</code></pre></li>
+<li><b>Use it</b> Every agent in the project now reads the same instructions and the same skills.</li>
+</ol>
+<p class="prodops-install-note">Update: <code>git -C prodops pull</code>, copy again, re-run the script. Remove: delete <code>.agents</code>, <code>AGENTS.md</code>, <code>scripts/link-agents.sh</code> and the links it made.</p>
+<p class="prodops-install-links"><a href="/workspace/#tools">Or run it in ProdOps →</a></p>
+</section>`
+  }
+
+  // A template is a repository, not a skill: copy it to a new folder and run it.
+  return `<section class="prodops-install-section" id="prodops-install" aria-label="Install ${name}">
+${heading}<p>${name} is a working repository: copy it to a new folder and run it. No email, no key, no account.</p>
+<ol>
+<li><b>Get the files</b><pre><code>git clone ${REPO} prodops</code></pre></li>
+<li><b>Make it your project</b><pre><code>cp -r prodops/${folder} my-app && cd my-app</code></pre></li>
+<li><b>Install what it runs on</b><pre><code>bundle install && npm install</code></pre></li>
+<li><b>Start it</b><pre><code>bin/dev</code></pre></li>
+<li><b>Check it landed</b> Open the address it prints — the starter's shell should answer, with no missing-constant or missing-module errors. <code>README.md</code> in the folder lists every route it ships.</li>
+</ol>
+<p class="prodops-install-note">Update: <code>git -C prodops pull</code>, then copy the folder again into a fresh directory. Remove: delete the folder you made. Nothing is sent anywhere.</p>
+<p class="prodops-install-links"><a href="/workspace/#tools">Or run it in ProdOps →</a></p>
 </section>`
 }
 
@@ -554,7 +639,9 @@ function cardEnd(html: string, start: number): number {
 export function withInstall(html: string, path: string): string {
   const fact = INSTALL[path]
   if (!fact) return html
-  const block = installBlock(fact)
+  // A page that already has its own "Installation" heading does not need a
+  // second one; the pages that never had it get the heading in the block.
+  const block = installBlock(fact, !html.includes('id="installation"'))
   let out = html
 
   /** Replace the card that holds the gate at `gate` with `replacement`. */

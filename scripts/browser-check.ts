@@ -52,6 +52,7 @@ const legacyProject = {
   archetypeId: 'clinic',
   createdAt: 1_700_000_000_000,
   updatedAt: 1_700_000_000_000,
+  described: true,
 }
 
 /* The product the previous release auto-seeded: a complete marketplace record
@@ -91,6 +92,13 @@ const scenarios: { name: string; storage: Record<string, string> }[] = [
   {
     name: 'the sample product the last release opened on',
     storage: { [STORAGE_KEY]: JSON.stringify([previousSample]) },
+  },
+  {
+    // A described product from before provenance was recorded. There is no way
+    // to tell it from the sample the workspace used to auto-compile, and the
+    // builder says they never asked for it — so it does not open.
+    name: 'a described product with no proof it was described',
+    storage: { [STORAGE_KEY]: JSON.stringify([{ ...previousSample, described: undefined }]) },
   },
   { name: 'corrupt JSON in storage', storage: { [STORAGE_KEY]: '{"broken": ' } },
   { name: 'junk in storage', storage: { [STORAGE_KEY]: JSON.stringify([null, 42, 'nope', { id: 'x' }]) } },
@@ -140,11 +148,14 @@ for (const scenario of scenarios) {
 
   check(`${scenario.name} · mounts`, nodes > 20 && text.length > 200 && !problems.some((p) => p.startsWith('threw')), detail)
   check(`${scenario.name} · renders the shell`, /Data Shape|Sections/i.test(text))
-  if (scenario.name === 'the sample product the last release opened on') {
+  if (
+    scenario.name === 'the sample product the last release opened on' ||
+    scenario.name === 'a described product with no proof it was described'
+  ) {
     // Somebody else's marketplace is not the builder's product: the workspace
     // opens on the description field, with no Control room in sight.
     check(
-      'the old auto-seeded sample opens on the description field',
+      'a product nobody asked for opens on the description field',
       /what happens when you build/i.test(text) && !/Control room/.test(text),
       text.slice(0, 60),
     )

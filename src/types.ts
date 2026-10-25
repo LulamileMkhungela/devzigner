@@ -436,6 +436,16 @@ export interface CompileInput {
 export interface Project extends CompileInput {
   /** Which compiler built this record — see COMPILER_VERSION. */
   compiler?: string
+  /**
+   * True only when the builder's own description produced this record.
+   *
+   * The workspace once opened on a sample that nobody had asked for, and a
+   * browser that still holds such a record keeps showing it forever — a
+   * marketplace with sections, a design system and an export nobody requested.
+   * A described product now has to carry this flag to be reopened; anything
+   * compiled without a description is not somebody's product.
+   */
+  described?: boolean
   id: string
   name: string
   archetypeLabel: string

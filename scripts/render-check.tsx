@@ -123,6 +123,12 @@ const checks = [
     const joined = project.brief.personas.every((p) => project.flows.some((f) => f.persona === p.name))
     return named && joined && html.includes('Who this is not for')
   })()],
+  // "Personas" is a word from a design book. The page says who it is for, which
+  // is the question the builder can answer.
+  ['who it is for leads the page, in plain words', (() => {
+    const html = wrap(<PersonasPage project={project} />)
+    return html.includes('Who it is for') && !/>Personas</.test(html)
+  })()],
   ['registry populated', project.system.components.length >= 10],
   ['data layer separated', wrap(<ExportPage project={project} />).includes('src/data/mock-adapter.ts')],
   ['wiki generated', wrap(<WikiPage project={project} />).includes('wiki/') && wrap(<WikiPage project={project} />).includes('Component registry')],

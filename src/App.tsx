@@ -94,7 +94,7 @@ const STAGE_INTRO: Record<
   },
   personas: {
     stage: 'Workspace',
-    title: 'Personas',
+    title: 'Who it is for',
     subtitle: 'The people the product is for.',
     willHold: ['The person whose day the product changes', 'Their goal, their pain, and what is actually true'],
   },
@@ -138,7 +138,7 @@ const STAGE_INTRO: Record<
 
 const TRACK_NAV = [
   { path: 'tools', label: 'Tools', icon: 'Sparkles' },
-  { path: 'personas', label: 'Personas', icon: 'Users' },
+  { path: 'personas', label: 'Who it is for', icon: 'Users' },
   { path: 'flows', label: 'User Flows', icon: 'Route' },
   { path: 'system', label: 'Tech Stack', icon: 'Layers' },
   { path: 'prototype', label: 'Prototype', icon: 'Play' },

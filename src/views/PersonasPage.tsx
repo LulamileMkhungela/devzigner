@@ -32,8 +32,8 @@ export function PersonasPage({ project }: { project: Project }) {
         project={project}
         steps={TRACK}
         current="personas"
-        title="Personas"
-        subtitle="Who it is for, and the flows each of them walks."
+        title="Who it is for"
+        subtitle="Read from your description: each person, the flows they walk, and the screens they use."
         actions={
           <Link to="flows" className="lz-btn small">
             <Icon name="Route" size={13} /> Flows

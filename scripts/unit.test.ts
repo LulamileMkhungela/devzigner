@@ -318,6 +318,8 @@ test('a project saved by an older version is rebuilt, not trusted', () => {
     seed: 4242,
     archetypeId: 'clinic',
     createdAt: 1_700_000_000_000,
+    // Proof that a description produced it: only then is it the builder's.
+    described: true,
   }
 
   const migrated = migrateProject(legacy)
@@ -378,6 +380,33 @@ test('confirming a stage ticks exactly that stage, in order', () => {
   assert.deepEqual(phaseBlockers(broken, captured, 'data-shape'), ['no entities yet'])
 })
 
+test('a described product nobody asked for is dropped, not reopened', () => {
+  // The workspace used to open on a sample product. A browser that still holds
+  // one was showing a marketplace with sections, a design system and an export
+  // that the builder never asked for — every reload. A described record now has
+  // to prove a description produced it; the samples never could.
+  const sample = {
+    id: 'artisan-flow-2ell',
+    name: 'Stall & Co',
+    idea: 'A marketplace where township artisans sell directly to buyers across South Africa',
+    seed: 112233,
+    archetypeId: 'marketplace',
+    createdAt: 1_700_000_000_000,
+    sections: [],
+  }
+  assert.equal(migrateProject(sample), null, 'an unmarked description is not the builder\'s product')
+  assert.equal(
+    migrateProject({ ...sample, described: false }),
+    null,
+    'and saying so does not make it theirs',
+  )
+  // Undescribed records are kept: they are empty, and dropping them would give
+  // the workspace a new id on every reload for no reason.
+  const blank = migrateProject({ id: 'untitled', name: 'Untitled product', idea: '', seed: 1111, archetypeId: 'saas' })
+  assert.ok(blank, 'an empty record survives')
+  assert.equal(blank!.idea, '')
+})
+
 test('migration keeps earned ticks and never invents new ones', () => {
   const legacy = {
     id: 'legacy-2',
@@ -385,6 +414,7 @@ test('migration keeps earned ticks and never invents new ones', () => {
     seed: 4242,
     archetypeId: 'clinic',
     createdAt: 1_700_000_000_000,
+    described: true,
     progress: { confirmed: ['product', 42, null] },
   }
   const migrated = migrateProject(legacy)

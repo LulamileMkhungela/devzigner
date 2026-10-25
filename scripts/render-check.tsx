@@ -19,6 +19,8 @@ import { PrototypePage } from '../src/views/PrototypePage'
 import { EditorPage } from '../src/views/EditorPage'
 import { WikiPage } from '../src/views/WikiPage'
 import { CoveragePage } from '../src/views/CoveragePage'
+import { ToolsPage } from '../src/views/ToolsPage'
+import { TOOLS } from '../src/tools'
 
 const store: Record<string, string> = {}
 ;(globalThis as any).localStorage = {
@@ -135,6 +137,15 @@ const checks = [
     const out = { product: wrap(<ProductPage project={project} />), 'data-shape': wrap(<DataShapePage project={project} />), design: wrap(<DesignPage project={project} />), sections: wrap(<SectionsPage project={project} />), export: wrap(<ExportPage project={project} />) }[phase]!
     return /Mark stage complete|Stage \d complete/.test(out)
   })],
+
+  /* ---- the tools page shows every step of every tool --------------------- */
+  ['tools: each tool lists its full step sequence', (() => {
+    const out = wrap(<ToolsPage project={project} />)
+    // Rendered text escapes ampersands, so compare the way the page contains it.
+    const shown = (text: string) => out.includes(text.replace(/&/g, '&amp;'))
+    const missing = TOOLS.filter((tool) => tool.steps.some((step) => !shown(step)))
+    return missing.length === 0 && TOOLS.every((tool) => tool.steps.length >= 4) && out.includes('steps/write-files.md')
+  })()],
 
   /* ---- branding -------------------------------------------------------- */
   ['the brand mark is the product one', (() => {

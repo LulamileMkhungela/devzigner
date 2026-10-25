@@ -227,9 +227,17 @@ a symlink to AGENTS.md, so there is exactly one copy of the instructions.
       `| ${index + 1} | **${tool.name}** | ${tool.kind} | ${tool.ships} | [${tool.url.replace('https://', '')}](${tool.url}) |`,
   ).join('\n')
 
+  // Each step names the file it runs from, so the list can be checked against
+  // the package rather than trusted: `steps/write-files.md` either exists or it
+  // does not.
   const steps = TOOLS.map(
     (tool) =>
-      `### ${tool.name}\n\n${tool.blurb}\n\n${tool.steps.map((step, i) => `${i + 1}. ${step}`).join('\n')}\n`,
+      `### ${tool.name}\n\n${tool.blurb}\n\n${tool.steps
+        .map((step, i) => {
+          const file = tool.stepFiles?.[i]
+          return `${i + 1}. ${step}${file ? ` — \`${file}\`` : ''}`
+        })
+        .join('\n')}\n`,
   ).join('\n')
 
   push(

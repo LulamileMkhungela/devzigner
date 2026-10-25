@@ -19,6 +19,12 @@ export interface Tool {
   /** Where the real files live in the export. */
   ships: string
   steps: string[]
+  /**
+   * The upstream file behind each step, when there is one. Same length as
+   * `steps` or empty — a step without its own file (a command in a workflow)
+   * gets no path rather than an invented one.
+   */
+  stepFiles?: string[]
 }
 
 function headings(content: string, pattern: RegExp): string[] {
@@ -34,12 +40,41 @@ function vendored(id: string) {
   return TOOLKIT.find((tool) => tool.id === id)
 }
 
-function skillSteps(id: string, pattern = /^##\s+(?:Phase|Step)\s+[\w.]+(?:\s*[—–-]\s*)?(.*)$/): string[] {
+/**
+ * A skill's phases, read from the instruction that defines them.
+ *
+ * Some skills enumerate their phases in SKILL.md and keep each one in its own
+ * `steps/` file (`1. **Brain dump intake** — `steps/brain-dump.md``); others use
+ * `## Phase 1 — …` headings in SKILL.md and no step files at all. Both layouts
+ * are read here, in the order the skill itself states, so the count on this page
+ * is the count the agent will actually run. A deliberately loose fallback would
+ * silently show four steps for an eleven-step process.
+ */
+function skillPhases(id: string): { steps: string[]; stepFiles?: string[] } {
   const tool = vendored(id)
   const skill = tool?.files.find((file) => file.path.endsWith('/SKILL.md'))
-  if (!skill) return []
-  const steps = headings(skill.content, pattern)
-  return steps.length ? steps : headings(skill.content, /^##\s+(.*)$/)
+  if (!skill) return { steps: [] }
+
+  // Layout A: a numbered list whose items point at their own step file. The
+  // path must follow the bold title on the same line, which is what separates a
+  // phase list from a bulleted list of rules that happens to reference a file.
+  const numbered: { title: string; file: string }[] = []
+  for (const line of skill.content.split('\n')) {
+    const match = line.match(/^\s*\d+\.\s+\*\*(.+?)\*\*[^`]*`(steps\/[\w.-]+\.md)`/)
+    if (match) numbered.push({ title: match[1].replace(/\s+/g, ' ').trim(), file: match[2] })
+  }
+  if (numbered.length >= 3) {
+    return { steps: numbered.map((n) => n.title), stepFiles: numbered.map((n) => n.file) }
+  }
+
+  // Layout B: `## Phase N — Title` / `## Step N — Title` headings, then any
+  // `##` heading as a last resort (section headings such as "Hard rules" are
+  // filtered out, because they are not things the skill does in order).
+  const BOILERPLATE = /^(audience assumption|core interaction principles|hard (rules|assumptions)|final note.*|prerequisites|the process|canonical section list|token derivation.*|style notes.*)$/i
+  const phased = headings(skill.content, /^##\s+(?:Phase|Step)\s+[\w.]+(?:\s*[—–-]\s*)?(.*)$/)
+  if (phased.length) return { steps: phased }
+  const anyH2 = headings(skill.content, /^##\s+(.*)$/).filter((title) => !BOILERPLATE.test(title))
+  return { steps: anyH2 }
 }
 
 export const TOOLS: Tool[] = [
@@ -50,7 +85,7 @@ export const TOOLS: Tool[] = [
     url: 'https://buildermethods.com/prd-creator',
     blurb: 'Turns a fuzzy idea into a locked PRD plus build-ready milestone prompts and a milestone log.',
     ships: '.agents/skills/prd-creator/ + _build_plan/prd.md and one prompt per milestone',
-    steps: skillSteps('prd-creator', /^##\s+\d+\\?\.\s*(.*)$/),
+    ...skillPhases('prd-creator'),
   },
   {
     id: 'skill-builder',
@@ -59,7 +94,7 @@ export const TOOLS: Tool[] = [
     url: 'https://buildermethods.com/skill-builder',
     blurb: 'Interviews you about a repeatable process, then designs, writes and verifies a portable skill.',
     ships: '.agents/skills/skill-builder/',
-    steps: skillSteps('skill-builder', /^##\s+(.*)$/),
+    ...skillPhases('skill-builder'),
   },
   {
     id: 'design-system',
@@ -68,7 +103,7 @@ export const TOOLS: Tool[] = [
     url: 'https://buildermethods.com/ai-design-system',
     blurb: 'Scaffolds a real design system into a React + Tailwind app, with a preview page and agent rules.',
     ships: '.agents/skills/design-system/ (50 reference files)',
-    steps: skillSteps('design-system', /^##\s+Phase\s+[\w.]+\s*[—–-]\s*(.*)$/),
+    ...skillPhases('design-system'),
   },
   {
     id: 'build-new',
@@ -109,7 +144,7 @@ export const TOOLS: Tool[] = [
     url: 'https://buildermethods.com/favicon-creator',
     blurb: 'Generates the full favicon set from one icon and wires the meta tags into the codebase.',
     ships: '.agents/skills/favicon-creator/ + favicon.svg (the set is built by the skill)',
-    steps: skillSteps('favicon-creator', /^##\s+Step\s+\d+\s*[—–-]\s*(.*)$/),
+    ...skillPhases('favicon-creator'),
   },
   {
     id: 'agent-os',

@@ -2151,6 +2151,19 @@ input[type='range'] {
 .lz-app[data-theme='dark'] .lz-toolsteps-n {
   background: #332f2c;
 }
+/* The step's file, under its title — a full path in its own line, so the
+   ellipsis of a long skill name never hides which file runs. */
+.lz-toolsteps li > span:last-child {
+  flex: 1;
+  min-width: 0;
+}
+.lz-toolsteps-file {
+  display: block;
+  margin-top: 2px;
+  font: 11px/1.35 var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
 
 /* --------------------------------------------------------------------------
    how to do this step

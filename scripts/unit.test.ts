@@ -74,6 +74,31 @@ test('the default genome passes its own audit at 100', () => {
   assert.equal(project.audit.checks.filter((c) => c.status === 'fail').length, 0)
 })
 
+test('every tool lists the steps its own instruction file defines', () => {
+  // The step list is parsed, not hand-written, and the drift it prevents is
+  // real: PRD Creator runs eleven phases upstream and once showed four here.
+  // Each step must also name a file that exists in the vendored skill.
+  for (const tool of TOOLS) {
+    assert.ok(tool.steps.length >= 4, `${tool.id} exposes only ${tool.steps.length} steps`)
+    if (!tool.stepFiles) continue
+    assert.equal(tool.stepFiles.length, tool.steps.length, `${tool.id} files do not line up with its steps`)
+    const prefix = `.agents/skills/${tool.id}/`
+    const files = buildPackage(compileProject(input as never)).map((f) => f.path)
+    for (const file of tool.stepFiles) {
+      assert.ok(files.includes(prefix + file), `${tool.id} names ${file}, which is not in the package`)
+    }
+  }
+  const prd = TOOLS.find((t) => t.id === 'prd-creator')!
+  assert.equal(prd.steps.length, 11, 'PRD Creator has eleven phases upstream')
+  assert.equal(prd.steps[0], 'Brain dump intake')
+  assert.equal(prd.steps.at(-1), 'Write files')
+  const skillBuilder = TOOLS.find((t) => t.id === 'skill-builder')!
+  assert.deepEqual(
+    skillBuilder.steps,
+    ['Understand the process', 'Interview the user', 'Design the shape', 'Build it', 'Save it', 'Verify & hand off'],
+  )
+})
+
 test('all eight free tools are in the package', () => {
   const files = buildPackage(compileProject(input as never))
   const paths = new Set(files.map((f) => f.path))

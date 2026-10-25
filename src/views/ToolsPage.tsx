@@ -14,8 +14,10 @@ const KIND_ICON: Record<string, string> = {
 
 /**
  * The eight free tools from buildermethods.com/tools, with the steps each one
- * actually runs. The skill text is shipped verbatim in the package, so this page
- * is an index of real files rather than a description of them.
+ * actually runs — parsed from the skill's own instruction file, so an eleven-phase
+ * skill shows eleven phases, and each one names the step file it lives in. The
+ * text is shipped verbatim in the package, so this page is an index of real files
+ * rather than a description of them.
  */
 export function ToolsPage({ project }: { project: Project }) {
   return (
@@ -62,7 +64,12 @@ export function ToolsPage({ project }: { project: Project }) {
                 {tool.steps.map((step, index) => (
                   <li key={`${tool.id}-${index}`}>
                     <span className="lz-toolsteps-n">{index + 1}</span>
-                    <span>{step}</span>
+                    <span>
+                      {step}
+                      {/* The file the agent opens for this step, so the count
+                          above can be checked against the package on disk. */}
+                      {tool.stepFiles?.[index] && <code className="lz-toolsteps-file">{tool.stepFiles[index]}</code>}
+                    </span>
                   </li>
                 ))}
               </ol>

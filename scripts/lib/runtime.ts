@@ -90,6 +90,22 @@ export const RUNTIME = `<script id="prodops-runtime">
         li.appendChild(a);
         ul.appendChild(li);
       }
+      // The theme switch lives in .ds-nav-actions, which the stylesheet hides
+      // below 900px along with the rest of the desktop actions. The drawer is
+      // where those links go on a phone, so the switch goes with them.
+      if (document.querySelector('.prodops-theme')) {
+        var row = document.createElement('li');
+        var themeButton = document.createElement('button');
+        themeButton.type = 'button';
+        themeButton.className = 'ds-nav-link prodops-theme-mobile';
+        themeButton.textContent = themeLabel();
+        themeButton.addEventListener('click', function () {
+          toggleTheme();
+          themeButton.textContent = themeLabel();
+        });
+        row.appendChild(themeButton);
+        ul.appendChild(row);
+      }
       panel.appendChild(ul);
       toggle.parentNode.appendChild(panel);
       toggle.setAttribute('aria-controls', 'local-nav-drawer');
@@ -616,12 +632,81 @@ export const RUNTIME = `<script id="prodops-runtime">
     }
   }
 
-  /* ---- 6. the workspace pill answers the keyboard ---------------------- */
-  function wirePill() {
-    var pill = document.getElementById('prodops-pill');
-    if (!pill) return;
-    var link = pill.querySelector('a');
-    if (link) link.textContent = 'Open ProdOps';
+  /* ---- 6. the light/dark switch ---------------------------------------- */
+  /**
+   * The capture was drawn for a light theme, but it already ships both: a
+   * .dark block of colour tokens and two wordmarks, one per theme. So the
+   * switch is one class on <html>, remembered across pages.
+   *
+   * The first visit follows the reader's own system setting rather than
+   * guessing: someone who runs their machine dark gets a dark page without
+   * having to find the button. After that the button wins, and the choice
+   * applies to every page of the site until it is changed again.
+   */
+  var THEME_KEY = 'prodops-theme';
+
+  function preferredTheme() {
+    try {
+      var saved = window.localStorage.getItem(THEME_KEY);
+      if (saved === 'dark' || saved === 'light') return saved;
+    } catch (error) {}
+    return window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
+  }
+
+  function applyTheme(theme) {
+    var dark = theme === 'dark';
+    var root = document.documentElement;
+    if (root.classList) root.classList.toggle('dark', dark);
+    root.setAttribute('data-theme', theme);
+    var buttons = document.querySelectorAll('.prodops-theme');
+    for (var i = 0; i < buttons.length; i++) {
+      var label = dark ? 'Switch to light mode' : 'Switch to dark mode';
+      buttons[i].setAttribute('aria-pressed', dark ? 'true' : 'false');
+      buttons[i].setAttribute('aria-label', label);
+      buttons[i].setAttribute('title', label);
+    }
+  }
+
+  /** What the switch is offering: the other mode, named. */
+  function themeLabel() {
+    return document.documentElement.getAttribute('data-theme') === 'dark' ? 'Light mode' : 'Dark mode';
+  }
+
+  function toggleTheme() {
+    var next = document.documentElement.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+    applyTheme(next);
+    try { window.localStorage.setItem(THEME_KEY, next); } catch (error) {}
+  }
+
+  function wireTheme() {
+    applyTheme(preferredTheme());
+    var buttons = document.querySelectorAll('.prodops-theme');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].addEventListener('click', toggleTheme);
+    }
+  }
+
+  /* ---- 7. copy buttons -------------------------------------------------- */
+  /**
+   * A PayShap ID or a bank account number is there to be copied, not retyped.
+   * Without the clipboard API the button stays out of the way and the code is
+   * still selectable text.
+   */
+  function wireCopy() {
+    var buttons = document.querySelectorAll('.prodops-pay-copy');
+    for (var i = 0; i < buttons.length; i++) {
+      buttons[i].addEventListener('click', function () {
+        var value = this.getAttribute('data-copy') || '';
+        var button = this;
+        function done() {
+          button.textContent = 'Copied';
+          setTimeout(function () { button.textContent = 'Copy'; }, 1600);
+        }
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          navigator.clipboard.writeText(value).then(done, function () {});
+        }
+      });
+    }
   }
 
   function boot() {
@@ -631,7 +716,8 @@ export const RUNTIME = `<script id="prodops-runtime">
     wireVideos();
     wireMotion();
     wireLinks();
-    wirePill();
+    wireTheme();
+    wireCopy();
   }
 
   if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot);

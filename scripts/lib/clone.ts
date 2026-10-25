@@ -18,18 +18,60 @@
  */
 import { RUNTIME, restoreEmails } from './runtime'
 import { rebrand } from './brand'
+import { withFounder } from './founder'
+import { withPayment, withRandPrices } from './payments'
+import { southAfricanTime } from './sast'
 
 export const isBlocked = (html: string): boolean =>
   html.includes('challenges.cloudflare.com') || /<title>\s*Just a moment/i.test(html)
 
-export const PILL = `
-<div id="prodops-pill" style="position:fixed;right:16px;bottom:16px;z-index:2147483647;display:flex;align-items:center;gap:10px;
-  padding:9px 12px;border-radius:999px;border:1px solid #2b2b2b;background:#111;color:#fafafa;
-  font:500 12.5px/1 system-ui,-apple-system,'Segoe UI',sans-serif;box-shadow:0 10px 30px -14px rgba(0,0,0,.9)">
-  <span style="width:7px;height:7px;border-radius:50%;background:#ff5c1a"></span>
-  <span>ProdOps · local copy — no email, no keys</span>
-  <a href="/workspace/" style="padding:6px 10px;border-radius:999px;background:#ff5c1a;color:#0a0a0a;text-decoration:none;font-weight:600">Open ProdOps</a>
-</div>`
+/**
+ * Two things the capture has no way to know, put where the site keeps them.
+ *
+ * **"Open ProdOps"** used to float in the corner of every page, over content,
+ * and the brief was to stop doing that: the workspace is a destination, and
+ * destinations belong in the navigation. It goes first in the nav actions,
+ * before "Log in", because it is the reason the visitor is here.
+ *
+ * **The theme switch** goes last, after "Join Pro", where a site keeps its
+ * small utilities. The capture was built for a light theme and its markup
+ * already carries both wordmarks (`.dark:hidden` and `.hidden dark:block`) and
+ * a `.dark` token block, so the switch is a class on `<html>` — no second
+ * stylesheet, no re-render.
+ *
+ * Both are anchors/buttons in the site's own classes, so they inherit the nav's
+ * rhythm and the mobile drawer picks the link up with the rest of them.
+ */
+const NAV_OPEN = '<a class="ds-nav-link prodops-open" href="/workspace/">Open ProdOps</a>'
+
+const THEME_TOGGLE = `<button class="prodops-theme" type="button" aria-label="Switch to dark mode" aria-pressed="false" title="Switch to dark mode">
+  <svg class="prodops-theme-sun" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"></circle><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"></path></svg>
+  <svg class="prodops-theme-moon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.8A9 9 0 1 1 11.2 3a7 7 0 0 0 9.8 9.8Z"></path></svg>
+</button>`
+
+/** The nav gets the workspace link and the theme switch; nothing else moves. */
+export function withNav(html: string): string {
+  let out = html
+  // Only the header's own action group: the footer has a link list that also
+  // ends in "Log in", and the header is the one with the toggle beside it.
+  const actions = out.indexOf('class="ds-nav-actions"')
+  if (actions === -1) return out
+  const login = out.indexOf('<a class="ds-nav-link" href="login.html">Log in</a>', actions)
+  if (login !== -1) {
+    out = out.slice(0, login) + NAV_OPEN + out.slice(login)
+  } else {
+    // Some pages write the action group without the plain class; the first
+    // link inside it is still before "Log in".
+    out = out.replace('class="ds-nav-actions">', `class="ds-nav-actions">${NAV_OPEN}`)
+  }
+  // After the last action link in the group, before the hamburger.
+  const groupStart = out.indexOf('class="ds-nav-actions"')
+  const groupEnd = out.indexOf('</div>', groupStart)
+  if (groupStart !== -1 && groupEnd !== -1) {
+    out = out.slice(0, groupEnd) + THEME_TOGGLE + out.slice(groupEnd)
+  }
+  return out
+}
 
 /**
  * The motion and colour the captured markup lost.
@@ -540,16 +582,26 @@ export function adaptPage(html: string, path: string): string {
   // is not part of the site, and the address it names is not this site's.
   out = out.replace(/<!--\s*Mirrored from[\s\S]*?-->/gi, '')
   out = restoreEmails(out)
+  out = withFounder(out)
+  out = withNav(out)
   out = withInstall(out, path)
+  out = withPayment(out, path)
   out = dropCoursePromos(out)
   out = replaceVideos(out)
   // The name, the mark, the byline and the handles, on the way out. `site/`
   // itself stays an untouched capture; see scripts/lib/brand.ts.
   out = rebrand(out, path)
+  // South African time, after the rebrand: the sentences around it are already
+  // in this site's words, and the dates are still in the shape the capture's
+  // own props use.
+  out = southAfricanTime(out)
+  // Prices again: React splits "$" and "299" with an empty comment, and the
+  // rebrand is what removes those. This pass is idempotent.
+  out = withRandPrices(out)
 
   if (TOOL_PAGE.test(path)) {
     out = out.replace('<body>', `<body>\n${TOOLBAR}`)
   }
 
-  return out.replace('</body>', `${MOTION_CSS}\n${PILL}\n${RUNTIME}\n</body>`)
+  return out.replace('</body>', `${MOTION_CSS}\n${RUNTIME}\n</body>`)
 }

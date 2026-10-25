@@ -201,6 +201,18 @@ export function App() {
             <div className="lz-account-name" title={active.name}>{active.name}</div>
             <div className="lz-account-email">{active.archetypeLabel} · {doneCount}/5 phases</div>
           </div>
+          {/* The theme is one click away instead of two: it sits beside the
+              account actions, and the same switch is still in the menu. */}
+          <button
+            className="lz-theme-toggle"
+            type="button"
+            aria-label={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            aria-pressed={theme === 'dark'}
+            onClick={toggleTheme}
+          >
+            <Icon name={theme === 'dark' ? 'Sun' : 'Moon'} size={15} />
+          </button>
           <button
             className="lz-dots"
             type="button"
@@ -253,8 +265,10 @@ export function App() {
         <div key={path.join('/') || 'product'}>{page()}</div>
 
         <footer className="lz-credit">
-          <span className="lz-credit-mark">
-            <img src="/prodops-mark.svg" alt="" width={14} height={14} />
+          {/* The founder, in his own workspace: the name is credited, and the
+              face behind it is the photograph he supplied rather than a mark. */}
+          <span className="lz-credit-founder">
+            <img src="/lulamile-mkhungela.png" alt="Lulamile Mkhungela" width={28} height={28} loading="lazy" />
           </span>
           <span>
             <b>ProdOps</b> — developed by <b>Lulamile Mkhungela</b>. Compiled in this browser: no keys, no model calls,

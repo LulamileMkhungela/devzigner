@@ -11,6 +11,7 @@ import { existsSync, readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, normalize, relative, sep } from 'node:path'
 import { JSDOM } from 'jsdom'
 import { adaptPage, blockedPage, isBlocked } from './lib/clone'
+import { toSast } from './lib/sast'
 import { LEGACY_ASSETS, OLD_BRAND, OLD_PRODUCTS } from './lib/brand'
 import { decodeCfEmail, restoreEmails } from './lib/runtime'
 
@@ -218,7 +219,110 @@ const home = readFileSync(join(SITE, 'index.html'), 'utf8')
 const served = adaptPage(home, '/')
 check('the homepage is served offline', !/https:\/\/(?:www\.)?buildermethods\.com\//.test(served))
 check('the analytics tag is stripped', !served.includes('plausible.io'))
-check('every page carries the workspace pill', served.includes('prodops-pill') && served.includes('/workspace/'))
+/* The workspace link is a nav action now, not a badge floating over the page:
+   first in the header's action group, before "Log in", with the theme switch
+   beside it. The floating pill it replaced must be gone. */
+check(
+  'the workspace link sits in the nav, before Log in',
+  /class="ds-nav-actions"><a class="ds-nav-link prodops-open" href="\/workspace\/">Open ProdOps<\/a><a class="ds-nav-link" href="login\.html">Log in/.test(
+    served,
+  ),
+  (served.match(/<div class="ds-nav-actions">[\s\S]{0,220}/) ?? ['missing'])[0].replace(/\s+/g, ' ').slice(0, 150),
+)
+check(
+  'the corner pill is gone and nothing floats over the page',
+  !served.includes('prodops-pill') && !served.includes('position:fixed;right:16px;bottom:16px'),
+)
+check(
+  'the light/dark switch is a nav action, wired before the first paint',
+  served.includes('class="prodops-theme"') &&
+    served.includes('prodops-theme-boot') &&
+    /localStorage\.getItem\('prodops-theme'\)/.test(served) &&
+    // The site's own dark tokens are what the class switches on.
+    readFileSync(join(SITE, 'vite/assets/design-system-B0kF4gVi.css'), 'utf8').includes('.dark{--color-page:#100f0e'),
+  'switch + boot + dark tokens',
+)
+
+/* ---- rand, South African time, and the way people actually pay ---------- */
+
+const checkout = ['checkout3366', 'checkout1d1a', 'checkoutd3b3'].map((page) => ({
+  page,
+  out: adaptPage(readFileSync(join(SITE, `${page}.html`), 'utf8'), `/${page}.html`),
+}))
+check(
+  'every price is in rand, and no dollar sign survives on the pricing pages',
+  checkout.every(({ out }) => /R\d/.test(out) && !/\$[\d]/.test(out)) &&
+    ['R5 499', 'R27 499', 'R899'].every((price) => checkout.some(({ out }) => out.includes(price))) &&
+    !/"priceCurrency":"USD"/.test(adaptPage(readFileSync(join(SITE, 'pro.html'), 'utf8'), '/pro.html')) &&
+    /"priceCurrency":"ZAR"/.test(adaptPage(readFileSync(join(SITE, 'pro.html'), 'utf8'), '/pro.html')),
+  checkout
+    .map(({ page, out }) => `${page}: ${(out.match(/<h3>Pay (R[\d ]+) with PayShap/) ?? ['', '?'])[1]}`)
+    .join(' · '),
+)
+check(
+  'checkout takes PayShap, an instant EFT or an invoice — and no card',
+  checkout.every(
+    ({ out }) =>
+      out.includes('prodops-pay') &&
+      /PayShap/.test(out) &&
+      /Instant EFT/i.test(out) &&
+      /invoice/i.test(out) &&
+      /reference/.test(out) &&
+      // The captured step was a hand-off to a card processor; no card fields.
+      !/card number|cardnumber|cvc|stripe/i.test(out.replace(/<script[\s\S]*?<\/script>/g, '')),
+  ),
+  (checkout[0].out.match(/<h3>Pay [^<]+<\/h3>/) ?? ['no heading'])[0],
+)
+
+const sessions = adaptPage(readFileSync(join(SITE, 'sessions.html'), 'utf8'), '/sessions.html')
+check(
+  'session times are South African, and convert against their own date',
+  /2\d:00 SAST/.test(sessions) &&
+    !/[\d] [AP]M ET/.test(sessions) &&
+    // November is outside American daylight saving, so 2:00 PM ET is 21:00 here;
+    // April is inside it, and the same clock time is an hour earlier in SAST.
+    /3 November 2026 · 21:00 SAST/.test(sessions) &&
+    toSast('2:00 PM ET', 'November 3, 2026') === '21:00 SAST' &&
+    toSast('2:00 PM ET', 'April 30, 2026') === '20:00 SAST',
+  [...new Set(sessions.match(/[\d]{1,2} [A-Z][a-z]+ 20\d\d · [\d:]{5} SAST/g) ?? [])].join(' · '),
+)
+const detailPath = '/sessions/12-10-26-projects-qa.html'
+const detail = adaptPage(readFileSync(join(SITE, 'sessions/12-10-26-projects-qa.html'), 'utf8'), detailPath)
+check(
+  'a session page states one timezone, in SA time, from its own instant',
+  /<time dateTime="2026-12-10T19:00:00Z">10 December 2026 @ 21:00 SAST<\/time>/.test(detail) &&
+    !/11am PT|2pm ET|7pm GMT/.test(detail),
+  (detail.match(/<time[^>]*>[^<]*<\/time>/) ?? ['none'])[0],
+)
+check(
+  'dates read the South African way, day first',
+  /3 November 2026/.test(sessions) && !/[A-Z][a-z]+ \d{1,2}, 20\d\d/.test(sessions),
+  (sessions.match(/[\d]{1,2} [A-Z][a-z]+ 20\d\d/g) ?? []).slice(0, 2).join(' · '),
+)
+
+/* ---- the founder ------------------------------------------------------- */
+
+const about = adaptPage(readFileSync(join(SITE, 'about.html'), 'utf8'), '/about.html')
+check(
+  'the sign-off carries the founder as he is, in a photograph',
+  /class="prodops-founder-photo"><img class="prodops-founder" src="\/images\/people\/lulamile-mkhungela\.png" alt="Lulamile Mkhungela"/.test(
+    about,
+  ) &&
+    existsSync(join(ROOT, 'site/images/people/lulamile-mkhungela.png')) &&
+    /Founder, ProdOps/.test(about),
+  (about.match(/<div class="signoff">[\s\S]{0,240}/) ?? ['no sign-off'])[0].replace(/\s+/g, ' ').slice(0, 150),
+)
+
+/* ---- the logo is the site's own orange --------------------------------- */
+
+const logoFiles = ['site/images/marks/prodops-mark.svg', 'site/images/logos/prodops-wordmark.svg', 'site/favicon/icon.svg']
+const logoInk = logoFiles.map((file) => readFileSync(join(ROOT, file), 'utf8'))
+check(
+  'the mark is drawn in the site\'s two brand tokens, not an invented orange',
+  logoInk.every((svg) => svg.includes('#f0621a') && svg.includes('#ea580c')) &&
+    logoInk.every((svg) => !/#ff7a3d|#d83c0b/i.test(svg)),
+  'stops #f0621a → #ea580c',
+)
 
 const toolPage = adaptPage(readFileSync(join(SITE, 'tools.html'), 'utf8'), '/tools.html')
 check('tool pages say the tool is installed locally', toolPage.includes('prodops-toolbar') && toolPage.includes('runs locally'))

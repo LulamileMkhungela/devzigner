@@ -1,5 +1,7 @@
 import type { ReactNode } from 'react'
-import { readFileSync } from 'node:fs'
+import { existsSync, readFileSync } from 'node:fs'
+import { dirname, join, resolve } from 'node:path'
+import { fileURLToPath } from 'node:url'
 import { renderToString } from 'react-dom/server'
 import { App } from '../src/App'
 import { StoreProvider } from '../src/lib/store'
@@ -25,6 +27,8 @@ import { ToolPanel, ToolsPage } from '../src/views/ToolsPage'
 import { NextStepGuide } from '../src/components/NextStepGuide'
 import { Toast } from '../src/components/ui'
 import { TOOLS } from '../src/tools'
+
+const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 
 const store: Record<string, string> = {}
 ;(globalThis as any).localStorage = {
@@ -235,6 +239,30 @@ const checks = [
   ['the credit is in the document', (() => {
     const app = renderToString(<StoreProvider><App /></StoreProvider>)
     return app.includes('developed by') && app.includes('Lulamile Mkhungela')
+  })()],
+  /* The founder's name is credited, and the face behind it is his photograph —
+     the same file the site's sign-off uses, not a product mark standing in. */
+  ['the credit carries the founder\'s own photograph', (() => {
+    const app = renderToString(<StoreProvider><App /></StoreProvider>)
+    return (
+      app.includes('lz-credit-founder') &&
+      app.includes('/lulamile-mkhungela.png') &&
+      app.includes('alt="Lulamile Mkhungela"') &&
+      existsSync(join(root, 'public/lulamile-mkhungela.png'))
+    )
+  })()],
+  /* Light and dark are both real themes, and the switch is a header control
+     rather than a line buried in the account menu. */
+  ['the theme switch is in the header, and both themes exist', (() => {
+    const app = renderToString(<StoreProvider><App /></StoreProvider>)
+    const css = readFileSync(join(root, 'src/styles/app.css'), 'utf8')
+    return (
+      app.includes('lz-theme-toggle') &&
+      app.includes('aria-pressed') &&
+      /data-theme=(\\?"|\{)/.test(app) &&
+      css.includes(".lz-app[data-theme='light']") &&
+      css.includes(".lz-app[data-theme='dark']")
+    )
   })()],
   /**
    * After a rebuild the builder is told what to do next, in the page rather than

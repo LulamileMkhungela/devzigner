@@ -271,8 +271,124 @@ const BRAND_CSS = `<style id="prodops-brand">
   .ds-nav > a[aria-label], .ds-footer a[aria-label] { display: inline-flex; align-items: center; }
   /* The author portrait is a mark now, so it sits with the sign-off text. */
   .signoff > img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
-  @media (max-width: 640px) { .ds-wordmark { height: 32px; } }
+
+  /* ---- the workspace link and the theme switch -------------------------- */
+  /* "Open ProdOps" is a nav action, not a floating button: the same 14px
+     weight and radius as the links beside it, filled with the brand token so
+     it is the one thing in the header that looks like a destination. */
+  .ds-nav-actions { align-items: center; }
+  .prodops-open {
+    display: inline-flex; align-items: center; align-self: center;
+    padding: 8px 14px; border-radius: var(--radius-control);
+    background: var(--color-brand); color: var(--color-on-brand, #fff);
+    font-size: 14px; font-weight: 600; line-height: 1.4; text-decoration: none;
+    white-space: nowrap; transition: background var(--duration-fast, .18s) ease;
+  }
+  .prodops-open:hover, .prodops-open:focus-visible { background: var(--color-brand-hover); color: var(--color-on-brand, #fff); }
+  .prodops-theme {
+    display: inline-flex; align-items: center; justify-content: center;
+    align-self: center; width: 36px; height: 36px; padding: 0; cursor: pointer;
+    border: 1px solid var(--color-hairline); border-radius: 999px;
+    background: transparent; color: var(--color-body);
+    transition: color var(--duration-fast, .18s) ease, border-color var(--duration-fast, .18s) ease;
+  }
+  .prodops-theme:hover, .prodops-theme:focus-visible { color: var(--color-brand); border-color: var(--color-brand); }
+  .prodops-theme svg { display: block; }
+  .prodops-theme-moon { display: none; }
+  .dark .prodops-theme-sun { display: none; }
+  .dark .prodops-theme-moon { display: block; }
+  /* Inside the mobile drawer the switch is a row like the links above it. */
+  .prodops-theme-mobile {
+    width: 100%; justify-content: flex-start; text-align: left;
+    background: none; border: 0; cursor: pointer; font: inherit;
+  }
+  /* Dark mode has to keep the two wordmarks honest: the capture shows the ink
+     one by default and the light one under .dark, which the utility classes
+     already do — this only makes sure a switch that lands mid-paint cannot
+     show both for a frame. */
+  html.dark { color-scheme: dark; }
+
+  /* ---- the founder's photograph ---------------------------------------- */
+  /* The capture's portrait slot was a 40px circle showing a product mark. It
+     now holds a photograph of a person at a desk, so the circle is a little
+     larger and the image is cropped to the face rather than to the room. */
+  .prodops-founder-photo {
+    width: 64px; height: 64px; flex: 0 0 64px; display: inline-block;
+    border-radius: 50%; overflow: hidden;
+    border: 1px solid var(--color-hairline); background: var(--color-hairline);
+  }
+  .prodops-founder {
+    width: 100%; height: 100%; display: block; object-fit: cover;
+    transform: scale(2.7); transform-origin: 41% 24%;
+  }
+  .signoff { align-items: center; }
+  .signoff .name { font-weight: 600; }
+
+  /* ---- paying, in rand -------------------------------------------------- */
+  .prodops-pay {
+    margin-top: 16px; padding: 24px;
+    border: 1px solid var(--color-hairline); border-radius: var(--radius-card);
+    background: var(--color-surface);
+    color: var(--color-body); font-size: 15px; line-height: 1.6;
+  }
+  .prodops-pay h3 { margin: 6px 0 8px; font-size: 20px; color: var(--color-display); letter-spacing: -.01em; }
+  .prodops-pay h4 { margin: 22px 0 8px; font-size: 14px; color: var(--color-display); }
+  .prodops-pay p { margin: 0 0 10px; }
+  .prodops-pay .kicker { margin: 0; }
+  .prodops-pay-lede { color: var(--color-muted); }
+  .prodops-pay-steps { margin: 14px 0 4px; padding-left: 20px; }
+  .prodops-pay-steps li { margin: 8px 0; }
+  .prodops-pay code {
+    font: 500 12.5px/1.5 ui-monospace, SFMono-Regular, Menlo, monospace;
+    padding: 2px 6px; border-radius: 6px;
+    background: color-mix(in srgb, var(--color-display) 8%, transparent);
+    color: var(--color-display);
+  }
+  .prodops-pay-copy {
+    margin-left: 6px; padding: 3px 9px; cursor: pointer;
+    border: 1px solid var(--color-hairline); border-radius: 999px;
+    background: transparent; color: var(--color-brand);
+    font: 600 12px/1.4 inherit;
+  }
+  .prodops-pay-copy:hover { border-color: var(--color-brand); }
+  .prodops-pay-eft { margin: 0; display: grid; gap: 8px; }
+  .prodops-pay-eft > div { display: flex; justify-content: space-between; gap: 16px; border-bottom: 1px solid var(--color-hairline); padding-bottom: 8px; }
+  .prodops-pay-eft > div:last-child { border-bottom: 0; padding-bottom: 0; }
+  .prodops-pay-eft dt { color: var(--color-muted); font-size: 14px; margin: 0; }
+  .prodops-pay-eft dd { margin: 0; color: var(--color-display); font-size: 14px; text-align: right; }
+  .prodops-pay-note {
+    margin: 20px 0 0; padding-top: 14px; border-top: 1px solid var(--color-hairline);
+    font-size: 13px; color: var(--color-muted);
+  }
+  @media (max-width: 640px) {
+    .ds-wordmark { height: 32px; }
+    .prodops-open { padding: 7px 11px; font-size: 13px; }
+  }
 </style>`
+
+/**
+ * The theme, before the first paint.
+ *
+ * `BRAND_CSS` is in the head, and so is this: a reader whose machine is in dark
+ * mode should never see a white page flash and then go dark, which is exactly
+ * what a switch that waits for `DOMContentLoaded` produces. It is four lines,
+ * it reads the same key the runtime writes, and with no JavaScript at all the
+ * pages stay in the light theme they were captured in.
+ */
+const THEME_BOOT = `<script id="prodops-theme-boot">
+  (function () {
+    try {
+      var saved = localStorage.getItem('prodops-theme');
+      var dark = saved ? saved === 'dark' : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+      if (dark) document.documentElement.classList.add('dark');
+    } catch (error) {}
+  })();
+</script>`
+
+function bootTheme(html: string): string {
+  if (html.includes('prodops-theme-boot')) return html
+  return html.replace(/<head\b([^>]*)>/i, (tag: string) => `${tag}\n${THEME_BOOT}`)
+}
 
 /**
  * Apply a table to the text of a document, never to its tags.
@@ -301,9 +417,10 @@ function renameProducts(html: string): string {
 
 /** Put the brand stylesheet in the head, before anything paints. */
 function withBrandCss(html: string): string {
-  const at = html.toLowerCase().indexOf('</head>')
-  if (at === -1) return html.replace(/<body\b[^>]*>/i, (tag) => `${tag}\n${BRAND_CSS}`)
-  return html.slice(0, at) + BRAND_CSS + '\n' + html.slice(at)
+  const withTheme = bootTheme(html)
+  const at = withTheme.toLowerCase().indexOf('</head>')
+  if (at === -1) return withTheme.replace(/<body\b[^>]*>/i, (tag) => `${tag}\n${BRAND_CSS}`)
+  return withTheme.slice(0, at) + BRAND_CSS + '\n' + withTheme.slice(at)
 }
 
 export function rebrand(html: string, path = '/'): string {

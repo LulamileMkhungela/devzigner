@@ -230,6 +230,44 @@ missing, or if the logo needs a request to appear.
 Attribution is not lost with the branding: the MIT notices for the work this builds on live in
 `docs/LICENSES.md`, which is where a licence requires them — on the package, not on the storefront.
 
+### The same orange, everywhere
+
+The logo is drawn in the site's own two brand tokens — `#f0621a` on dark surfaces and `#ea580c` on
+light ones — and the workspace's accent is those same two values, so the app and the site are one
+product rather than two palettes that nearly match. `npm run site-check` fails if a mark is drawn in
+any other orange.
+
+### The header, and light and dark
+
+The workspace used to be a badge floating over the corner of every page. It is now a nav action,
+first in the header before **Log in**, where a destination belongs — and it travels into the mobile
+drawer with the other links. Beside **Join Pro** is the theme switch: the capture already carried a
+`.dark` token block and both wordmarks, so the switch is one class on `<html>`, resolved by a four-line
+script in the head before the first paint (no white flash for a reader whose machine is dark, and no
+flash of the wrong logo). The choice is remembered per browser; with no JavaScript the pages stay in
+the light theme they were captured in. The workspace has the same switch in its own header, and its
+light and dark themes are both real themes rather than one theme and an inversion.
+
+### Rand, South African time, and how people actually pay
+
+- **Prices are in rand.** The capture was priced in dollars — Pro at $299 a year, a five-seat team at
+  $1,495, a workshop ticket at $50 — and every one of them is now shown as `R5 499`, `R27 499` and
+  `R899`, including the price inside the structured data (rand, `ZAR`), because that is the number a
+  search result would quote.
+- **Session times are South African, and computed rather than shifted.** Every session read
+  "2:00 PM ET"; each is now "21:00 SAST". Eastern Time is UTC−5 outside American daylight saving and
+  UTC−4 inside it, and South Africa is UTC+2 all year, so 2:00 PM ET is 20:00 SAST in April and 21:00
+  in November. `scripts/lib/sast.ts` computes the rule from the session's own date, and dates are
+  written day-first (`3 November 2026`).
+- **Payment is PayShap, an instant EFT, or an invoice** — none of which charges a fee to the payer or
+  the seller, and none of which needs a card. The captured checkout step was a hand-off to a card
+  processor; the payment block replaces that step on all three checkout pages. The PayShap ID and the
+  banking details live in one object — `MERCHANT` in `scripts/lib/payments.ts` — and while a field is
+  empty the page offers to send that detail instead of inventing one.
+- **The founder is in the sign-off as himself**: the block that carried a product mark now carries
+  his photograph (`site/images/people/lulamile-mkhungela.png`), cropped to the face, with his name and
+  `Founder, ProdOps` beside it. The workspace footer credits the same face.
+
 | URL | What you get |
 | --- | --- |
 | `/` | the copy: home, tools, the tool pages, articles, sessions, pro |
@@ -237,8 +275,8 @@ Attribution is not lost with the branding: the MIT notices for the work this bui
 | `/prodops-standalone.html` | the workspace as one file, no server |
 | `/prodops-snapshot.html` | every workspace page as static markup, no JavaScript |
 
-On `/tools.html` the page reads left to right: the captured index of the eight tools in the left
-column, exactly as it was, and a tab strip with one panel in the right column. Each tab reads that
+On `/tools.html` a browser sits above the captured listing: the tool page's own documentation sidebar
+in the left column, and a tab strip with one panel in the right column. Each tab reads that
 tool's real page into the panel without a page load, so comparing two tools costs one click instead
 of two page loads. `npm run site-check` asserts both halves: eight tabs that swap the panel and the
 original eight-row list still in the left column and still displayed.

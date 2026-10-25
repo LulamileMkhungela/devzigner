@@ -141,10 +141,12 @@ pre {
   --ink-2: #d4d4d4;
   --muted: #a3a3a3;
   --faint: #737373;
-  --accent: #ff5c1a;
-  --accent-hover: #ff7a45;
-  --accent-tint: rgba(255, 92, 26, 0.12);
-  --accent-line: rgba(255, 92, 26, 0.32);
+  /* The site's own brand token for dark surfaces (#f0621a), so the workspace
+     and the marketing site are the same orange rather than two of them. */
+  --accent: #f0621a;
+  --accent-hover: #ff7431;
+  --accent-tint: rgba(240, 98, 26, 0.14);
+  --accent-line: rgba(240, 98, 26, 0.34);
   --blue-bg: #12253d;
   --blue-ink: #9dc4f0;
   --green-bg: #122a17;
@@ -190,10 +192,11 @@ pre {
   --ink-2: #44403c;
   --muted: #57534e;
   --faint: #a8a29e;
-  --accent: #1c1917;
-  --accent-hover: #292524;
-  --accent-tint: #f5f5f4;
-  --accent-line: #d6d3d1;
+  /* And the site's light-surface brand token (#ea580c). */
+  --accent: #ea580c;
+  --accent-hover: #d14e0a;
+  --accent-tint: rgba(234, 88, 12, 0.1);
+  --accent-line: rgba(234, 88, 12, 0.3);
   --blue-bg: #dfe8f7;
   --blue-ink: #3e5e93;
   --green-bg: #e9f1e4;
@@ -579,6 +582,24 @@ pre {
 .lz-dots:hover {
   background: var(--hover);
   color: var(--ink);
+}
+/* The theme switch is the same control as the dots beside it — same size, same
+   hover — with an icon instead of a glyph, and it is not the menu button. */
+.lz-theme-toggle {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  border-radius: 7px;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.lz-theme-toggle:hover,
+.lz-theme-toggle:focus-visible {
+  background: var(--hover);
+  color: var(--accent);
 }
 .lz-menu {
   position: absolute;
@@ -2827,14 +2848,20 @@ input[type='range'] {
   font-weight: 600;
   color: var(--ink-2);
 }
-.lz-credit-mark {
+/* The founder's photograph in the footer: a disc, cropped to the face the same
+   way the site's sign-off crops it. */
+.lz-credit-founder {
   display: inline-flex;
   flex: 0 0 auto;
-  opacity: .9;
 }
-.lz-credit-mark img {
-  display: block;
-  border-radius: 4px;
+.lz-credit-founder img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 41% 24%;
+  transform: scale(1.9);
+  border: 1px solid var(--line);
 }
 .lz-credit b {
   font-weight: 600;

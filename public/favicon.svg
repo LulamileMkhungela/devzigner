@@ -5,8 +5,8 @@
        all show the same product. -->
   <defs>
     <linearGradient id="fav-accent" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
-      <stop offset="0" stop-color="#ff7a3d" />
-      <stop offset="1" stop-color="#d83c0b" />
+      <stop offset="0" stop-color="#f0621a" />
+      <stop offset="1" stop-color="#ea580c" />
     </linearGradient>
   </defs>
   <rect width="64" height="64" rx="15" fill="url(#fav-accent)" />

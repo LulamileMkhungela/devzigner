@@ -174,14 +174,20 @@ function swapLogos(html: string): string {
   // store and are not part of the capture. Preloading them is pointless, and a
   // remote URL keeps the old brand in the markup; the mark stands in instead.
   html = html.replace(/<link[^>]+rel="preload"[^>]+as="image"[^>]*buildermethods[^>]*>/gi, '')
+  // Preloading an image that is about to be inlined as a data URI is pointless,
+  // and the capture preloads its wordmark and portrait on every page.
+  html = html.replace(/<link[^>]+rel="preload"[^>]+as="image"[^>]*images\/(?:logos\/prodops-wordmark|marks\/prodops-mark)[^>]*>/gi, '')
   html = html.replace(/https:\/\/buildermethods[^"'\s<>]*/g, mark())
   // The portrait and the author avatar are a photograph of somebody who has
-  // nothing to do with this product; the mark stands in for both.
-  html = html.replace(new RegExp('(?:\.\.\/)*images/marks/prodops-mark\.svg', 'g'), mark())
+  // nothing to do with this product; the mark stands in for both. `(?<!/)`
+  // keeps an absolute URL absolute: `https://prodops.dev/images/...` is a link
+  // to a file this repository ships, and a data URI there would leave the host
+  // glued to the front of it, as in `https://prodops.ddata:image/svg+xml...`.
+  html = html.replace(/(?<!\/)(?:\.\.\/)*images\/marks\/prodops-mark\.svg/g, mark())
   // The reference may be relative — nested pages write ../images/logos/… — and
   // the prefix has to go with the path, or the data URI becomes "../data:".
   // The pattern is built from a string so the escape level is stated once.
-  const logoRef = new RegExp('(?:\.\.\/)*images/logos/prodops-wordmark(-light)?\.svg', 'g')
+  const logoRef = /(?<!\/)(?:\.\.\/)*images\/logos\/prodops-wordmark(-light)?\.svg/g
   return html.replace(logoRef, (match: string) => (match.includes('-light') ? light : dark))
 }
 

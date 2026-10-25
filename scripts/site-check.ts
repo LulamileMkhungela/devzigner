@@ -252,7 +252,9 @@ const brandLink = doc.querySelector('a[href="index.html"], a[href="/"]')
 check(
   'the logo is inlined, so it needs no request',
   [...doc.querySelectorAll('img')].some((img) => img.getAttribute('src')?.startsWith('data:image/svg+xml')) &&
-    !served.includes('images/logos/'),
+    // Nothing points at the file any more. An absolute URL in the structured
+    // data is a citation of the published address, not a request the page makes.
+    !/(?:src|href)="(?:\.\.\/)*images\/logos\//.test(served),
   `${doc.querySelectorAll('img[src^="data:image/svg+xml"]').length} inline marks`,
 )
 check(
@@ -703,6 +705,27 @@ const legacyMissing = Object.keys(LEGACY_ASSETS).filter((path) => exists.has(joi
 const markMissing = Object.values(LEGACY_ASSETS).filter((file) => !existsSync(join(ROOT, file)))
 check('the old brand\'s files are gone from the capture', legacyMissing.length === 0, legacyMissing.join(', '))
 check('their URLs are answered by the ProdOps mark', markMissing.length === 0, markMissing.join(', '))
+
+// Structured data is JSON, and a rename that lands inside a URL can quietly
+// break it — the wordmark swap once turned "https://prodops.dev/images/…" into
+// "https://prodops.ddata:image/svg+xml;…". Parse it, and look for the seam.
+{
+  const broken: string[] = []
+  const sealed: string[] = []
+  for (const file of html) {
+    const out = adaptPage(readFileSync(file, 'utf8'), `/${relative(SITE, file)}`)
+    for (const match of out.matchAll(/<script[^>]+type="application\/ld\+json"[^>]*>([\s\S]*?)<\/script>/gi)) {
+      try {
+        JSON.parse(match[1])
+      } catch {
+        broken.push(relative(SITE, file))
+      }
+    }
+    if (/https?:\/\/[^"'\s]+data:image/i.test(out)) sealed.push(relative(SITE, file))
+  }
+  check('every page\'s structured data is still valid JSON', broken.length === 0, broken.slice(0, 5).join(', '))
+  check('no absolute URL has a data URI welded onto it', sealed.length === 0, sealed.slice(0, 5).join(', '))
+}
 
 // One tab icon, the ProdOps mark, referenced absolutely so it works at any depth.
 const iconLinks = [...served.matchAll(/<link[^>]+rel="(?:shortcut )?icon"[^>]*>/gi)].map((m) => m[0])

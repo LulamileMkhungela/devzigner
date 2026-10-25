@@ -345,6 +345,45 @@ check(
     ),
 )
 
+/* ---- contrast, computed -------------------------------------------------
+ *
+ * The accent is a bright orange, and white on it is 3.3:1 — below AA for the
+ * sizes these controls use. So the label is ink, and this is the arithmetic that
+ * says so rather than a claim in a comment. The pairs below are the ones the
+ * site actually renders: the nav link, the Access Free button, brand text on
+ * each theme's page, and the workspace's primary button.
+ */
+function luminance(hex: string): number {
+  const clean = hex.replace('#', '')
+  const channels = [0, 2, 4].map((at) => parseInt(clean.slice(at, at + 2), 16) / 255)
+  const linear = channels.map((c) => (c <= 0.03928 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2]
+}
+function contrast(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x)
+  return (hi + 0.05) / (lo + 0.05)
+}
+const CONTRAST_PAIRS: [string, string, string][] = [
+  ['ink on the brand (dark theme)', '#141110', '#f0621a'],
+  ['ink on the brand (light theme)', '#141110', '#ea580c'],
+  ['brand text on the dark page', '#f0621a', '#100f0e'],
+  // The light page darkens brand-coloured *text* one step; see BRAND_CSS.
+  ['brand text on the light page', '#b9430a', '#fafaf9'],
+]
+check(
+  'every pair the site puts together clears AA',
+  CONTRAST_PAIRS.every(([, a, b]) => contrast(a, b) >= 4.5),
+  CONTRAST_PAIRS.map(([label, a, b]) => `${label} ${contrast(a, b).toFixed(2)}:1`).join(' · '),
+)
+check(
+  'the label on the brand is ink, not white',
+  /\.prodops-open \{[^}]*color: #141110/.test(served) &&
+    /\.prodops-access \{[^}]*color: #141110/s.test(served) &&
+    // and white is still white where the surface is dark
+    !/\.prodops-open \{[^}]*color: #fff/.test(served),
+  'ink on brand',
+)
+
 /* ---- the founder ------------------------------------------------------- */
 
 const about = adaptPage(readFileSync(join(SITE, 'about.html'), 'utf8'), '/about.html')

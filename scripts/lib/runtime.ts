@@ -658,6 +658,10 @@ export const RUNTIME = `<script id="prodops-runtime">
     var root = document.documentElement;
     if (root.classList) root.classList.toggle('dark', dark);
     root.setAttribute('data-theme', theme);
+    // The browser tints its own chrome (address bar, status bar) from this, and
+    // the capture only ever declared the light colour.
+    var meta = document.querySelector('meta[name="theme-color"]');
+    if (meta) meta.setAttribute('content', dark ? '#100f0e' : '#fcf8f2');
     var buttons = document.querySelectorAll('.prodops-theme');
     for (var i = 0; i < buttons.length; i++) {
       var label = dark ? 'Switch to light mode' : 'Switch to dark mode';

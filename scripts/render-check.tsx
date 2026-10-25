@@ -172,6 +172,20 @@ const checks = [
       shown(wrap(<ToolPanel tool={TOOLS[0]} />), 'steps/write-files.md')
     )
   })()],
+  /* The panel's arrow points at the tool's own page — and the tool's id is not
+     the page's name, so this is the check that the map is right and that every
+     mapped file is really there. */
+  ['tools: every panel links to the page that exists', (() => {
+    const missing = TOOLS.filter((tool) => {
+      const out = wrap(<ToolPanel tool={tool} />)
+      return (
+        !tool.page ||
+        !existsSync(join(root, 'site', tool.page.replace(/^\//, ''))) ||
+        !out.includes(`href="${tool.page}"`)
+      )
+    })
+    return missing.length === 0 && TOOLS.every((tool) => tool.page?.endsWith('.html'))
+  })()],
   ['tools: all eight tools are one tab strip', (() => {
     const out = wrap(<ToolsPage project={project} />)
     const tabs = (out.match(/role="tab"/g) ?? []).length

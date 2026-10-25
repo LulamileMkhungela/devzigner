@@ -272,6 +272,20 @@ const BRAND_CSS = `<style id="prodops-brand">
   /* The author portrait is a mark now, so it sits with the sign-off text. */
   .signoff > img { width: 40px; height: 40px; border-radius: 50%; object-fit: cover; }
 
+  /* ---- brand-coloured text on a light page ------------------------------ */
+  /* #ea580c on the light page is 3.4:1 — under AA for anything set in it as
+     text. The same hue one step darker (#b9430a) is 5.2:1, and the difference is
+     invisible next to a 16px kicker. Fills keep the brand colour, so buttons,
+     the nav link and the marks are untouched. */
+  html:not(.dark) .kicker,
+  html:not(.dark) .text-brand,
+  html:not(.dark) .prodops-install-links a,
+  html:not(.dark) .prodops-install .prodops-install-links a,
+  html:not(.dark) .prodops-panel-head a,
+  html:not(.dark) .prodops-panel-kind,
+  html:not(.dark) .prodops-tab[aria-selected="true"] { color: #b9430a; }
+  html:not(.dark) .prodops-tab[aria-selected="true"] { border-color: #d99a7a; }
+
   /* ---- the workspace link and the theme switch -------------------------- */
   /* "Open ProdOps" is a nav action, not a floating button: the same 14px
      weight and radius as the links beside it, filled with the brand token so
@@ -280,11 +294,17 @@ const BRAND_CSS = `<style id="prodops-brand">
   .prodops-open {
     display: inline-flex; align-items: center; align-self: center;
     padding: 8px 14px; border-radius: var(--radius-control);
-    background: var(--color-brand); color: var(--color-on-brand, #fff);
+    background: var(--color-brand); color: #141110;
     font-size: 14px; font-weight: 600; line-height: 1.4; text-decoration: none;
     white-space: nowrap; transition: background var(--duration-fast, .18s) ease;
   }
-  .prodops-open:hover, .prodops-open:focus-visible { background: var(--color-brand-hover); color: var(--color-on-brand, #fff); }
+  /* Ink on the orange, not white: 5.9:1 on #f0621a and 5.4:1 on #ea580c,
+     where white would be 3.3 and 3.6. The fill lightens on hover, which keeps
+     the label legible rather than washing it out. */
+  .prodops-open:hover, .prodops-open:focus-visible {
+    background: color-mix(in srgb, var(--color-brand) 86%, #fff);
+    color: #141110;
+  }
   .prodops-theme {
     display: inline-flex; align-items: center; justify-content: center;
     align-self: center; width: 36px; height: 36px; padding: 0; cursor: pointer;
@@ -382,6 +402,8 @@ const THEME_BOOT = `<script id="prodops-theme-boot">
       var saved = localStorage.getItem('prodops-theme');
       var dark = saved ? saved === 'dark' : window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
       if (dark) document.documentElement.classList.add('dark');
+      var meta = document.querySelector('meta[name="theme-color"]');
+      if (meta) meta.setAttribute('content', dark ? '#100f0e' : '#fcf8f2');
     } catch (error) {}
   })();
 </script>`

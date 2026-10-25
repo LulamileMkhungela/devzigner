@@ -155,17 +155,26 @@ const MOTION_CSS = `<style id="prodops-motion">
 
   /* The chosen tab and the Access Free button carry the accent in a gradient
      that drifts, so the colour is moving wherever the reader looks first. */
-  .prodops-tab[aria-selected="true"], .prodops-access {
+  /* The selected tab keeps brand-coloured text, so what animates behind it is a
+     tint of the brand rather than a fill: the label stays readable at every
+     frame, and the colour is still moving. */
+  .prodops-tab[aria-selected="true"] {
     background-image: linear-gradient(
       100deg,
-      var(--color-brand),
-      color-mix(in srgb, var(--color-brand) 45%, #fff) 30%,
-      color-mix(in srgb, var(--color-brand) 74%, #1c1917) 55%,
-      color-mix(in srgb, var(--color-brand) 72%, #ffb020) 78%,
-      var(--color-brand)
+      color-mix(in srgb, var(--color-brand) 8%, transparent),
+      color-mix(in srgb, var(--color-brand) 26%, transparent) 30%,
+      color-mix(in srgb, var(--color-brand) 12%, transparent) 55%,
+      color-mix(in srgb, var(--color-brand) 24%, transparent) 78%,
+      color-mix(in srgb, var(--color-brand) 8%, transparent)
     );
     background-size: 300% 100%;
     animation: prodops-sweep 6s linear infinite;
+  }
+  /* The Access Free button animates its own fill; see .prodops-access below. */
+  .prodops-access { animation: prodops-access-sweep 9s ease-in-out infinite; }
+  @keyframes prodops-access-sweep {
+    0%, 100% { background-position: 0% 0; }
+    50% { background-position: 100% 0; }
   }
 
   .ds-wordmark { animation: prodops-mark-hue 8s ease-in-out infinite alternate; }
@@ -286,12 +295,16 @@ const MOTION_CSS = `<style id="prodops-motion">
     border-radius: var(--radius-control);
     padding: 13px 22px;
     font: 600 15px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
-    color: #fff;
+    /* Ink, not white. White on the brand orange is 3.3:1 — below AA for this
+       size — and the gradient moves under the label, so the colour has to stay
+       legible at every stop. The band is narrow on purpose: enough to see the
+       colour travel, not enough to change how light the fill is. */
+    color: #141110;
     background-image: linear-gradient(
       100deg,
       var(--color-brand),
-      color-mix(in srgb, var(--color-brand) 78%, #1c1917) 45%,
-      color-mix(in srgb, var(--color-brand) 72%, #ffb020) 62%,
+      color-mix(in srgb, var(--color-brand) 88%, #1c1917) 45%,
+      color-mix(in srgb, var(--color-brand) 92%, #ffb020) 62%,
       var(--color-brand)
     );
     background-size: 220% 100%;

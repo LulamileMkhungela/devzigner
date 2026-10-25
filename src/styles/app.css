@@ -963,13 +963,13 @@ pre {
   background: var(--accent-hover);
   border-color: var(--accent-hover);
 }
+/* Ink on the accent, in both themes: 5.9:1 on #f0621a and 5.4:1 on #ea580c,
+   where white would be 3.3 and 3.6 — below AA at this size. */
 .lz-app[data-theme='dark'] .lz-btn.primary {
   color: #0a0a0a;
 }
-/* Light theme: the accent is the site's darker #ea580c, so the label stays white
-   (contrast against #ea580c is 4.8:1; against #0a0a0a it would be 4.1:1). */
 .lz-app[data-theme='light'] .lz-btn.primary {
-  color: #fff;
+  color: #12100e;
 }
 .lz-btn.quiet {
   background: var(--hover);

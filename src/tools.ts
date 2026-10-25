@@ -19,6 +19,17 @@ export interface Tool {
   ships: string
   /** No external site: every tool here is installed in the package. */
   url?: string
+  /**
+   * The tool's own page on the site at `/`, where there is one.
+   *
+   * The ids here are ProdOps names (`design-system`, `agents`, `starter`,
+   * `standards`, `prodops`); the captured pages are still at the mirror's own
+   * slugs (`ai-design-system.html`, `agentcanon.html`, `rails-react-template.html`,
+   * `agent-os.html`, `design-os.html`). Renaming a file would break every link
+   * the mirror makes to it, so the two names are mapped rather than merged —
+   * and this is the map the "Explore" arrow uses.
+   */
+  page?: string
   steps: string[]
   /**
    * The upstream file behind each step, when there is one. Same length as
@@ -81,6 +92,7 @@ function skillPhases(id: string): { steps: string[]; stepFiles?: string[] } {
 export const TOOLS: Tool[] = [
   {
     id: 'prd-creator',
+    page: '/prd-creator.html',
     name: 'PRD Creator',
     kind: 'Agent skill',
     blurb: 'Turns a fuzzy idea into a locked PRD plus build-ready milestone prompts and a milestone log.',
@@ -89,6 +101,7 @@ export const TOOLS: Tool[] = [
   },
   {
     id: 'skill-builder',
+    page: '/skill-builder.html',
     name: 'Skill Builder',
     kind: 'Agent skill',
     blurb: 'Interviews you about a repeatable process, then designs, writes and verifies a portable skill.',
@@ -97,6 +110,7 @@ export const TOOLS: Tool[] = [
   },
   {
     id: 'design-system',
+    page: '/ai-design-system.html',
     name: 'Design System',
     kind: 'Agent skill',
     blurb: 'Scaffolds a real design system into a React + Tailwind app, with a preview page and agent rules.',
@@ -105,6 +119,7 @@ export const TOOLS: Tool[] = [
   },
   {
     id: 'starter',
+    page: '/rails-react-template.html',
     name: 'Starter',
     kind: 'Template',
     blurb: 'The Rails + React starter: conventions, agent instructions and deployment notes, already canonical.',
@@ -120,6 +135,7 @@ export const TOOLS: Tool[] = [
   },
   {
     id: 'agents',
+    page: '/agentcanon.html',
     name: 'Agents canon',
     kind: 'Convention',
     blurb: 'One canonical home for skills and instructions: .agents/skills + AGENTS.md, with symlinks for the holdouts.',
@@ -135,6 +151,7 @@ export const TOOLS: Tool[] = [
   },
   {
     id: 'favicon-creator',
+    page: '/favicon-creator.html',
     name: 'Favicon Creator',
     kind: 'Agent skill',
     blurb: 'Generates the full favicon set from one icon and wires the meta tags into the codebase.',
@@ -143,6 +160,7 @@ export const TOOLS: Tool[] = [
   },
   {
     id: 'standards',
+    page: '/agent-os.html',
     name: 'Standards',
     kind: 'Workflow',
     blurb: 'Standards, specs and shaping for the coding agent, captured once and injected everywhere.',
@@ -151,6 +169,7 @@ export const TOOLS: Tool[] = [
   },
   {
     id: 'prodops',
+    page: '/design-os.html',
     name: 'ProdOps flow',
     kind: 'Workflow',
     blurb: 'Plan and design a real app in five stages, then export a handoff a coding agent can build from.',

@@ -33,7 +33,7 @@ export const DEFAULT_CURRENCY = 'ZAR'
  * makes that impossible: a record compiled by another version is recompiled
  * from the inputs it stored, and the description decides again.
  */
-export const COMPILER_VERSION = '2026-10-25-scope'
+export const COMPILER_VERSION = '2026-10-25-scope-2'
 
 export const GENOME_PRESETS: { id: string; label: string; genome: Genome }[] = [
   { id: 'editorial', label: 'Editorial calm', genome: { density: 44, warmth: 68, contrast: 54, expression: 44, geometry: 30 } },

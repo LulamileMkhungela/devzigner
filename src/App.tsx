@@ -229,6 +229,13 @@ export function App() {
           <img className="lz-brand-mark" src="/prodops-mark.svg" alt="" width={22} height={22} />
           <span className="lz-brand-name">ProdOps</span>
           <span className="lz-mode-chip" title="Compiled in this browser. No keys, no model calls.">Local</span>
+          {/* The way back to the site, in the one row that is on screen in every
+              view at every width. The panel row below it stays for the reader
+              who looks there; this one is for the reader who is lost. */}
+          <a className="lz-brand-site" href="/" title="Back to the ProdOps site">
+            <span>Site</span>
+            <Icon name="ArrowUpRight" size={12} />
+          </a>
         </div>
 
         <nav className="lz-nav" aria-label="Process">

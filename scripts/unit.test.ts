@@ -17,6 +17,7 @@ import { BLOCK_COMPONENT_NAMES } from '../src/engine/system'
 import { buildPackage } from '../src/export/package'
 import { TOOLS } from '../src/tools'
 import { FRAMEWORKS } from '../src/export/frameworks'
+import { migrateProject } from '../src/lib/migrate'
 import { migrateProject, migrateProjects } from '../src/lib/migrate'
 import { OLD_BRAND, rebrand } from './lib/brand'
 import { PHASES, completedPhases, confirmedPhases, isStageDone, nextStage, phaseBlockers, phaseReady } from '../src/lib/progress'
@@ -596,4 +597,44 @@ test('the brief asks what the description did not answer', () => {
   )
   const remaining = intakeGaps(answered, 'A booking tool for mobile dog groomers: owners pick a slot and pay on arrival. It must work on a phone, offline, because the groomer is on the road all day. We charge R99 a month.')
   assert.equal(remaining.some((gap) => /who is this for|earn or save|where is it used|kind of product/i.test(gap)), false, remaining.join(' | '))
+})
+
+/* ---- a stored product is recompiled when the compiler moves on ----------- */
+
+test('a product compiled by an older version is recompiled, not trusted', () => {
+  // What a builder's browser actually held after the previous release: a
+  // complete marketplace record, six sections, Control room included.
+  const old = compileProject({ idea: 'a marketplace for township artisans', seed: 112233 })
+  const stored = JSON.parse(JSON.stringify(old)) as Record<string, unknown>
+  delete stored.compiler
+  stored.sections = compileProject({ archetypeId: 'marketplace', seed: 112233 }).sections
+
+  const migrated = migrateProject(stored)
+  assert.ok(migrated, 'the record is rebuilt')
+  assert.ok(
+    migrated!.sections.some((section) => section.id === 'control-room') === false,
+    'and the sections follow the description again',
+  )
+  // The builder's own work survives the rebuild.
+  assert.equal(migrated!.id, old.id)
+  assert.equal(migrated!.name, old.name)
+})
+
+test('a product compiled by this version is left exactly as it is', () => {
+  const product = compileProject({ idea: 'a marketplace for township artisans' })
+  const stored = JSON.parse(JSON.stringify(product))
+  const migrated = migrateProject(stored)
+  // Compared after the same round-trip: JSON drops `undefined` keys, and that
+  // is the only difference a trusted record may have.
+  assert.deepEqual(migrated, JSON.parse(JSON.stringify(product)))
+})
+
+test('the auto-seeded sample is not treated as the builder’s product', () => {
+  // What every browser held before the workspace opened on an empty product.
+  const sample = compileProject({
+    idea: 'A marketplace where township artisans sell directly to buyers across South Africa',
+    archetypeId: 'marketplace',
+    seed: 112233,
+  })
+  assert.equal(migrateProject(JSON.parse(JSON.stringify(sample))), null)
 })

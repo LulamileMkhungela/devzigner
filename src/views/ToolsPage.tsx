@@ -146,7 +146,7 @@ export function ToolsPage({ project }: { project: Project }) {
         steps={[{ id: 'tools', label: 'Tools', path: 'tools' }, ...TRACK.filter((t) => t.id !== 'tools')]}
         current="tools"
         title="The builder toolkit"
-        subtitle="All eight free tools, installed in this package with their own steps and prompts. No keys, no accounts."
+        subtitle="The eight free tools: steps, files and install, in this package."
         actions={
           <Link to="export" className="lz-btn small primary">
             <Icon name="Download" size={13} /> Open the package
@@ -200,15 +200,11 @@ export function ToolsPage({ project }: { project: Project }) {
       <ToolPanel key={tool.id} tool={tool} />
 
       <div className="lz-card">
-        <h3>The convention they share</h3>
+        <h3>One home for all of it</h3>
         <p>
-          Skills live once, in <code>.agents/skills/</code>. Instructions live once, in <code>AGENTS.md</code>.{' '}
-          <code>CLAUDE.md</code> and <code>.claude/skills</code> are symlinks created by{' '}
-          <code>scripts/link-agents.sh</code>, so there is nothing to keep in sync by hand.
-        </p>
-        <p className="lz-sub">
-          The fifteen commands live together in <code>.agents/commands/prodops/</code>, one markdown file each, so an
-          agent that reads markdown can run them and nothing else has to be installed.
+          Skills in <code>.agents/skills/</code>, instructions in <code>AGENTS.md</code>, commands in{' '}
+          <code>.agents/commands/prodops/</code>. <code>CLAUDE.md</code> and <code>.claude/skills</code> are symlinks, so
+          there is one copy to keep current.
         </p>
         <div className="lz-row" style={{ gap: 8, marginTop: 12 }}>
           <Link to="coverage" className="lz-btn small">

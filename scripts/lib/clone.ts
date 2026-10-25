@@ -396,15 +396,6 @@ const MOTION_CSS = `<style id="prodops-motion">
 </style>`
 
 /** The tool pages get one extra line: the gate they open with is already satisfied. */
-const TOOLBAR = `<div id="prodops-toolbar" style="padding:10px 16px;border-bottom:1px solid var(--color-hairline);
-  background:var(--color-surface);color:var(--color-body);
-  font:500 12.5px/1.4 var(--font-sans)">
-  This tool is installed in ProdOps — it runs locally, with no email, model or key.
-  <a href="/workspace/" style="color:var(--color-brand);margin-left:6px;text-decoration:none;font-weight:600">Open it →</a>
-</div>`
-
-const TOOL_PAGE = /^\/(tools|prd-creator|skill-builder|ai-design-system|favicon-creator|agentcanon|starter|rails-react-template|design-os|agent-os)(\/|\.html$|$)/
-
 /** A standalone page for a capture that failed, in the site's own palette. */
 export function blockedPage(path: string): string {
   return `<!doctype html>
@@ -505,64 +496,27 @@ const INSTALL: Record<string, InstallFact> = {
 
 const REPO = 'https://github.com/LulamileMkhungela/devzigner.git'
 
-/** The section a visitor unlocks with "Access Free". */
-function installSection(fact: InstallFact): string {
+/**
+ * The installation steps, where the page says "Installation".
+ *
+ * The capture put an email gate there: one sentence promising "installation
+ * instructions", a field, and a button. This copy has no server and no list, so
+ * the promise is kept by writing the instructions out — two lines a builder can
+ * paste, then the sentence that tells their agent to run the tool. Nothing else:
+ * the page already explains what the tool does and the steps it runs.
+ */
+function installBlock(fact: InstallFact): string {
   const folder = fact.ships.split(/\s|\+/)[0]
-  const copy =
-    fact.kind === 'skill'
-      ? `<pre><code>git clone ${REPO} prodops
-cp -r prodops/${folder} ~/.agents/skills/                 # global: every project
-# or into one project: cp -r prodops/${folder} your-app/.agents/skills/</code></pre>`
-      : `<pre><code>git clone ${REPO} prodops
-cp -r prodops/${folder} .                                 # into the project it belongs to</code></pre>`
-  // Where the symlink goes depends on what was copied: a skill belongs in the
-  // skills folder, the commands in the commands folder, a template in the app.
-  const leaf = folder.replace(/\/$/, '').split('/').pop() ?? fact.name
-  const link =
-    fact.kind === 'skill'
-      ? `ln -s "$PWD/prodops/${folder}" ~/.agents/skills/${leaf}`
-      : fact.kind === 'workflow'
-        ? `ln -s "$PWD/prodops/.agents/commands/prodops" ~/.agents/commands/prodops`
-        : fact.kind === 'convention'
-          ? `ln -s "$PWD/prodops/.agents" ./.agents && ln -s "$PWD/prodops/AGENTS.md" ./AGENTS.md`
-          : `ln -s "$PWD/prodops/${folder}" ./${leaf}`
-  const what =
-    fact.kind === 'skill'
-      ? 'the skill folder, its <code>SKILL.md</code> and every step file it names'
-      : fact.kind === 'template'
-        ? 'the starter app, its conventions and its setup script'
-        : fact.kind === 'convention'
-          ? '<code>AGENTS.md</code>, the skills folder it points at, and the script that links every agent to it'
-          : 'the commands and the reference files they read'
-  return `<section class="prodops-install-section" id="prodops-install" aria-label="Installation">
-  <h3>Install ${fact.name}</h3>
-  <p>${fact.name} ships in the ProdOps toolkit, built on the open Agent Skills standard, so it works with Claude
-  Code, Codex, Cursor and any agent that reads skills. Three ways to install:</p>
-  <h4>Option 1 — copy it into your project or your skills folder</h4>
-  ${copy}
-  <h4>Option 2 — link it, so one copy stays current</h4>
-  <pre><code>${link}</code></pre>
-  <h4>Option 3 — use it here, with nothing to install</h4>
-  <p>Open ProdOps, choose <strong>Tools</strong>, then <strong>${fact.name}</strong>, and work through the same
-  steps inside the workspace. What you get is ${what}; it ships at <code>${fact.ships}</code>.</p>
-  <div class="prodops-install-links">
-    <a href="/workspace/#tools">Open ProdOps →</a>
-    <a href="/agentcanon.html">One canon for skills →</a>
-    <a href="/tools.html">All eight tools →</a>
-  </div>
-  <p class="prodops-install-note">No email, no account, no key. This copy has no server behind it, so nothing is sent.</p>
+  const into = fact.kind === 'skill' ? '~/.agents/skills/' : '.'
+  const run = fact.kind === 'skill' ? `Use the ${fact.name} skill.` : `Use ${fact.name}.`
+  return `<section class="prodops-install-section" id="prodops-install" aria-label="Install ${fact.name}">
+<pre><code>git clone ${REPO} prodops
+cp -r prodops/${folder} ${into}</code></pre>
+<p class="prodops-install-note">Then ask your agent: “${run}” No email, no key, no account.</p>
+<p class="prodops-install-note"><a href="/workspace/#tools">Or run it in ProdOps →</a></p>
 </section>`
 }
 
-/**
- * Put the instructions where the gate is: the card that says "Get free access to
- * X and installation instructions" is followed by the instructions themselves.
- *
- * They are visible, not hidden behind the button. The point of the page is that
- * a reader can see all three ways to install without giving anyone an address;
- * pressing "Access Free" takes them to the section and marks it, which is what
- * the button promised and more than the email gate ever delivered.
- */
 export function withInstall(html: string, path: string): string {
   const fact = INSTALL[path]
   if (!fact) return html
@@ -572,16 +526,23 @@ export function withInstall(html: string, path: string): string {
   // before that next heading, which is where the site would have put them.
   const gate = html.indexOf('Get free access to')
   if (gate === -1) return html
-  const afterForm = html.indexOf('</form>', gate)
-  const from = afterForm === -1 ? gate : afterForm
-  const nextHeading = html.slice(from).search(/<h[23][\s>]/i)
-  if (nextHeading === -1) {
-    const article = html.lastIndexOf('</article>')
-    if (article === -1) return html
-    return html.slice(0, article) + installSection(fact) + html.slice(article)
+  const block = installBlock(fact)
+
+  // The gate is a `.ds-card` holding a sentence, a field and a button. There is
+  // nothing nested inside it, so the card is the nearest opening tag before the
+  // sentence and the first closing tag after the form.
+  const cardStart = html.lastIndexOf('<div class="ds-card"', gate)
+  const formEnd = html.indexOf('</form>', gate)
+  if (cardStart !== -1 && formEnd !== -1) {
+    const cardEnd = html.indexOf('</div>', formEnd)
+    if (cardEnd !== -1) {
+      return html.slice(0, cardStart) + block + html.slice(cardEnd + '</div>'.length)
+    }
   }
-  const at = from + nextHeading
-  return html.slice(0, at) + installSection(fact) + html.slice(at)
+
+  // No card: put the steps where the gate was and drop the form.
+  if (formEnd !== -1) return html.slice(0, gate) + block + html.slice(formEnd + '</form>'.length)
+  return html.slice(0, gate) + block + html.slice(gate)
 }
 
 /**
@@ -641,10 +602,6 @@ export function adaptPage(html: string, path: string): string {
   // Prices again: React splits "$" and "299" with an empty comment, and the
   // rebrand is what removes those. This pass is idempotent.
   out = withRandPrices(out)
-
-  if (TOOL_PAGE.test(path)) {
-    out = out.replace('<body>', `<body>\n${TOOLBAR}`)
-  }
 
   return out.replace('</body>', `${MOTION_CSS}\n${RUNTIME}\n</body>`)
 }

@@ -280,7 +280,7 @@ export function CoveragePage({ project }: { project: Project }) {
         steps={TRACK}
         current="coverage"
         title="Coverage"
-        subtitle="Every claim below is computed by building the export package and checking the artefact is in it. Nothing here is aspirational."
+        subtitle="Every claim below is checked against the export package."
       />
 
       <div className="lz-card">

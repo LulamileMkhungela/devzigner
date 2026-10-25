@@ -22,6 +22,19 @@ import { readScope } from './scope'
 
 export const DEFAULT_CURRENCY = 'ZAR'
 
+/**
+ * The compiler's own version, bumped whenever a change alters what a given
+ * description compiles to.
+ *
+ * A stored product is a compiled artefact: sections, screens, flows, nav. A
+ * builder who described a product last week still had Control room in their
+ * workspace this week, because the record was structurally complete and
+ * therefore trusted. That is how a fix ships and nobody sees it. The version
+ * makes that impossible: a record compiled by another version is recompiled
+ * from the inputs it stored, and the description decides again.
+ */
+export const COMPILER_VERSION = '2026-10-25-scope'
+
 export const GENOME_PRESETS: { id: string; label: string; genome: Genome }[] = [
   { id: 'editorial', label: 'Editorial calm', genome: { density: 44, warmth: 68, contrast: 54, expression: 44, geometry: 30 } },
   { id: 'technical', label: 'Technical precision', genome: { density: 62, warmth: 22, contrast: 78, expression: 36, geometry: 14 } },
@@ -186,6 +199,7 @@ export function compileProject(opts: CompileOptions = {}): Project {
 
   return {
     ...input,
+    compiler: COMPILER_VERSION,
     id: `${slugify(name)}-${seed.toString(36).slice(0, 6)}`,
     name,
     archetypeLabel: pack.label,

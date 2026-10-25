@@ -31,7 +31,7 @@ export function WikiPage({ project }: { project: Project }) {
         steps={TRACK}
         current="wiki"
         title="Prototype wiki"
-        subtitle="Product and design knowledge, written from the compile and versioned in this browser. Branches hold iterations; the export is a git-ready folder."
+        subtitle="The product knowledge, versioned in this browser."
         actions={
           <>
             <button

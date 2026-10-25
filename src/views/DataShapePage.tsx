@@ -19,7 +19,7 @@ export function DataShapePage({ project }: { project: Project }) {
         project={project}
         current="data-shape"
         title="Data Shape"
-        subtitle="The records every screen reads and writes. Four to five entities, their fields and the joins between them — compiled before any layout."
+        subtitle="The records every screen reads and writes."
         actions={
           <>
             <button className="lz-btn small" onClick={() => download('schema.sql', data.sql, 'text/plain')}>

@@ -338,11 +338,9 @@ check(
   'tokens only',
 )
 check(
-  'the toolbar and the panels follow the theme instead of pinning a dark bar',
+  'nothing on a tool page pins its own light or dark bar',
   themed.every((out) => !/background:#111|color:#fafafa/.test(out)) &&
-    /background:var\(--color-surface\);color:var\(--color-body\)/.test(
-      adaptPage(readFileSync(join(SITE, 'prd-creator.html'), 'utf8'), '/prd-creator.html'),
-    ),
+    !adaptPage(readFileSync(join(SITE, 'prd-creator.html'), 'utf8'), '/prd-creator.html').includes('prodops-toolbar'),
 )
 
 /* ---- contrast, computed -------------------------------------------------
@@ -409,7 +407,10 @@ check(
 )
 
 const toolPage = adaptPage(readFileSync(join(SITE, 'tools.html'), 'utf8'), '/tools.html')
-check('tool pages say the tool is installed locally', toolPage.includes('prodops-toolbar') && toolPage.includes('runs locally'))
+check(
+  'tool pages carry the install steps, not a banner about themselves',
+  !toolPage.includes('prodops-toolbar') && !/runs locally/.test(toolPage),
+)
 
 /* ---- the build's own assets --------------------------------------------- */
 
@@ -607,33 +608,24 @@ const gated = new JSDOM(adaptPage(readFileSync(join(SITE, 'prd-creator.html'), '
 await new Promise((resolve) => setTimeout(resolve, 250))
 const gatedDoc = gated.window.document
 // The gate is a promise, not a form: press it and the tool is there.
-const gateButton = gatedDoc.querySelector<HTMLButtonElement>('.prodops-access')
-check(
-  'a tool\'s email gate becomes an Access Free button',
-  Boolean(gateButton) && /access free/i.test(gateButton?.textContent ?? ''),
-  gateButton?.textContent ?? 'no button',
-)
-// Every tool page carries the installation section — the words and the
-// commands — visible, not behind the form the real site hides it behind.
+// The page said "Get free access to X and installation instructions" and gave a
+// form instead. The steps now stand where the form did — nothing is unlocked,
+// because there is nothing to unlock.
 const installSection = gatedDoc.querySelector('#prodops-install')
 const installText = installSection?.textContent ?? ''
 check(
-  'the Installation section is on the page, with its options and its commands',
+  'the Installation section holds the two commands, not an email field',
   Boolean(installSection) &&
     !installSection?.hasAttribute('hidden') &&
-    /Option 1/.test(installText) &&
-    /Option 2/.test(installText) &&
-    /Option 3/.test(installText) &&
     /git clone https:\/\/github\.com\/LulamileMkhungela\/devzigner/.test(installText) &&
-    /\.agents\/skills\/prd-creator\//.test(installText),
+    /cp -r prodops\/\.agents\/skills\/prd-creator\//.test(installText) &&
+    !/Option \d/.test(installText) &&
+    !gatedDoc.querySelector('#prodops-install input[type="email"]'),
   installText.replace(/\s+/g, ' ').slice(0, 110) || 'no section',
 )
-gateButton?.click()
 check(
-  'Access Free takes the reader to those instructions',
-  installSection?.classList.contains('prodops-flash') === true ||
-    gateButton?.getAttribute('aria-controls') === 'prodops-install',
-  gateButton?.getAttribute('aria-controls') ?? 'not wired',
+  'the steps sit where the page says "Installation"',
+  /Installation[\s\S]{0,400}id="prodops-install"/.test(adaptPage(readFileSync(join(SITE, 'prd-creator.html'), 'utf8'), '/prd-creator.html')),
 )
 check(
   'the gate form is gone, not left dead',
@@ -659,7 +651,7 @@ gated.window.close()
   ]
   const missing = pages.filter((page) => {
     const out = adaptPage(readFileSync(join(SITE, `${page}.html`), 'utf8'), `/${page}.html`)
-    return !/id="prodops-install"/.test(out) || !/Option 1/.test(out) || !/Option 3/.test(out)
+    return !/id="prodops-install"/.test(out) || !/git clone https:\/\/github\.com/.test(out) || !/cp -r prodops\//.test(out)
   })
   check('all eight tool pages carry the installation section', missing.length === 0, missing.join(', '))
   /* The docs are applied, not quoted: every `cp -r prodops/<path>` a page tells
@@ -735,7 +727,7 @@ gated.window.close()
   )
   check(
     'the panel carries the installation section, so Access Free is never a dead end',
-    /\.agents\/skills\//.test(firstPanel) && /Option 1/.test(firstPanel),
+    /\.agents\/skills\//.test(firstPanel) && /git clone https:\/\/github\.com/.test(firstPanel),
   )
   const second = tabs[1] as HTMLButtonElement
   second?.click()
@@ -753,11 +745,14 @@ gated.window.close()
       doc.querySelector('[role="tabpanel"]')?.getAttribute('aria-labelledby') === selected?.id,
     `selected ${selected?.id ?? 'none'}`,
   )
+  // The eight cards and the eight tabs said the same thing twice, and the cards
+  // said it with a repeated "Agent skill" label. The tabs are the list now.
   const list = doc.querySelector('.ds-listings') as HTMLElement | null
+  const kindLabels = [...doc.querySelectorAll('.ds-listing-label')].map((el) => (el.textContent ?? '').trim())
   check(
-    'the captured tools list is still there, not replaced by the tabs',
-    Boolean(list) && list?.style.display !== 'none' && (list?.querySelectorAll('.ds-listing').length ?? 0) === 8,
-    list ? `${list.querySelectorAll('.ds-listing').length} rows, display: ${list.style.display || 'block'}` : 'no list',
+    'the eight cards are gone once the tabs are up',
+    !list && !kindLabels.includes('Agent skill'),
+    list ? `${list.querySelectorAll('.ds-listing').length} rows left` : `no list, labels: ${kindLabels.join('|') || 'none'}`,
   )
   // The tool page's own layout, not a new one: the captured docs sidebar on the
   // left, the article on the right, and the tabs across the top of the article.
@@ -780,10 +775,29 @@ gated.window.close()
     sideText.slice(0, 110) || 'no sidebar',
   )
   check(
-    'the browser sits above the list and the list is untouched below it',
-    Boolean(browser && list && (browser.compareDocumentPosition(list) & 4) !== 0) &&
-      !browser?.contains(list),
+    'the browser takes the listing\'s place in the page',
+    Boolean(browser) && !browser?.querySelector('.ds-listing') && !doc.querySelector('.ds-listings'),
   )
+  // Clicking "Integrations" used to leave the mark on "Milestones": the scroll
+  // observer re-marked whichever heading it saw last. The link the reader
+  // pressed is now the link that keeps the mark.
+  // Back to the first tab: PRD Creator is the page with "Integrations" in it,
+  // and the panel is painted from a fetch, so the sidebar is only final after.
+  ;(tabs[0] as HTMLButtonElement)?.click()
+  await new Promise((resolve) => setTimeout(resolve, 350))
+  const integrations = doc.querySelector('.ds-docs-sidebar a[href="#prodops-panel-integrations"]') as HTMLElement | null
+  integrations?.dispatchEvent(new live.window.MouseEvent('click', { bubbles: true, cancelable: true }))
+  const milestones = doc.querySelector('.ds-docs-sidebar a[href="#prodops-panel-milestones"]')
+  check(
+    'the docs panel marks the section the reader clicked, not a neighbour',
+    Boolean(integrations) &&
+      integrations?.getAttribute('aria-current') === 'location' &&
+      !milestones?.hasAttribute('aria-current'),
+    `${integrations?.textContent?.trim() ?? 'nothing'} marked${
+      milestones?.hasAttribute('aria-current') ? ', milestones too' : ''
+    }`,
+  )
+
   live.window.close()
 }
 

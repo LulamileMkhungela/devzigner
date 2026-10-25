@@ -32,7 +32,7 @@ export function FlowsPage({ project }: { project: Project }) {
         steps={TRACK}
         current="flows"
         title="UX flows"
-        subtitle="Every flow is derived from compiled screens, so a step is never a diagram that does not exist. Add a flow to iterate the prototype."
+        subtitle="Steps built from real screens — never a diagram of a page that is not there."
         actions={
           <button className="lz-btn small primary" onClick={() => setAdding(true)}>
             <Icon name="Plus" size={13} /> New flow

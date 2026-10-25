@@ -11,7 +11,7 @@
  * rebuild loses nothing but the arrays that were missing — or it is dropped.
  */
 import type { Project, UserFlow } from '../types'
-import { compileProject, type CompileOptions } from '../engine'
+import { COMPILER_VERSION, compileProject, type CompileOptions } from '../engine'
 
 /** Every array the views and the export iterate over. Missing one is a crash. */
 function isComplete(value: Partial<Project>): boolean {
@@ -34,7 +34,10 @@ function isComplete(value: Partial<Project>): boolean {
         Array.isArray(section.entityIds),
     ) &&
     Array.isArray(value.flows) &&
-    Array.isArray(value.roadmap) &&
+    // The roadmap is an object holding phases, not an array: the old check asked
+    // the wrong question, so every load silently recompiled every product and
+    // rewrote its `updatedAt`.
+    Array.isArray(value.roadmap?.phases) &&
     Boolean(brief) &&
     Array.isArray(brief?.problems) &&
     Array.isArray(brief?.personas) &&
@@ -74,15 +77,38 @@ function optionsFrom(record: Partial<Project>): CompileOptions | null {
   if (record.overrides) options.overrides = record.overrides
   if (record.systemOverrides) options.systemOverrides = record.systemOverrides
   if (typeof record.createdAt === 'number') options.createdAt = record.createdAt
+  // The builder's own scope choices are theirs; a recompile must not silently
+  // put a section back that they removed.
+  if (record.scopeChoice) options.scopeChoice = record.scopeChoice
   return options
+}
+
+/**
+ * The sample product the workspace used to open on.
+ *
+ * It was compiled, not described: seed 112233 on the marketplace pack, with a
+ * sentence nobody typed. A builder whose browser still holds it has never given
+ * a product, so the honest thing is to drop it and open on the description
+ * field — not to recompile somebody else's marketplace and call it theirs.
+ */
+const SAMPLE_IDEA = /^a marketplace where township artisans sell directly to buyers across south africa$/i
+
+function wasTheSample(record: Partial<Project>): boolean {
+  return record.seed === 112233 && typeof record.idea === 'string' && SAMPLE_IDEA.test(record.idea.trim())
 }
 
 /** Returns a project that is safe to render, or `null` if the record is junk. */
 export function migrateProject(value: unknown): Project | null {
   if (!value || typeof value !== 'object' || Array.isArray(value)) return null
   const record = value as Partial<Project>
+  // Never the builder's own words: an auto-seeded sample is not a product.
+  if (wasTheSample(record)) return null
 
-  if (isComplete(record)) return record as Project
+  // A complete record is only trusted if *this* compiler built it. The shape can
+  // be right and the content stale: a product compiled before sections were
+  // scoped still carries an ops dashboard nobody asked for.
+  const current = record.compiler === COMPILER_VERSION
+  if (current && isComplete(record)) return record as Project
 
   const options = optionsFrom(record)
   if (!options) return null

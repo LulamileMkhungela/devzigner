@@ -46,7 +46,7 @@ export function PrototypePage({ project }: { project: Project }) {
         steps={TRACK}
         current="prototype"
         title="Prototype"
-        subtitle={`A working prototype of the ${project.sections.length} section${project.sections.length === 1 ? '' : 's'} in your brief — every screen below came from the Sections stage, and nothing else is in here. Real routes, seeded records, real inputs: type in it, filter it, create a record, walk a flow.`}
+        subtitle={`${project.sections.length} section${project.sections.length === 1 ? '' : 's'} from your brief — every screen below is one of them, nothing else.`}
         actions={
           <>
             <div className="lz-seg" role="group" aria-label="Breakpoint">

@@ -421,7 +421,13 @@ const checks = [
   /* ---- the way back out of the workspace -------------------------------- */
   ['the workspace links back to the site', (() => {
     const out = renderToString(<StoreProvider><App /></StoreProvider>)
-    return out.includes('lz-side-back') && out.includes('Back to the ProdOps site') && /href="\/"/.test(out)
+    return (
+      out.includes('lz-side-back') &&
+      out.includes('Back to the ProdOps site') &&
+      // and again in the brand row, which is on screen at every width
+      out.includes('lz-brand-site') &&
+      /href="\/"/.test(out)
+    )
   })()],
 
   /* ---- nothing is pre-filled before the builder has described anything -- */

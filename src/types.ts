@@ -434,6 +434,8 @@ export interface CompileInput {
 }
 
 export interface Project extends CompileInput {
+  /** Which compiler built this record — see COMPILER_VERSION. */
+  compiler?: string
   id: string
   name: string
   archetypeLabel: string

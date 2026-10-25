@@ -40,7 +40,7 @@ export function SystemPage({ project }: { project: Project }) {
         steps={TRACK}
         current="system"
         title="System"
-        subtitle="The prototype is only as disciplined as its system: a fixed stack, a registry of components that may use tokens only, an AppShell, and a data layer the UI cannot reach around."
+        subtitle="The stack, the component registry, the shell and the API."
         actions={
           <>
             <button className="lz-btn small" onClick={() => download('registry.json', files.find((f) => f.path === 'system/registry.json')?.content ?? '{}', 'application/json')}>

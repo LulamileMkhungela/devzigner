@@ -19,7 +19,7 @@ export function SectionsPage({ project }: { project: Project }) {
         project={project}
         current="sections"
         title="Sections"
-        subtitle="The build order. Each section is a slice of the product with its own spec, sample data, screens and captured screenshots."
+        subtitle="The build order: spec, data, screens and screenshots per section."
         actions={
           <span className="lz-pill">
             {stats.done} of {stats.total} completed

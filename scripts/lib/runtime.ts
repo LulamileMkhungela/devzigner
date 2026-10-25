@@ -259,7 +259,19 @@ export const RUNTIME = `<script id="prodops-runtime">
         links[l].setAttribute('href', '#prodops-panel-' + target);
         links[l].removeAttribute('aria-current');
         if (target === firstSection) links[l].setAttribute('aria-current', 'location');
-        links[l].addEventListener('click', function () {
+        links[l].addEventListener('click', function (event) {
+          // The link the reader pressed is the section they asked for. The
+          // observer below would otherwise re-mark whatever heading happens to
+          // cross its band while the page scrolls, which is how clicking
+          // "Integrations" ended up highlighting "Milestones".
+          if (event && event.preventDefault) event.preventDefault();
+          var target = document.getElementById(this.getAttribute('href').slice(1));
+          if (target && target.scrollIntoView) {
+            try { target.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (error) { target.scrollIntoView(); }
+          } else if (this.getAttribute('href')) {
+            window.location.hash = this.getAttribute('href');
+          }
+          locked = Date.now() + 900;
           var all = sidebar.querySelectorAll('a[href^="#"]');
           for (var a = 0; a < all.length; a++) all[a].removeAttribute('aria-current');
           this.setAttribute('aria-current', 'location');
@@ -274,6 +286,8 @@ export const RUNTIME = `<script id="prodops-runtime">
        panel is inside a long page, so this is an observation, not a scroll
        listener. Environments without IntersectionObserver keep the first mark. */
     var observer = null;
+    /** Until this timestamp the reader's click owns the mark, not the scroll. */
+    var locked = 0;
 
     function trackSections() {
       if (observer && observer.disconnect) observer.disconnect();
@@ -281,17 +295,43 @@ export const RUNTIME = `<script id="prodops-runtime">
       var links = {};
       var anchors = sidebar.querySelectorAll('a[href^="#"]');
       for (var n = 0; n < anchors.length; n++) links[anchors[n].getAttribute('href')] = anchors[n];
+      // Which headings are in the band, and where each one sits. The mark goes
+      // to the one nearest the top of the band — not to whichever entry the
+      // observer happened to report last, which is what made a click on
+      // "Integrations" land on "Milestones".
+      var inBand = {};
+      function nearest() {
+        var best = '';
+        var bestTop = Infinity;
+        for (var id in inBand) {
+          if (!Object.prototype.hasOwnProperty.call(inBand, id)) continue;
+          var top = inBand[id];
+          if (top < bestTop) {
+            bestTop = top;
+            best = id;
+          }
+        }
+        return best;
+      }
+      function mark(id) {
+        for (var key in links) if (links[key].removeAttribute) links[key].removeAttribute('aria-current');
+        if (id && links[id]) links[id].setAttribute('aria-current', 'location');
+      }
       observer = new window.IntersectionObserver(
         function (entries) {
           for (var e = 0; e < entries.length; e++) {
-            if (!entries[e].isIntersecting) continue;
             var id = '#' + entries[e].target.id;
             if (!links[id]) continue;
-            for (var key in links) if (links[key].removeAttribute) links[key].removeAttribute('aria-current');
-            links[id].setAttribute('aria-current', 'location');
+            if (entries[e].isIntersecting) {
+              inBand[id] = Math.abs(entries[e].boundingClientRect ? entries[e].boundingClientRect.top : 0);
+            } else {
+              delete inBand[id];
+            }
           }
+          if (Date.now() < locked) return;
+          mark(nearest());
         },
-        { rootMargin: '-15% 0px -70% 0px', threshold: 0 },
+        { rootMargin: '-12% 0px -72% 0px', threshold: 0 },
       );
       var targets = body.querySelectorAll('h2[id], h3[id], section[id]');
       for (var t = 0; t < targets.length; t++) observer.observe(targets[t]);
@@ -323,9 +363,8 @@ export const RUNTIME = `<script id="prodops-runtime">
     function fallback(tab) {
       paint({
         head:
-          '<div><p class="prodops-panel-kind">Free tool</p><h2>' +
-          escapeHtml(tab.getAttribute('data-title')) +
-          '</h2></div><a href="' + escapeHtml(tab.getAttribute('data-href')) + '">Open the full page →</a>',
+          '<div><h2>' + escapeHtml(tab.getAttribute('data-title')) + '</h2></div>' +
+          '<a href="' + escapeHtml(tab.getAttribute('data-href')) + '">Open the full page →</a>',
         body:
           '<p class="prodops-panel-loading">This page could not be read into the browser. ' +
           '<a href="' + escapeHtml(tab.getAttribute('data-href')) + '">Open it instead →</a></p>',
@@ -367,12 +406,12 @@ export const RUNTIME = `<script id="prodops-runtime">
             if (asked === current) fallback(tabs[current]);
             return;
           }
-          var kindEl = items[asked] ? items[asked].querySelector('.ds-listing-label') : null;
+          // No kind line above the title: the tab already names the tool, and a
+          // second label ("Agent skill") was the thing this page repeated eight
+          // times. The head is the name and the way to the full page.
           var entry = {
             head:
-              '<div><p class="prodops-panel-kind">' +
-              escapeHtml(kindEl ? String(kindEl.textContent || '').trim() : 'Free tool') +
-              '</p><h2>' + escapeHtml(tabs[asked].getAttribute('data-title')) + '</h2></div>' +
+              '<div><h2>' + escapeHtml(tabs[asked].getAttribute('data-title')) + '</h2></div>' +
               '<a href="' + escapeHtml(href) + '">Open the full page →</a>',
             body: content,
             side: sideEl ? sideEl.innerHTML : '',
@@ -420,20 +459,26 @@ export const RUNTIME = `<script id="prodops-runtime">
        deliberately left as captured, it needs no measuring. */
     function markPillHeights() {}
 
-    /* The browser needs the capture's docs measure (1040px), not the listing's
-       720px column, so it goes above the section that holds the list — still on
-       the page, still in the site's own rhythm — and the list stays underneath:
-       the page keeps everything it had and gains the tabs. */
+    /* The browser takes the listing's place. The eight cards said the same
+       thing eight times — a kind label, a name, a one-line pitch and a button —
+       and every one of them is a tab now, with the tool's whole page behind it.
+       So the browser goes where the list was and the list goes; the tab strip
+       carries the same eight names. No script, no removal: the list stays. */
     var holderSection = document.createElement('section');
     holderSection.className = 'prodops-tools-browser';
-    holderSection.setAttribute('aria-label', 'Read a tool before you open it');
+    holderSection.setAttribute('aria-label', 'The eight free tools');
     var wide = document.createElement('div');
     wide.className = 'ds-wide';
     wide.appendChild(layout);
     holderSection.appendChild(wide);
     var anchor = list.closest ? list.closest('section') : null;
-    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(holderSection, anchor);
-    else list.parentNode.insertBefore(holderSection, list);
+    if (anchor && anchor.parentNode) {
+      anchor.parentNode.insertBefore(holderSection, anchor);
+      anchor.parentNode.removeChild(anchor);
+    } else {
+      list.parentNode.insertBefore(holderSection, list);
+      list.parentNode.removeChild(list);
+    }
     select(0, false);
   }
 

@@ -248,6 +248,15 @@ flash of the wrong logo). The choice is remembered per browser; with no JavaScri
 the light theme they were captured in. The workspace has the same switch in its own header, and its
 light and dark themes are both real themes rather than one theme and an inversion.
 
+### Contrast, measured
+
+The brand orange is bright, and white on it is 3.3:1 — under AA at the sizes these
+controls use. So the label on the brand is ink (`#141110`, 5.8:1 on `#f0621a` and 5.3:1 on
+`#ea580c`), the Access Free fill runs as a narrow band so the colour can move without changing
+how light the button is, and brand-coloured *text* on the light page is one step darker
+(`#b9430a`, 5.2:1). `npm run site-check` computes those ratios rather than asserting them in a
+comment.
+
 ### Rand, South African time, and how people actually pay
 
 - **Prices are in rand.** The capture was priced in dollars — Pro at $299 a year, a five-seat team at

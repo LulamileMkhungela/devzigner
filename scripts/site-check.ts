@@ -569,6 +569,31 @@ check(
   'the submission is kept in the browser, not posted',
   JSON.parse(live.window.localStorage.getItem('prodops.site.signups.v1') ?? '[]').length === 1,
 )
+
+/* The theme switch, operated like a visitor: one click puts the dark class on
+   the document, changes the label it offers, writes the choice, and tints the
+   browser's own chrome — and a second click puts it back. */
+const themeButton = liveDoc.querySelector('.prodops-theme') as HTMLButtonElement | null
+themeButton?.click()
+await new Promise((resolve) => setTimeout(resolve, 40))
+const wentDark = liveDoc.documentElement.classList.contains('dark')
+const savedTheme = live.window.localStorage.getItem('prodops-theme')
+const darkLabel = themeButton?.getAttribute('aria-label') ?? ''
+const chrome = liveDoc.querySelector('meta[name="theme-color"]')?.getAttribute('content') ?? ''
+themeButton?.click()
+await new Promise((resolve) => setTimeout(resolve, 40))
+const wentBack = !liveDoc.documentElement.classList.contains('dark')
+check(
+  'the switch flips the site, remembers it, and names what it will do next',
+  Boolean(themeButton) &&
+    wentDark &&
+    savedTheme === 'dark' &&
+    /Switch to light mode/.test(darkLabel) &&
+    chrome === '#100f0e' &&
+    wentBack &&
+    live.window.localStorage.getItem('prodops-theme') === 'light',
+  `${wentDark ? 'dark' : 'light'} → ${wentBack ? 'light' : 'dark'}, saved ${savedTheme}, chrome ${chrome}, label "${darkLabel}"`,
+)
 live.window.close()
 
 /* ---- tool pages: the email gate is satisfied, and says so ---------------- */

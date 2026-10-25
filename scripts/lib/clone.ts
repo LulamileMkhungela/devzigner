@@ -148,75 +148,58 @@ const MOTION_CSS = `<style id="prodops-motion">
      .ds-card (--color-surface, --radius-card, 32px), the button is the site's
      filled .btn. The only liberty is that the selected tab keeps a slow drift
      of the brand colour, because the colour animation was asked for twice. */
-  /* The page reads left to right, like the rest of the site: the captured
-     index down the left, the browser beside it. Under 1080px the two columns
-     stack with the index first, which is the page exactly as it was captured. */
-  .prodops-browser {
-    display: grid;
-    grid-template-columns: minmax(0, 1fr);
-    gap: 26px;
-    max-width: 1200px;
-    margin: 0 auto;
-    padding: 0 24px;
-  }
-  .prodops-index, .prodops-detail { min-width: 0; }
-  .prodops-browser .ds-thin { max-width: none; }
-  @media (min-width: 1080px) {
-    .prodops-browser {
-      grid-template-columns: minmax(300px, 0.86fr) minmax(0, 1.14fr);
-      gap: 48px;
-      align-items: start;
-    }
-    /* The index stays put while the panel scrolls past it. */
-    .prodops-index { position: sticky; top: 96px; }
-  }
-  .prodops-tools { margin: 0; }
+  /* The tool browser is the tool page's own layout: .ds-docs-layout is the
+     capture's two-column docs grid, .ds-docs-sidebar its sticky navigation and
+     .ds-docs-article its measure. Nothing here re-skins those; the browser
+     only supplies the strip of tabs above the article and the panel head. */
+  .prodops-tools-browser { padding: 56px 0 8px; }
+  .prodops-browser { align-items: start; }
+  .prodops-docs-main { min-width: 0; }
+  .prodops-docs-main .prodops-tabstrip { margin-bottom: 28px; }
+
   .prodops-tabstrip {
     display: flex;
     flex-wrap: wrap;
     gap: 8px;
-    margin: 0 0 22px;
+    margin: 0 0 24px;
   }
+  /* A tab is a .ds-docs-link with a button's manners: same hairline, same
+     radius, same 14px/1.5 rhythm as the navigation on the left. */
   .prodops-tab {
     appearance: none;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     border: 1px solid var(--color-hairline);
+    border-radius: var(--radius-control);
     background: transparent;
     color: var(--color-body);
-    border-radius: var(--radius-control);
-    padding: 9px 15px;
-    font: 500 14px/1.4 system-ui, -apple-system, 'Segoe UI', sans-serif;
+    padding: 8px 12px;
+    font: 500 14px/1.5 system-ui, -apple-system, 'Segoe UI', sans-serif;
     letter-spacing: -.01em;
     cursor: pointer;
     white-space: nowrap;
-    transition: border-color .18s ease, color .18s ease, background .18s ease;
+    transition: color .18s ease, border-color .18s ease, background-color .18s ease;
   }
-  .prodops-tab:hover { border-color: var(--color-brand); color: var(--color-brand); }
+  .prodops-tab:hover { color: var(--color-brand); border-color: var(--color-brand); }
   .prodops-tab[aria-selected="true"] {
-    color: #fff;
-    border-color: transparent;
-    background-image: linear-gradient(100deg, var(--color-brand), #d8430a 45%, #f97333 62%, var(--color-brand));
-    background-size: 220% 100%;
-    animation: prodops-sweep 9s ease-in-out infinite;
+    color: var(--color-brand);
+    border-color: color-mix(in srgb, var(--color-brand) 55%, var(--color-hairline));
+    background: color-mix(in srgb, var(--color-brand) 9%, transparent);
+    font-weight: 600;
   }
-  .prodops-toolpanel {
-    background: var(--color-surface);
-    border: 1px solid var(--color-hairline);
-    border-radius: var(--radius-card);
-    padding: 30px 32px 32px;
-    animation: prodops-fade .28s ease both;
-  }
-  @keyframes prodops-fade { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: none; } }
   .prodops-panel-head {
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
     justify-content: space-between;
     gap: 10px;
-    padding-bottom: 14px;
-    margin-bottom: 4px;
+    padding-bottom: 12px;
+    margin-bottom: 20px;
     border-bottom: 1px solid var(--color-hairline);
   }
-  .prodops-panel-head h2 { margin: 0; font-size: 26px; letter-spacing: -.02em; }
+  .prodops-panel-head h2 { margin: 0; font-size: 24px; letter-spacing: -.02em; }
+  .prodops-panel-head a { font: 600 13.5px/1.4 system-ui, sans-serif; color: var(--color-brand); text-decoration: none; }
   .prodops-panel-kind {
     margin: 0 0 6px;
     font: 600 10.5px/1 ui-monospace, mono;
@@ -224,10 +207,14 @@ const MOTION_CSS = `<style id="prodops-motion">
     text-transform: uppercase;
     color: var(--color-brand);
   }
-  .prodops-toolpanel h3 { margin: 26px 0 8px; }
-  .prodops-toolpanel p, .prodops-toolpanel li { line-height: 1.65; }
-  .prodops-toolpanel pre { overflow: auto; }
   .prodops-panel-loading { font: 500 14px/1.6 system-ui, sans-serif; color: var(--color-muted, #6b6560); }
+  /* Inside the copied article the capture's own headings already carry the
+     site's rhythm; only the code blocks needed a scrollbar. */
+  .prodops-browser .body-content pre { overflow: auto; }
+  @media (max-width: 1023px) {
+    .prodops-browser { display: block; }
+    .prodops-browser > .ds-docs-sidebar { position: static; max-height: none; margin-bottom: 20px; }
+  }
 
   /* The gate: the real site trades an email for the download. Here the button
      keeps its promise and opens the install instructions that ship with the
@@ -430,7 +417,9 @@ const INSTALL: Record<string, InstallFact> = {
   '/rails-react-template.html': { name: 'Starter', ships: 'template/starter/', kind: 'template' },
   '/agentcanon.html': { name: 'Agents canon', ships: '.agents/ + AGENTS.md + scripts/link-agents.sh', kind: 'convention' },
   '/agent-os.html': { name: 'Standards', ships: 'standards/ + .agents/commands/prodops/', kind: 'workflow' },
-  '/design-os.html': { name: 'ProdOps flow', ships: 'product-plan/ + .agents/commands/prodops/', kind: 'workflow' },
+  // The flow's own output is product-plan/, but that is written into the
+  // builder's project by /export-product — the repository ships the commands.
+  '/design-os.html': { name: 'ProdOps flow', ships: '.agents/commands/prodops/', kind: 'workflow' },
 }
 
 const REPO = 'https://github.com/LulamileMkhungela/devzigner.git'

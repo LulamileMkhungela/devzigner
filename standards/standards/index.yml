@@ -1,0 +1,3 @@
+# Written by /discover-standards and /index-standards.
+# One entry per standard, so an agent can find the rule without reading the repo.
+standards: []

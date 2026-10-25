@@ -177,55 +177,117 @@ export const RUNTIME = `<script id="prodops-runtime">
     if (items.length < 3) return;
     // .ds-listings is the site's generic listing class — articles, sessions and
     // the pro page use it too. Only the eight tool pages become tabs.
-    var TOOL_PAGE = /^(prd-creator|skill-builder|ai-design-system|rails-react-template|agentcanon|favicon-creator|agent-os|design-os)(\.html)?$/;
+    var TOOL_PAGE = /^(prd-creator|skill-builder|ai-design-system|rails-react-template|agentcanon|favicon-creator|agent-os|design-os)(\\.html)?$/;
     for (var check = 0; check < items.length; check++) {
-      var href = String(items[check].getAttribute('href') || '');
-      if (href.indexOf('./') === 0) href = href.slice(2);
-      if (!TOOL_PAGE.test(href)) return;
+      var first = String(items[check].getAttribute('href') || '');
+      if (first.indexOf('./') === 0) first = first.slice(2);
+      if (!TOOL_PAGE.test(first)) return;
     }
     list.setAttribute('data-local-wired', '1');
 
-    var wrap = document.createElement('div');
-    wrap.className = 'prodops-tools';
+    /* The browser is the tool page, laid out the way the tool page lays itself
+       out: the captured documentation sidebar on the left, the article on the
+       right, and the tab strip across the top of that article. Same classes,
+       same CSS, so it reads as the site and not as something bolted onto it. */
     var strip = document.createElement('div');
     strip.className = 'prodops-tabstrip';
     strip.setAttribute('role', 'tablist');
-    strip.setAttribute('aria-label', 'Free tools');
-    var panel = document.createElement('div');
-    panel.className = 'prodops-toolpanel';
-    panel.setAttribute('role', 'tabpanel');
-    panel.setAttribute('tabindex', '0');
+    strip.setAttribute('aria-label', 'The eight free tools');
+
+    var head = document.createElement('div');
+    head.className = 'prodops-panel-head';
+
+    var body = document.createElement('div');
+    body.className = 'body-content';
+
+    var article = document.createElement('article');
+    article.className = 'ds-docs-article';
+    article.id = 'prodops-toolpanel';
+    article.setAttribute('role', 'tabpanel');
+    article.setAttribute('tabindex', '0');
+    article.appendChild(head);
+    article.appendChild(body);
+
+    var sidebar = document.createElement('aside');
+    sidebar.className = 'ds-docs-sidebar';
+    sidebar.setAttribute('aria-label', 'On this page');
+
+    var main = document.createElement('div');
+    main.className = 'prodops-docs-main';
+    main.appendChild(strip);
+    main.appendChild(article);
+
+    var layout = document.createElement('div');
+    layout.className = 'ds-wide ds-docs-layout prodops-browser';
+    layout.appendChild(sidebar);
+    layout.appendChild(main);
 
     var cache = {};
     var tabs = [];
+    var current = 0;
 
-    function paint(html) {
-      panel.innerHTML = html;
-      // The fetched page carries its own email gate and its own sidebar; the
-      // panel is already inside a page with both.
-      var forms = panel.querySelectorAll('form');
+    function tabTitle() {
+      return tabs[current] ? tabs[current].getAttribute('data-title') : toolName();
+    }
+
+    /* The panel holds a whole page inside a page, so the anchored headings it
+       brings get a prefix and the copied sidebar is repointed at them; without
+       this the panel's #installation and the tool page's own #installation would
+       share an id and the links would jump to the wrong copy. */
+    function scopeIds() {
+      var ids = body.querySelectorAll('[id]');
+      for (var n = 0; n < ids.length; n++) ids[n].id = 'prodops-panel-' + ids[n].id;
+      var links = sidebar.querySelectorAll('a[href^="#"]');
+      for (var l = 0; l < links.length; l++) {
+        var target = links[l].getAttribute('href').slice(1);
+        links[l].setAttribute('href', '#prodops-panel-' + target);
+        links[l].removeAttribute('aria-current');
+        if (target === firstSection) links[l].setAttribute('aria-current', 'location');
+        links[l].addEventListener('click', function () {
+          var all = sidebar.querySelectorAll('a[href^="#"]');
+          for (var a = 0; a < all.length; a++) all[a].removeAttribute('aria-current');
+          this.setAttribute('aria-current', 'location');
+          markPillHeights();
+        });
+      }
+      markPillHeights();
+    }
+
+    var firstSection = '';
+
+    function paint(entry) {
+      head.innerHTML = entry.head;
+      body.innerHTML = entry.body;
+      sidebar.innerHTML = entry.side;
+      // The sidebar's own "current" was captured on the tool page; the panel
+      // starts at the top of the copy, so the first anchor is the honest one.
+      var firstLink = sidebar.querySelector('a[href^="#"]');
+      firstSection = firstLink ? firstLink.getAttribute('href').slice(1) : '';
+      // A copied page's email gates would post nowhere from in here; the
+      // installation section that follows each of them already says how to get
+      // the tool, so the form and its card come out.
+      var forms = body.querySelectorAll('form');
       for (var f = 0; f < forms.length; f++) {
         var card = forms[f].closest ? forms[f].closest('.ds-card') : null;
         var drop = card || forms[f];
         if (drop.parentNode) drop.parentNode.removeChild(drop);
       }
-      var asides = panel.querySelectorAll('.ds-docs-sidebar, .ds-docs-mobile');
-      for (var a = 0; a < asides.length; a++) {
-        if (asides[a].parentNode) asides[a].parentNode.removeChild(asides[a]);
-      }
-      panel.appendChild(installCard(tabTitle()));
+      scopeIds();
+      article.setAttribute('aria-labelledby', tabs[current].id);
     }
 
     function fallback(tab) {
-      return '<div class="prodops-panel-head"><h2>' + escapeHtml(tab.getAttribute('data-title')) + '</h2>' +
-        '<a href="' + escapeHtml(tab.getAttribute('data-href')) + '">Full page →</a></div>' +
-        '<p class="prodops-panel-loading">The full page could not be read here. ' +
-        '<a href="' + escapeHtml(tab.getAttribute('data-href')) + '">Open it instead →</a></p>';
-    }
-
-    var current = 0;
-    function tabTitle() {
-      return tabs[current] ? tabs[current].getAttribute('data-title') : toolName();
+      paint({
+        head:
+          '<div><p class="prodops-panel-kind">Free tool</p><h2>' +
+          escapeHtml(tab.getAttribute('data-title')) +
+          '</h2></div><a href="' + escapeHtml(tab.getAttribute('data-href')) + '">Open the full page →</a>',
+        body:
+          '<p class="prodops-panel-loading">This page could not be read into the browser. ' +
+          '<a href="' + escapeHtml(tab.getAttribute('data-href')) + '">Open it instead →</a></p>',
+        side: '',
+      });
+      article.setAttribute('aria-labelledby', tab.id);
     }
 
     function select(index, focus) {
@@ -236,38 +298,46 @@ export const RUNTIME = `<script id="prodops-runtime">
         tabs[i].setAttribute('tabindex', i === index ? '0' : '-1');
       }
       if (focus && tabs[index].focus) tabs[index].focus();
-      panel.setAttribute('aria-labelledby', tabs[index].id);
       var href = tabs[index].getAttribute('data-href');
       if (cache[href]) {
         paint(cache[href]);
         return;
       }
-      panel.innerHTML = '<p class="prodops-panel-loading">Loading ' +
-        escapeHtml(tabs[index].getAttribute('data-title')) + '…</p>';
+      head.innerHTML = '<h2>' + escapeHtml(tabs[index].getAttribute('data-title')) + '</h2>';
+      body.innerHTML = '<p class="prodops-panel-loading">Loading ' + escapeHtml(tabTitle()) + '…</p>';
       if (!window.fetch) {
-        panel.innerHTML = fallback(tabs[index]);
+        fallback(tabs[index]);
         return;
       }
+      var asked = index;
       window
         .fetch(href)
         .then(function (response) { return response.text(); })
         .then(function (html) {
           var doc = new window.DOMParser().parseFromString(html, 'text/html');
-          var article = doc.querySelector('article .body-content') || doc.querySelector('main article') || doc.querySelector('main');
-          var body = article ? article.innerHTML : '';
-          if (!body) {
-            panel.innerHTML = fallback(tabs[current]);
+          var page = doc.querySelector('article.ds-docs-article') || doc.querySelector('main article');
+          var copy = page ? (page.querySelector('.body-content') || page) : doc.querySelector('main');
+          var sideEl = doc.querySelector('aside.ds-docs-sidebar');
+          var content = copy ? copy.innerHTML : '';
+          if (!content) {
+            if (asked === current) fallback(tabs[current]);
             return;
           }
-          var head =
-            '<div class="prodops-panel-head"><div><p class="prodops-panel-kind">Free tool</p><h2>' +
-            escapeHtml(tabs[current].getAttribute('data-title')) + '</h2></div>' +
-            '<a href="' + escapeHtml(href) + '">Keep this page →</a></div>';
-          cache[href] = head + body;
-          paint(cache[href]);
+          var kindEl = items[asked] ? items[asked].querySelector('.ds-listing-label') : null;
+          var entry = {
+            head:
+              '<div><p class="prodops-panel-kind">' +
+              escapeHtml(kindEl ? String(kindEl.textContent || '').trim() : 'Free tool') +
+              '</p><h2>' + escapeHtml(tabs[asked].getAttribute('data-title')) + '</h2></div>' +
+              '<a href="' + escapeHtml(href) + '">Open the full page →</a>',
+            body: content,
+            side: sideEl ? sideEl.innerHTML : '',
+          };
+          cache[href] = entry;
+          if (asked === current) paint(entry);
         })
         .catch(function () {
-          panel.innerHTML = fallback(tabs[current]);
+          if (asked === current) fallback(tabs[current]);
         });
     }
 
@@ -275,6 +345,7 @@ export const RUNTIME = `<script id="prodops-runtime">
       (function (item, index) {
         var title = item.querySelector('h3');
         var href = item.getAttribute('href');
+        var name = title ? String(title.textContent || '').trim() : 'Tool ' + (index + 1);
         var tab = document.createElement('button');
         tab.type = 'button';
         tab.className = 'prodops-tab';
@@ -284,8 +355,8 @@ export const RUNTIME = `<script id="prodops-runtime">
         tab.setAttribute('aria-controls', 'prodops-toolpanel');
         tab.setAttribute('tabindex', index === 0 ? '0' : '-1');
         tab.setAttribute('data-href', href);
-        tab.setAttribute('data-title', title ? String(title.textContent || '').trim() : 'Tool ' + (index + 1));
-        tab.textContent = title ? String(title.textContent || '').trim() : 'Tool ' + (index + 1);
+        tab.setAttribute('data-title', name);
+        tab.textContent = name;
         tab.addEventListener('click', function () { select(index, false); });
         tab.addEventListener('keydown', function (event) {
           var key = event.key;
@@ -301,25 +372,24 @@ export const RUNTIME = `<script id="prodops-runtime">
       })(items[i], i);
     }
 
-    panel.id = 'prodops-toolpanel';
-    wrap.appendChild(strip);
-    wrap.appendChild(panel);
+    /* The panel's sidebar reopens as a <details> below 1024px; the summary is
+       deliberately left as captured, it needs no measuring. */
+    function markPillHeights() {}
 
-    // Two columns, the way the rest of the site reads: the captured index on
-    // the left, untouched, and the browser to its right. Below 1080px they
-    // stack, index first, which is the page as the crawler found it.
-    var browser = document.createElement('div');
-    browser.className = 'prodops-browser';
-    var index = document.createElement('div');
-    index.className = 'prodops-index';
-    var detail = document.createElement('div');
-    detail.className = 'prodops-detail';
-    list.parentNode.insertBefore(browser, list);
-    index.appendChild(list);
-    detail.appendChild(wrap);
-    browser.appendChild(index);
-    browser.appendChild(detail);
-    list.setAttribute('aria-label', 'The eight tools, one per row');
+    /* The browser needs the capture's docs measure (1040px), not the listing's
+       720px column, so it goes above the section that holds the list — still on
+       the page, still in the site's own rhythm — and the list stays underneath:
+       the page keeps everything it had and gains the tabs. */
+    var holderSection = document.createElement('section');
+    holderSection.className = 'prodops-tools-browser';
+    holderSection.setAttribute('aria-label', 'Read a tool before you open it');
+    var wide = document.createElement('div');
+    wide.className = 'ds-wide';
+    wide.appendChild(layout);
+    holderSection.appendChild(wide);
+    var anchor = list.closest ? list.closest('section') : null;
+    if (anchor && anchor.parentNode) anchor.parentNode.insertBefore(holderSection, anchor);
+    else list.parentNode.insertBefore(holderSection, list);
     select(0, false);
   }
 
@@ -381,7 +451,11 @@ export const RUNTIME = `<script id="prodops-runtime">
           if (full) button.setAttribute('aria-controls', 'prodops-install');
           button.addEventListener('click', function () {
             if (full) {
-              try { full.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (error) { full.scrollIntoView(); }
+              // Not every environment can scroll a node (jsdom cannot); the
+              // jump is a courtesy, the flash and the focus are the message.
+              if (full.scrollIntoView) {
+                try { full.scrollIntoView({ behavior: 'smooth', block: 'start' }); } catch (error) { full.scrollIntoView(); }
+              }
               full.classList.remove('prodops-flash');
               // Force a reflow so the animation restarts on a second press.
               void full.offsetWidth;

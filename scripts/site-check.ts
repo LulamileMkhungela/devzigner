@@ -449,6 +449,23 @@ gated.window.close()
     return !/id="prodops-install"/.test(out) || !/Option 1/.test(out) || !/Option 3/.test(out)
   })
   check('all eight tool pages carry the installation section', missing.length === 0, missing.join(', '))
+  /* The docs are applied, not quoted: every `cp -r prodops/<path>` a page tells
+     the reader to run must name a path that exists in this checkout. A page that
+     promises a folder the repository does not have is a broken install, however
+     good the prose reads. */
+  const promised = new Map<string, string>()
+  for (const page of pages) {
+    const out = adaptPage(readFileSync(join(SITE, `${page}.html`), 'utf8'), `/${page}.html`)
+    const section = out.slice(out.indexOf('id="prodops-install"'))
+    const text = section.slice(0, section.indexOf('</section>')).replace(/&amp;/g, '&')
+    for (const match of text.matchAll(/cp -r prodops\/([^\s]+)/g)) promised.set(match[1], page)
+  }
+  const absent = [...promised].filter(([path]) => !existsSync(join(ROOT, path)))
+  check(
+    'every path the installation section says to copy exists in this repo',
+    promised.size >= 8 && absent.length === 0,
+    absent.length ? absent.map(([path, page]) => `${path} (${page})`).join(', ') : [...promised.keys()].join(' '),
+  )
   // "Learn Agent Skills" was a cross-sell to a paid course; everything else the
   // capture had — including "Learn to build" — is still there.
   const promos = pages.filter((page) => {
@@ -504,8 +521,8 @@ gated.window.close()
     firstPanel.slice(0, 90),
   )
   check(
-    'the panel carries the install card, so Access Free is never a dead end',
-    /\.agents\/skills\//.test(firstPanel) && /Open ProdOps/.test(firstPanel),
+    'the panel carries the installation section, so Access Free is never a dead end',
+    /\.agents\/skills\//.test(firstPanel) && /Option 1/.test(firstPanel),
   )
   const second = tabs[1] as HTMLButtonElement
   second?.click()
@@ -529,20 +546,30 @@ gated.window.close()
     Boolean(list) && list?.style.display !== 'none' && (list?.querySelectorAll('.ds-listing').length ?? 0) === 8,
     list ? `${list.querySelectorAll('.ds-listing').length} rows, display: ${list.style.display || 'block'}` : 'no list',
   )
-  // Two columns: the captured index on the left, the browser on the right.
+  // The tool page's own layout, not a new one: the captured docs sidebar on the
+  // left, the article on the right, and the tabs across the top of the article.
   const browser = doc.querySelector('.prodops-browser')
-  const index = doc.querySelector('.prodops-index')
-  const detail = doc.querySelector('.prodops-detail')
+  const docsSidebar = browser?.querySelector('.ds-docs-sidebar')
+  const docsMain = browser?.querySelector('.prodops-docs-main')
+  const sideText = (docsSidebar?.textContent ?? '').replace(/\s+/g, ' ')
   check(
-    'the index keeps the left column and the tabs sit to its right',
-    Boolean(browser && index && detail) &&
-      index?.parentElement?.className === 'prodops-browser' &&
-      detail?.parentElement?.className === 'prodops-browser' &&
-      Boolean(index && detail && (index.compareDocumentPosition(detail) & 4) !== 0) &&
-      Boolean(index?.contains(list)) &&
-      Boolean(detail?.querySelector('.prodops-tabstrip')) &&
-      Boolean(detail?.querySelector('#prodops-toolpanel')),
-    browser ? `columns: ${[...browser.children].map((child) => child.className).join(' | ')}` : 'no grid',
+    'the browser keeps the tool page\'s left panel and puts the tabs to its right',
+    Boolean(browser) &&
+      browser?.classList.contains('ds-docs-layout') &&
+      Boolean(docsSidebar && docsMain) &&
+      Boolean(docsSidebar && docsMain && (docsSidebar.compareDocumentPosition(docsMain) & 4) !== 0) &&
+      /Getting Started/.test(sideText) &&
+      /The workflow/.test(sideText) &&
+      /Overview/.test(sideText) &&
+      /Installation/.test(sideText) &&
+      Boolean(docsMain?.querySelector('.prodops-tabstrip')) &&
+      Boolean(docsMain?.querySelector('article.ds-docs-article')),
+    sideText.slice(0, 110) || 'no sidebar',
+  )
+  check(
+    'the browser sits above the list and the list is untouched below it',
+    Boolean(browser && list && (browser.compareDocumentPosition(list) & 4) !== 0) &&
+      !browser?.contains(list),
   )
   live.window.close()
 }

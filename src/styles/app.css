@@ -1828,6 +1828,9 @@ pre {
   .lz-app {
     grid-template-columns: minmax(0, 1fr);
   }
+  /* The aside becomes a drawer. The wide layout is a horizontal bar, so the
+     drawer has to restate the axis: one column, full-width rows, its own
+     scroll — otherwise the nav wraps two items per line in a 268px panel. */
   .lz-side {
     position: fixed;
     inset: 0 auto 0 0;
@@ -1835,6 +1838,41 @@ pre {
     transform: translateX(-102%);
     transition: transform 0.2s ease;
     box-shadow: 0 0 50px rgba(28, 26, 22, 0.18);
+    flex-direction: column;
+    flex-wrap: nowrap;
+    align-items: stretch;
+    gap: 2px;
+    padding: 16px 14px;
+    overflow-y: auto;
+    border-bottom: 0;
+    border-right: 1px solid var(--line);
+  }
+  .lz-brand {
+    padding: 0 0 12px;
+    margin-bottom: 6px;
+    border-bottom: 1px solid var(--line);
+  }
+  .lz-nav {
+    flex: 0 0 auto;
+    flex-direction: column;
+    align-items: stretch;
+    gap: 2px;
+  }
+  .lz-nav-item {
+    width: 100%;
+    font-size: 14.5px;
+    padding: 9px 10px;
+  }
+  .lz-nav-label {
+    display: block;
+    margin: 12px 0 4px;
+    padding: 0 10px;
+  }
+  .lz-side-foot {
+    margin: 12px 0 0;
+    padding: 12px 0 0;
+    border-left: 0;
+    border-top: 1px solid var(--line);
   }
   body.lz-nav-open .lz-side {
     transform: translateX(0);

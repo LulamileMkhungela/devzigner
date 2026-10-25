@@ -297,6 +297,9 @@ export function App() {
             </Link>
           ))}
 
+          {/* No sections, no list: an empty group under a heading is a
+              promise the workspace has not kept yet. */}
+          {active.sections.length > 0 && (
           <div className="lz-nav-group">
             <button
               className="lz-nav-item lz-nav-group-toggle"
@@ -319,6 +322,7 @@ export function App() {
               </div>
             )}
           </div>
+          )}
 
         </nav>
 

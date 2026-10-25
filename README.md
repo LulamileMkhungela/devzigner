@@ -207,7 +207,7 @@ byte-identical package.
 3. **Genome** — density, motion, contrast and card style. Re-rolling one module never silently
    rewrites another.
 
-`devzign.json` in the export carries the inputs, so a package can be regenerated and diffed.
+`prodops.json` in the export carries the inputs, so a package can be regenerated and diffed.
 
 ## How the audit stays honest
 

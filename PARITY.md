@@ -178,7 +178,7 @@ for two archetypes on every `npm run check`.
 | Inputs that are pictures of inputs | The prototype contains real `input`/`select`/`textarea`/`button`: type to filter, sort, submit with validation, create a record, navigate | `AppPreview`, `npm run smoke` |
 | A page assembled from bespoke UI | Every block renders through a named registry component; the mapping is exported and tested | `engine/system.ts`, `render-check` |
 | Design knowledge lost in a chat | Wiki + the standards layer layer shipped beside the code, versioned by snapshots/branches; worktree workflow documented | `wiki/`, `standards/`, `git-workflow.md` |
-| Needing a model, a key, or data to start | The whole package is a pure function of seed + archetype + genome | `devzign.json`, `npm run qa` (36 runs, 0 failures) |
+| Needing a model, a key, or data to start | The whole package is a pure function of seed + archetype + genome | `prodops.json`, `npm run qa` (36 runs, 0 failures) |
 | No freeform canvas | By design: the editable surface is the token editor and the flow builder, and everything downstream recompiles | `/editor`, `/flows` |
 
 ### What is *not* claimed

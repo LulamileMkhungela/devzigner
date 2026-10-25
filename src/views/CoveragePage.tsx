@@ -264,7 +264,7 @@ export function CoveragePage({ project }: { project: Project }) {
           row('Data layer separated', 'components take props; only the adapter holds rows', has('src/data/mock-adapter.ts') && has('data-shapes/overview.ts'), ['src/data/repository.ts', 'src/data/mock-adapter.ts', 'data-shapes/overview.ts']),
           row('Definable stack and registry', 'the stack and component registry are editable and reach the export', has('system/stack.md') && has('system/registry.json'), ['system/stack.md', 'system/registry.json']),
           row('Versioned in git', 'commits, branches and a changelog inside the wiki', hasPrefix('wiki/') && has('wiki/CHANGELOG.md'), ['wiki/CHANGELOG.md', 'wiki/README.md']),
-          row('No model calls', 'the package is a pure function of the seed', has('devzign.json'), ['devzign.json']),
+          row('No model calls', 'the package is a pure function of the seed', has('prodops.json'), ['prodops.json']),
         ],
       },
     ]

@@ -123,7 +123,12 @@ pre {
    -------------------------------------------------------------------------- */
 
 .lz-app {
-  /* Buildermethods: near-black ground, orange accent, mono kickers. */
+  /* Near-black ground, an ember accent that moves, mono kickers. The three
+     accent stops are also the palette of the shell's colour animation: the
+     brand rail, the active step and a completed stage all read from them, so
+     the motion is the product's own colour rather than a decoration. */
+  --accent-2: #ffb020;
+  --accent-3: #ff2d6f;
   --bg: #0a0a0a;
   --side: #0f0f0f;
   --card: #141414;
@@ -156,8 +161,13 @@ pre {
   --shadow-lg: 0 18px 48px -26px rgba(0, 0, 0, 0.85);
   --font: 'DM Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
   --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
-  display: flex;
-  flex-direction: column;
+  /* Two panes: the process rail on the left, the work on the right. The rail
+     is sticky and full height, so the five steps are always visible while the
+     content scrolls — that is the shape of a tool that walks you through a
+     process, not a marketing page with a nav bar. */
+  display: grid;
+  grid-template-columns: 288px minmax(0, 1fr);
+  align-items: start;
   min-height: 100vh;
   background: var(--bg);
   color: var(--ink);
@@ -166,6 +176,8 @@ pre {
 
 /* The light stone palette is still here, one click away in the menu. */
 .lz-app[data-theme='light'] {
+  --accent-2: #d97706;
+  --accent-3: #db2777;
   --bg: #fafaf9;
   --side: #ffffff;
   --card: #ffffff;
@@ -213,25 +225,69 @@ pre {
    -------------------------------------------------------------------------- */
 
 .lz-side {
+  /* The left panel: the five process steps, the section list under them, the
+     secondary tools, and the account at the foot. It owns the viewport height
+     and scrolls independently of the work area. */
   position: sticky;
   top: 0;
   display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 6px 14px;
-  height: auto;
-  background: color-mix(in srgb, var(--side) 88%, transparent);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid var(--line);
-  padding: 10px 20px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--side);
+  border-right: 1px solid var(--line);
+  padding: 14px 12px 12px;
   z-index: 30;
+  scrollbar-width: thin;
+}
+/* A slow ember wash behind the top of the rail. It is the only large moving
+   surface in the app: everything else animates at the moment of an action. */
+.lz-side::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 220px;
+  pointer-events: none;
+  background:
+    radial-gradient(120px 90px at 18% 0%, color-mix(in srgb, var(--accent) 26%, transparent), transparent 70%),
+    radial-gradient(140px 110px at 88% 12%, color-mix(in srgb, var(--accent-3) 16%, transparent), transparent 72%);
+  animation: lz-aurora 16s ease-in-out infinite alternate;
+  opacity: 0.9;
+}
+@keyframes lz-aurora {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: hue-rotate(0deg) saturate(1);
+  }
+  50% {
+    transform: translate3d(8%, 4%, 0) scale(1.08);
+    filter: hue-rotate(-14deg) saturate(1.15);
+  }
+  100% {
+    transform: translate3d(-6%, 2%, 0) scale(1.02);
+    filter: hue-rotate(12deg) saturate(1.05);
+  }
 }
 
 .lz-brand {
+  position: relative;
   display: flex;
   align-items: center;
   gap: 9px;
-  padding: 0 8px 0 0;
+  padding: 2px 2px 14px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.lz-brand-mark {
+  transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.4), filter 0.4s ease;
+}
+.lz-brand:hover .lz-brand-mark {
+  transform: rotate(-6deg) scale(1.08);
+  filter: drop-shadow(0 2px 8px color-mix(in srgb, var(--accent) 55%, transparent));
 }
 .lz-brand-mark {
   width: 22px;
@@ -260,24 +316,32 @@ pre {
 }
 
 .lz-nav {
-  flex: 1 1 520px;
+  flex: 1 1 auto;
   display: flex;
-  flex-direction: row;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: 2px 4px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1px;
   overflow: visible;
+  position: relative;
 }
+/* Section captions inside the rail ("Process", "Workspace", "Sections"). */
 .lz-nav-label {
-  display: none;
+  display: block;
+  margin: 14px 0 5px;
+  padding: 0 9px;
+  font: 600 10px/1 var(--font);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--faint);
 }
 .lz-nav-item {
-  display: inline-flex;
+  position: relative;
+  display: flex;
   flex: 0 0 auto;
   align-items: center;
-  gap: 7px;
-  width: auto;
-  padding: 6px 10px;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 9px;
   border: 1px solid transparent;
   border-radius: 7px;
   background: transparent;
@@ -291,7 +355,7 @@ pre {
   background: var(--hover);
 }
 .lz-app[data-theme='dark'] .lz-nav-item:hover {
-  background: #171f2a;
+  background: #1a1a1a;
 }
 .lz-nav-item.is-active {
   background: var(--card);
@@ -299,11 +363,65 @@ pre {
   box-shadow: var(--shadow);
   color: var(--ink);
 }
+/* The active step carries a moving ember rail. It is the one piece of colour
+   animation that is always on, because it answers "where am I in the process"
+   without a label. */
+.lz-nav-item.is-active::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-2) 50%, var(--accent-3) 100%);
+  background-size: 100% 200%;
+  animation: lz-rail-flow 4.5s ease-in-out infinite alternate;
+}
+@keyframes lz-rail-flow {
+  from {
+    background-position: 50% 0%;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+  to {
+    background-position: 50% 100%;
+    box-shadow: 0 0 10px 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+}
+.lz-nav-item.is-active svg {
+  color: var(--accent);
+  opacity: 1;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 45%, transparent));
+}
 .lz-nav-item svg {
   flex: 0 0 auto;
   opacity: 0.7;
   width: 17px;
   height: 17px;
+  transition: opacity 0.18s, color 0.18s, filter 0.18s;
+}
+.lz-nav-dot {
+  margin-left: auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line-strong);
+  flex: 0 0 auto;
+  transition: background 0.2s;
+}
+.lz-nav-item.is-active .lz-nav-dot {
+  background: var(--accent);
+}
+.lz-rail-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 9px 2px;
+}
+.lz-rail-progress-label {
+  font: 500 10.5px/1 var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--faint);
 }
 .lz-nav-item span.lz-nav-label-text {
   flex: 1;
@@ -336,14 +454,35 @@ pre {
 }
 .lz-checkdot {
   margin-left: auto;
-  width: 16px;
-  height: 16px;
+  width: 17px;
+  height: 17px;
   border-radius: 50%;
   display: grid;
   place-items: center;
-  background: var(--green-bg);
-  color: var(--green-ink);
+  background: linear-gradient(140deg, var(--accent) 0%, var(--accent-2) 100%);
+  color: #14100c;
   flex: 0 0 auto;
+  animation: lz-pop 0.45s cubic-bezier(0.2, 1.2, 0.35, 1) both;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+/* The tick has to arrive, not appear: a stage becomes complete while you are
+   looking at it. */
+@keyframes lz-pop {
+  0% {
+    transform: scale(0.4) rotate(-18deg);
+    opacity: 0;
+  }
+  65% {
+    transform: scale(1.14) rotate(3deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+.lz-app[data-theme='light'] .lz-checkdot {
+  color: #fff;
 }
 .lz-nav-sub {
   display: flex;
@@ -372,33 +511,37 @@ pre {
 }
 .lz-app[data-theme='dark'] .lz-nav-sub a:hover,
 .lz-app[data-theme='dark'] .lz-nav-sub button:hover {
-  background: #171f2a;
+  background: #1a1a1a;
 }
 .lz-nav-sub .is-active {
   color: var(--ink);
   background: var(--hover);
 }
 .lz-app[data-theme='dark'] .lz-nav-sub .is-active {
-  background: #171f2a;
+  background: #1a1a1a;
 }
 
 .lz-side-foot {
   display: flex;
   align-items: center;
-  gap: 10px;
-  padding: 0 0 0 10px;
+  gap: 9px;
+  padding: 11px 4px 0;
   position: relative;
-  border-top: 0;
-  border-left: 1px solid var(--line);
-  margin-top: 0;
-  margin-left: auto;
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+  flex: 0 0 auto;
+}
+.lz-avatar {
+  background: linear-gradient(140deg, var(--accent) 0%, var(--accent-3) 130%);
+  color: #14100c;
+}
+.lz-app[data-theme='light'] .lz-avatar {
+  color: #fff;
 }
 .lz-avatar {
   width: 32px;
   height: 32px;
   border-radius: 50%;
-  background: #211f1c;
-  color: #fff;
   display: grid;
   place-items: center;
   font: 600 13px/1 var(--font);
@@ -572,45 +715,141 @@ pre {
   color: var(--ink-2);
 }
 .lz-app[data-theme='dark'] .lz-step:hover:not(.is-active) {
-  background: #171f2a;
+  background: #1a1a1a;
 }
 .lz-step-n {
   width: 23px;
   height: 23px;
   border-radius: 50%;
-  background: #e7edf8;
-  color: #5c7bb5;
+  background: var(--hover);
+  color: var(--muted);
+  border: 1px solid var(--line);
   display: grid;
   place-items: center;
   font: 600 11.5px/1 var(--font);
   flex: 0 0 auto;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
 }
 .lz-app[data-theme='dark'] .lz-step-n {
-  background: #1b2740;
-  color: #a8c2ee;
+  background: #1c1c1c;
+  color: var(--muted);
+  border-color: var(--line);
 }
 .lz-step.is-active {
-  background: #f3efe7;
+  background: var(--card);
   color: var(--ink);
-  border-color: #ece5da;
+  border-color: var(--line);
 }
 .lz-app[data-theme='dark'] .lz-step.is-active {
-  background: #1a2230;
-  border-color: #2a3547;
+  background: var(--card);
+  border-color: var(--line);
 }
 .lz-step.is-active .lz-step-n {
-  background: var(--accent);
-  color: #fff;
+  background: linear-gradient(140deg, var(--accent) 0%, var(--accent-2) 100%);
+  border-color: transparent;
+  color: #14100c;
 }
 .lz-step.is-done .lz-step-n {
-  background: var(--green-bg);
-  color: var(--green-ink);
+  background: linear-gradient(140deg, var(--accent) 0%, var(--accent-2) 100%);
+  border-color: transparent;
+  color: #14100c;
+}
+.lz-app[data-theme='light'] .lz-step.is-active .lz-step-n,
+.lz-app[data-theme='light'] .lz-step.is-done .lz-step-n {
+  color: #fff;
 }
 .lz-step-line {
   width: 22px;
   height: 1px;
   background: var(--line);
   flex: 0 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   stage strip — where you are in the process, in the page header
+   -------------------------------------------------------------------------- */
+
+/* The five stages are navigable from the rail on the left, so the header does
+   not repeat them as links. It states position: which stage, and how much of
+   the process is behind you, as one slim meter. */
+.lz-stagestrip {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex: 0 0 auto;
+  min-width: 190px;
+}
+.lz-stagestrip-label {
+  font: 600 10px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.lz-stagestrip-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lz-stagestrip .lz-step {
+  padding: 0;
+  border: 0;
+  background: none;
+  gap: 0;
+  cursor: default;
+}
+.lz-stagestrip .lz-step:hover {
+  background: none;
+}
+.lz-stagestrip .lz-step-n {
+  width: 20px;
+  height: 20px;
+  font-size: 10.5px;
+}
+.lz-stagestrip .lz-step:not(.is-active):not(.is-done) .lz-step-n {
+  background: transparent;
+  color: var(--faint);
+}
+/* The stage name is spoken, not printed, in the strip: the number is enough
+   once the rail carries the labels. */
+.lz-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+/* The meter fills with the same ember as the rail, so progress is colour as
+   well as length. */
+.lz-meter {
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+  width: 100%;
+  min-width: 120px;
+}
+.lz-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 55%, var(--accent-3) 100%);
+  background-size: 200% 100%;
+  animation: lz-meter-flow 6s linear infinite;
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+@keyframes lz-meter-flow {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 200% 50%;
+  }
 }
 
 .lz-head {
@@ -1815,6 +2054,11 @@ pre {
    responsive
    -------------------------------------------------------------------------- */
 
+@media (max-width: 1180px) {
+  .lz-app {
+    grid-template-columns: 252px minmax(0, 1fr);
+  }
+}
 @media (max-width: 1100px) {
   .lz-split {
     grid-template-columns: minmax(0, 1fr);
@@ -1824,55 +2068,20 @@ pre {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 }
-@media (max-width: 860px) {
+@media (max-width: 900px) {
   .lz-app {
     grid-template-columns: minmax(0, 1fr);
   }
-  /* The aside becomes a drawer. The wide layout is a horizontal bar, so the
-     drawer has to restate the axis: one column, full-width rows, its own
-     scroll — otherwise the nav wraps two items per line in a 268px panel. */
+  /* Below the breakpoint the same rail becomes a drawer: off-canvas, opened
+     from the bar at the top of the work area. Nothing about the panel itself
+     changes, so there is one set of rules for it. */
   .lz-side {
     position: fixed;
     inset: 0 auto 0 0;
-    width: 268px;
+    width: 288px;
     transform: translateX(-102%);
     transition: transform 0.2s ease;
-    box-shadow: 0 0 50px rgba(28, 26, 22, 0.18);
-    flex-direction: column;
-    flex-wrap: nowrap;
-    align-items: stretch;
-    gap: 2px;
-    padding: 16px 14px;
-    overflow-y: auto;
-    border-bottom: 0;
-    border-right: 1px solid var(--line);
-  }
-  .lz-brand {
-    padding: 0 0 12px;
-    margin-bottom: 6px;
-    border-bottom: 1px solid var(--line);
-  }
-  .lz-nav {
-    flex: 0 0 auto;
-    flex-direction: column;
-    align-items: stretch;
-    gap: 2px;
-  }
-  .lz-nav-item {
-    width: 100%;
-    font-size: 14.5px;
-    padding: 9px 10px;
-  }
-  .lz-nav-label {
-    display: block;
-    margin: 12px 0 4px;
-    padding: 0 10px;
-  }
-  .lz-side-foot {
-    margin: 12px 0 0;
-    padding: 12px 0 0;
-    border-left: 0;
-    border-top: 1px solid var(--line);
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
   }
   body.lz-nav-open .lz-side {
     transform: translateX(0);

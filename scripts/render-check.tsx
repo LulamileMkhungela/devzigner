@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { readFileSync } from 'node:fs'
 import { renderToString } from 'react-dom/server'
 import { App } from '../src/App'
 import { StoreProvider } from '../src/lib/store'
@@ -113,9 +114,11 @@ const checks = [
   ).map(([phase, html]) => {
     const out = html()
     const at = (needle: string) => out.indexOf(needle)
-    const order = [at('lz-pagehead'), at('lz-guide'), at('lz-stage'), at('lz-stage-done')]
-    const confirmAt = Math.max(order[2], order[3])
-    return [`${phase}: header → guide → content → confirm`, order[0] > -1 && order[1] > order[0] && confirmAt > order[1]] as [string, boolean]
+    // `lz-stage` alone also matches `lz-stagestrip` in the page header, so the
+    // confirm block is matched by its own class names.
+    const confirm = Math.max(at('class="lz-stage"'), at('lz-stage is-ready'), at('lz-stage-done'))
+    const order = [at('lz-pagehead'), at('lz-guide'), confirm]
+    return [`${phase}: header → guide → content → confirm`, order[0] > -1 && order[1] > order[0] && order[2] > order[1]] as [string, boolean]
   }),
 
   /* ---- the composer is the first thing on the Product page --------------- */
@@ -145,6 +148,44 @@ const checks = [
     const shown = (text: string) => out.includes(text.replace(/&/g, '&amp;'))
     const missing = TOOLS.filter((tool) => tool.steps.some((step) => !shown(step)))
     return missing.length === 0 && TOOLS.every((tool) => tool.steps.length >= 4) && out.includes('steps/write-files.md')
+  })()],
+
+  /* ---- the shell: a process rail on the left ---------------------------- */
+  ['shell: the five stages sit in the left rail, in order', (() => {
+    const out = renderToString(<StoreProvider><App /></StoreProvider>)
+    const nav = out.slice(out.indexOf('aria-label="Process"'), out.indexOf('aria-label="Process"') + 4000)
+    const order = ['Product', 'Data Shape', 'Design', 'Sections', 'Export'].map((label) => nav.indexOf(`>${label}<`))
+    return order.every((i) => i > -1) && order.every((i, n) => n === 0 || i > order[n - 1])
+  })()],
+  ['shell: the page header states the stage instead of repeating the rail', (() => {
+    const out = wrap(<ProductPage project={project} />)
+    return out.includes('lz-stagestrip') && !out.includes('class="lz-steps"') && out.includes('Stage 1 of 5')
+  })()],
+  ['shell: the rail shows how much of the process is done', (() => {
+    const out = renderToString(<StoreProvider><App /></StoreProvider>)
+    // Server rendering separates the interpolated numbers with comment
+    // markers, so match the words and the empty meter rather than the sentence.
+    return out.includes('lz-rail-progress') && out.includes('stages complete') && out.includes('width:0%')
+  })()],
+
+  /* ---- colour animation ------------------------------------------------- */
+  /**
+   * The motion is part of the design, so it is asserted: three named keyframes
+   * in the stylesheet and the elements that use them in the markup. A build
+   * that drops the animation is a build that looks flat, which is exactly what
+   * a reader notices first.
+   */
+  ['the shell animates its accent colour', (() => {
+    const css = readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8')
+    const frames = ['lz-aurora', 'lz-rail-flow', 'lz-meter-flow', 'lz-pop'].every((name) => css.includes(`@keyframes ${name}`))
+    const used = ['lz-aurora', 'lz-rail-flow', 'lz-meter-flow'].every((name) => new RegExp(`animation:\\s*${name}\\b`).test(css))
+    const out = renderToString(<StoreProvider><App /></StoreProvider>)
+    return frames && used && out.includes('lz-meter-fill') && out.includes('lz-nav-item is-active')
+  })()],
+  ['the animation stops for anyone who asks it to', (() => {
+    const css = readFileSync(new URL('../src/styles/app.css', import.meta.url), 'utf8')
+    const i = css.indexOf('@media (prefers-reduced-motion: reduce)')
+    return i > -1 && css.slice(i, i + 400).includes('animation: none !important')
   })()],
 
   /* ---- branding -------------------------------------------------------- */

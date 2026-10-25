@@ -95,6 +95,7 @@ export function PhaseHeader({
   const { captures, theme, toggleTheme } = useStore()
   const done = completedPhases(project, captures)
   const idx = phaseIndex(current)
+  const doneCount = PHASES.filter((phase) => done[phase.id]).length
   return (
     <div className="lz-pagehead">
       <div className="lz-head">
@@ -121,26 +122,31 @@ export function PhaseHeader({
           <span>{project.sections.length} sections · {project.audit.score}/100</span>
         </div>
         <div className="lz-weekhead-div" />
-        <nav className="lz-steps" aria-label="Product phases">
-          {PHASES.map((phase, i) => {
-            const isActive = phase.id === current
-            return (
-              <span className="lz-row" style={{ gap: 0 }} key={phase.id}>
-                <Link
-                  to={phase.path}
-                  className={`lz-step${isActive ? ' is-active' : ''}${done[phase.id] && !isActive ? ' is-done' : ''}`}
-                  aria-current={isActive ? 'page' : undefined}
-                >
-                  <span className="lz-step-n">
-                    {done[phase.id] && i !== idx ? <Icon name="Check" size={11} strokeWidth={2.6} /> : i + 1}
-                  </span>
-                  {phase.label}
-                </Link>
-                {i < PHASES.length - 1 && <span className="lz-step-line" />}
+        {/* Position, not navigation: the five stages are clicked in the rail on
+            the left. Repeating them here as links made the same choice twice on
+            one screen and pushed the real content down. */}
+        <div className="lz-stagestrip">
+          <span className="lz-stagestrip-label">
+            Stage {idx + 1} of {PHASES.length} · {PHASES[idx]?.label ?? ''}
+          </span>
+          <span className="lz-stagestrip-dots" role="group" aria-label={`Stage ${idx + 1} of ${PHASES.length}`}>
+            {PHASES.map((phase, i) => (
+              <span
+                key={phase.id}
+                className={`lz-step${phase.id === current ? ' is-active' : ''}${done[phase.id] && phase.id !== current ? ' is-done' : ''}`}
+                title={`${i + 1}. ${phase.label}${done[phase.id] ? ' — complete' : ''}`}
+              >
+                <span className="lz-step-n">
+                  {done[phase.id] && phase.id !== current ? <Icon name="Check" size={10} strokeWidth={2.8} /> : i + 1}
+                </span>
+                <span className="lz-sr">{phase.label}</span>
               </span>
-            )
-          })}
-        </nav>
+            ))}
+          </span>
+          <span className="lz-meter" aria-hidden="true">
+            <span className="lz-meter-fill" style={{ width: `${(doneCount / PHASES.length) * 100}%` }} />
+          </span>
+        </div>
       </div>
     </div>
   )

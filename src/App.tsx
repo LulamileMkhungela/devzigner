@@ -116,8 +116,11 @@ export function App() {
           <span className="lz-mode-chip" title="Compiled in this browser. No keys, no model calls.">Local</span>
         </div>
 
-        <nav className="lz-nav" aria-label="Primary">
-          <p className="lz-nav-label">Workspace</p>
+        <nav className="lz-nav" aria-label="Process">
+          {/* The five stages, in order, each with its own completion mark. This
+              is the process rail: it is why the panel exists, and it is the only
+              place the stages are navigated from. */}
+          <p className="lz-nav-label">Process</p>
           {PHASES.map((phase) => {
             const isActive = currentPhase === phase.id
             return (
@@ -135,11 +138,21 @@ export function App() {
                 {done[phase.id] && phase.id !== 'sections' && (
                   <span className="lz-checkdot"><Icon name="Check" size={10} strokeWidth={3} /></span>
                 )}
+                {!done[phase.id] && phase.id !== 'sections' && <span className="lz-nav-dot" aria-hidden="true" />}
               </Link>
             )
           })}
 
-          <p className="lz-nav-label" style={{ marginTop: 14 }}>Prototype</p>
+          {/* How far the process has actually got, in the rail where the
+              stages are. Every tick above is a stage the builder confirmed. */}
+          <div className="lz-rail-progress">
+            <span className="lz-rail-progress-label">{doneCount} of {PHASES.length} stages complete</span>
+            <span className="lz-meter" aria-hidden="true">
+              <span className="lz-meter-fill" style={{ width: `${(doneCount / PHASES.length) * 100}%` }} />
+            </span>
+          </div>
+
+          <p className="lz-nav-label">Workspace</p>
           {TRACK_NAV.map((item) => (
             <Link
               key={item.path}
@@ -154,7 +167,7 @@ export function App() {
             </Link>
           ))}
 
-          <div className="lz-nav-group" style={{ marginTop: 8 }}>
+          <div className="lz-nav-group">
             <button
               className="lz-nav-item lz-nav-group-toggle"
               type="button"

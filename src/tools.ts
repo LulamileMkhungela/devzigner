@@ -1,9 +1,9 @@
 /**
- * The eight free tools for builders from buildermethods.com/tools, in the order
- * the site lists them, with the steps each one actually runs.
+ * The eight free tools for builders, in the order the toolkit
+ * presents them, with the steps each one actually runs.
  *
  * The skill steps are parsed from the vendored SKILL.md headings, so the app
- * cannot drift from the text being shipped. Design OS and Agent OS are command
+ * cannot drift from the text being shipped. The fifteen commands are
  * based; their steps are the command sequences the site documents.
  */
 import { TOOLKIT } from './export/vendor/toolkit'
@@ -14,10 +14,11 @@ export interface Tool {
   id: string
   name: string
   kind: ToolKind
-  url: string
   blurb: string
   /** Where the real files live in the export. */
   ships: string
+  /** No external site: every tool here is installed in the package. */
+  url?: string
   steps: string[]
   /**
    * The upstream file behind each step, when there is one. Same length as
@@ -82,7 +83,6 @@ export const TOOLS: Tool[] = [
     id: 'prd-creator',
     name: 'PRD Creator',
     kind: 'Agent skill',
-    url: 'https://buildermethods.com/prd-creator',
     blurb: 'Turns a fuzzy idea into a locked PRD plus build-ready milestone prompts and a milestone log.',
     ships: '.agents/skills/prd-creator/ + _build_plan/prd.md and one prompt per milestone',
     ...skillPhases('prd-creator'),
@@ -91,7 +91,6 @@ export const TOOLS: Tool[] = [
     id: 'skill-builder',
     name: 'Skill Builder',
     kind: 'Agent skill',
-    url: 'https://buildermethods.com/skill-builder',
     blurb: 'Interviews you about a repeatable process, then designs, writes and verifies a portable skill.',
     ships: '.agents/skills/skill-builder/',
     ...skillPhases('skill-builder'),
@@ -100,18 +99,16 @@ export const TOOLS: Tool[] = [
     id: 'design-system',
     name: 'Design System',
     kind: 'Agent skill',
-    url: 'https://buildermethods.com/ai-design-system',
     blurb: 'Scaffolds a real design system into a React + Tailwind app, with a preview page and agent rules.',
     ships: '.agents/skills/design-system/ (50 reference files)',
     ...skillPhases('design-system'),
   },
   {
-    id: 'build-new',
-    name: 'Build New',
+    id: 'starter',
+    name: 'Starter',
     kind: 'Template',
-    url: 'https://buildermethods.com/rails-react-template',
     blurb: 'The Rails + React starter: conventions, agent instructions and deployment notes, already canonical.',
-    ships: 'template/build-new/',
+    ships: 'template/starter/',
     steps: [
       'Clone the template and bundle install',
       'Set the app name and credentials',
@@ -122,10 +119,9 @@ export const TOOLS: Tool[] = [
     ],
   },
   {
-    id: 'agentcanon',
-    name: 'agentcanon',
+    id: 'agents',
+    name: 'Agents canon',
     kind: 'Convention',
-    url: 'https://buildermethods.com/agentcanon',
     blurb: 'One canonical home for skills and instructions: .agents/skills + AGENTS.md, with symlinks for the holdouts.',
     ships: '.agents/ + AGENTS.md + scripts/link-agents.sh',
     steps: [
@@ -141,28 +137,25 @@ export const TOOLS: Tool[] = [
     id: 'favicon-creator',
     name: 'Favicon Creator',
     kind: 'Agent skill',
-    url: 'https://buildermethods.com/favicon-creator',
     blurb: 'Generates the full favicon set from one icon and wires the meta tags into the codebase.',
     ships: '.agents/skills/favicon-creator/ + favicon.svg (the set is built by the skill)',
     ...skillPhases('favicon-creator'),
   },
   {
-    id: 'agent-os',
-    name: 'Agent OS',
+    id: 'standards',
+    name: 'Standards',
     kind: 'Workflow',
-    url: 'https://buildermethods.com/agent-os',
     blurb: 'Standards, specs and shaping for the coding agent, captured once and injected everywhere.',
-    ships: 'agent-os/ + .claude/commands/agent-os/ (5 commands, verbatim)',
+    ships: 'standards/ + .agents/commands/prodops/ (the five standards commands)',
     steps: ['Install', 'Discover', 'Inject', 'Shape'],
   },
   {
-    id: 'design-os',
-    name: 'Design OS',
+    id: 'prodops',
+    name: 'ProdOps flow',
     kind: 'Workflow',
-    url: 'https://buildermethods.com/design-os',
-    blurb: 'Plan and design a real app in four steps, then export a handoff a coding agent can build from.',
-    ships: 'product-plan/ + .claude/commands/design-os/ (10 commands, verbatim)',
-    steps: ['Product Planning', 'Design System', 'Section Design', 'Export'],
+    blurb: 'Plan and design a real app in five stages, then export a handoff a coding agent can build from.',
+    ships: 'product-plan/ + .agents/commands/prodops/ (the ten stage commands)',
+    steps: ['Product', 'Data Shape', 'Design', 'Sections', 'Export'],
   },
 ]
 

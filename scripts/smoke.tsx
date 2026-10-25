@@ -88,7 +88,7 @@ w.location.hash = '#/sections'
 await wait(60)
 console.log(`ok  starter product ships captured (sections complete): ${emptyCount === 0}`)
 
-// the shell is the five Design OS phases and a guided panel per phase — there is
+// the shell is the five ProdOps phases and a guided panel per phase — there is
 // no project prompt, because the starter product is already compiled.
 w.location.hash = '#/'
 await wait(90)

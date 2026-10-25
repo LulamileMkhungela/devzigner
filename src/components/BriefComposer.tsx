@@ -2,7 +2,7 @@
  * Where the builder says what they want built.
  *
  * This is the first action in the product, and it is deliberately a plain
- * textarea rather than a wizard: Design OS's first command asks what the product
+ * textarea rather than a wizard: ProdOps's first command asks what the product
  * is for and who it is for, in prose. The placeholder shows the shape of a good
  * answer, the checklist says what a complete answer contains, and the reader
  * underneath says what the compiler understood *before* anything is rebuilt —

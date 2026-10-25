@@ -2,311 +2,110 @@
 
 # ProdOps
 
-**A product-operations workspace and design compiler, built by [Lulamile Mkhungela](https://github.com/LulamileMkhungela).**
+**A product-planning and UI-design framework, built by [Lulamile Mkhungela](https://github.com/LulamileMkhungela).**
 
-Describe what you want built, and ProdOps compiles the whole product package — brief, data
-shape, design system, sections, screens, tests, backend and agent handoff — in the browser, with
-no model, no key and no data leaving the page. It also serves the buildermethods.com site it is
-built to work with, locally, page for page.
+ProdOps is where a product idea becomes something an agent can build: the vision, the data
+shape, the design system, the sections, the screens and the handoff — decided in that order,
+written to files, and compiled in the browser with no model, no key and no data leaving the page.
 
----
-
-## Two things, side by side
-
-`site/` is the clone of **buildermethods.com** that was pushed to `main` — 155
-files, 92 pages with real server-rendered content. It is served as the site:
-page for page, offline, with absolute links rewritten to local paths and no
-analytics. `npm run preview:site` serves it at `/` and the workspace at
-`/workspace/`.
-
-| URL | What you get |
-| --- | --- |
-| `/` | the cloned site: home, tools, Design OS, Agent OS, articles, sessions, pro |
-| `/workspace/` | ProdOps — the five Design OS phases, the eight tools, the export |
-| `/workspace/#/system` | where the framework target is chosen (eight of them) |
-| `/prodops-standalone.html` | the workspace as one file, no server |
-| `/prodops-snapshot.html` | every workspace page as static markup, no JavaScript |
-
-`npm run site-check` walks the clone: it counts the pages, reads every internal
-link and image (4,926 of them), and fails if a page is an empty shell or a link
-points at a file that was never captured. It also operates the served copy the
-way a visitor does — opens the mobile drawer, submits the newsletter form,
-opens a tool page — so "interactive" is a test result, not a claim.
-
-### What the capture lost, and what is put back
-
-buildermethods.com renders its behaviour in the browser: the navigation drawer,
-the newsletter capture and the "Access Free" gates are all React. A capture
-keeps the markup and none of it. `scripts/lib/runtime.ts` restores exactly the
-behaviour the markup needs, in one dependency-free script per page:
-
-| Control on the real site | In this copy |
-| --- | --- |
-| Mobile nav toggle | opens a drawer built from the same five links, `aria-expanded` follows, Escape and resize close it |
-| Builder Briefing signup | validates the address, then saves it to this browser and says so — nothing is posted |
-| "Access Free" email gate on a tool page | replaced by an *already installed in ProdOps* notice that links to the tool |
-| Theme | still resolved before first paint from the OS, exactly as upstream does |
-| Cloudflare's `[email protected]` | decoded at serve time to the real address |
-| Teaser videos | the files were never captured, so each player becomes a labelled 16:9 panel |
-
-Everything else — pages, navigation, copy, links, images, the eight tool pages,
-the Design OS and Agent OS documentation — is upstream's own markup, served
-offline with absolute links rewritten to local paths.
-
-### The 21 pages the crawler did not get
-
-HTTrack was answered with Cloudflare's "Just a moment…" challenge on 21 URLs —
-mostly article bodies and duplicate `sessions*.html` captures. Those files are
-real pages that would run Cloudflare's script and try to navigate, so they are
-**replaced at serve time** with a local notice that says exactly that and links
-back to the workspace. Nothing claims to be a page it is not.
-
-
-
-**A deterministic design compiler.** One seed in, a complete product package out: brief, data model, design system, interactive screens, tests and an agent-ready handoff.
-
-No API keys. No prompts. No blank page. Nothing to provide.
+It sits between design thinking and generative AI. You describe the problem; ProdOps asks for
+the decisions a designer would make, writes each artefact, and refuses to tick a stage until
+you have reviewed it. The output is a working prototype made only of design-system components,
+plus a package an implementation agent can build from without inventing UI.
 
 ```
-seed + archetype + genome  ──►  brief · roadmap · schema · tokens · 18 screens · audit · ZIP
+idea → product → data shape → design system → sections → screens → export
 ```
 
 ---
 
 ## The workspace
 
-The app is a five-phase product workspace. Each phase is a page, and each page is a numbered step rail — the same five steps from start to finish:
+The shell is two panes. The process rail on the left holds the five stages, in order, each with
+its own completion mark and a meter of how far the process has got; the work is on the right.
+The rail also holds the prototype track, the section list and the account. Below 900px the rail
+becomes a drawer opened from the top bar.
 
-| Phase | Page | What it holds |
+| Stage | Page | What it holds |
 | --- | --- | --- |
-| **Product** | `/` | Product vision (problems, personas, differentiators, success measures, principles, voice, non-goals) and the roadmap. Collapsible cards throughout, engine log at the bottom. |
-| **Data Shape** | `/data-shape` | Entities in a two-column grid with fields and seeded rows, the relationships list, and the generated schema. |
-| **Design** | `/design` | Colour roles, type roles, the full palette, scale, radii, elevation and motion, then the shell: navigation items and a **View Shell Design** preview. |
-| **Sections** | `/sections` | The build order. Every row shows completion, priority, spec/data/screen/screenshot progress and a chevron into the section. |
+| **Product** | `/` | The description field, then vision (problems, personas, differentiators, success measures, principles, voice, non-goals) and the roadmap. |
+| **Data Shape** | `/data-shape` | Entities with fields and seeded rows, the relationships, and the generated schema. |
+| **Design** | `/design` | Colour roles, type roles, palette, scale, radii, elevation, motion, then the shell and its preview. |
+| **Sections** | `/sections` | The build order. Every row shows completion, priority and spec/data/screen/screenshot progress. |
 | **Section** | `/sections/:id` | Four steps: Spec → Sample data → Screen designs → Screenshots. |
-| **Screen design** | `/sections/:id/screen-designs/:name` | The rendered screen at 30 / 60 / 100 %, a live percentage readout, edge grips that resize from the centre, a light/dark switch and a fullscreen address. |
-| **Export** | `/export` | Readiness checklist, the package card, what's included, Option A / Option B usage, the full audit and every file in the ZIP. |
+| **Screen design** | `/sections/:id/screen-designs/:name` | The rendered screen at 30 / 60 / 100 %, edge grips that resize from the centre, a light/dark switch, fullscreen. |
+| **Export** | `/export` | Readiness checklist, package card, what is included, the two usage paths, the audit and every file in the ZIP. |
 
-The skin is Design OS's own: warm stone neutrals (stone-50 ground, white cards, 1px stone-200 rules, stone-900 primary buttons), DM Sans for text and IBM Plex Mono for code, 8px radii, a sticky header carrying the phase nav and a single centred content column. The flow is Design OS's too: phase stepper with completion ticks, numbered step rails, collapsible cards, dashed empty states with the command that fills them, a dismissible warning banner when earlier phases are incomplete, progress dots per section, resizable screen previews, and an export checklist with two usage paths.
+Every phase page has the same anatomy: header (where you are), the how-to guide (what this stage
+decides), the artefacts, then the completion control. The header states position — *Stage 2 of 5 ·
+Data Shape* — rather than repeating the rail as links, because the rail is where the stages are
+clicked.
 
 ### The prototype track
 
-Under the workspace phases sits a second track — **Tools → Flows → System → Prototype → Wiki → Coverage** with a token editor beside it. It is where the design system stops being a document and starts being the thing the prototype is built from, and where the eight Builder Methods tools are installed and verified.
+Beside the five stages: **Tools → Flows → System → Prototype → Wiki → Coverage**, with the token
+editor next to them.
 
 | Page | What it does |
 | --- | --- |
-| **Flows** (`/flows`) | Four UX flows compiled from the screens (first value, core loop, exception, setup), each step pointing at a real route. Add a flow in the app and it is stored with the product, written into the wiki and versioned. |
-| **System** (`/system`) | The decision record: tech stack per layer, a component registry (primitive / composite / pattern) where each entry declares the only tokens it may use, the AppShell regions and routes, and the data-layer rules. Four stack layers and the registry itself are **editable** — choices are stored with the product and follow into the export. |
-| **Prototype** (`/prototype`) | A working AppShell with real routes and seeded records, assembled only from registry components — every block renders through a named component (`data-component`). Type to filter, sort a table, submit a form with validation, create a record, navigate the shell, and switch between the four compiled breakpoints (the `sm` view is the mobile layout). |
-| **Token editor** (`/editor`) | Inline editing linked to the tokens: primary and accent hue, radius, spacing, shell and card style. Every change re-runs the compiler — ramps, contrast, semantic aliases, screens, audit — so nothing downstream can drift. |
-| **Wiki** (`/wiki`) | The prototype wiki: product, flows, data layer, design system, components, shell, screens, stack, audit and handoff, plus branches and snapshots. Restore rebuilds the product deterministically. |
-| **Coverage** (`/coverage`) | The parity audit. Every row rebuilds the export package and checks the artefact is really in it — Design OS's ten commands, the export contract, Agent OS's standards/specs, all eight free tools, the backend and its tests. Nothing here is asserted in prose. |
-| **Tools** (`/tools`) | The eight free tools from buildermethods.com/tools, each with the steps it actually runs and the path it is installed at. The skill text is shipped verbatim. |
+| **Tools** (`/tools`) | The eight builder tools, each with the steps it actually runs, parsed from the tool's own instruction file, and the file each step lives in. |
+| **Flows** (`/flows`) | Four UX flows compiled from the screens — first value, core loop, exception, setup — each step pointing at a real route. |
+| **System** (`/system`) | The decision record: tech stack per layer, the component registry (primitive / composite / pattern) with the tokens each entry may use, the AppShell regions, the data-layer rules. Editable. |
+| **Prototype** (`/prototype`) | A working AppShell with real routes and seeded records, assembled only from registry components. Type to filter, sort a table, submit a validated form, create a record, switch breakpoints. |
+| **Token editor** (`/editor`) | Primary and accent hue, radius, spacing, shell and card style. Every change re-runs the compiler, so nothing downstream can drift. |
+| **Wiki** (`/wiki`) | The product wiki: product, flows, data layer, design system, components, shell, screens, stack, audit and handoff, plus branches and snapshots. |
+| **Coverage** (`/coverage`) | The parity audit. Every row rebuilds the package and checks the artefact is really in it. Nothing here is asserted in prose. |
 
-The export grows to match: `src/data/types.ts`, `src/data/repository.ts` and `src/data/mock-adapter.ts` (a dummy data layer the UI can only reach through an interface), `src/components/app-shell.tsx`, `system/{stack,registry,app-shell,data-layer}` and a `wiki/` folder with a changelog. Branches are real snapshots in the browser; the exported folder is ready to commit, one worktree per exploration.
+---
 
-### The eight free tools, installed
+## What the package contains
 
-The Builder Methods toolkit is not linked from a menu — it is installed in the
-package, verbatim, under the `agentcanon` convention:
+`npm run build` compiles a product; **Export → Download** writes it out. It is a folder, not a PDF.
+
+| Path | What it is |
+| --- | --- |
+| `product-overview.md`, `roadmap.md`, `product/` | the product's decisions, as the first thing an agent reads |
+| `design-system/` | `tokens.json` (W3C DTCG), `tokens.css`, the component registry and the shell |
+| `sections/<id>/` | `spec.md`, `sample-data.json`, one props-based component per screen, `tests.md`, screenshots |
+| `src/data/` | the data layer behind an interface: `types.ts`, `repository.ts`, `mock-adapter.ts`, `http-adapter.ts` |
+| `src/shell/` | `AppShell`, `MainNav`, `UserMenu` — built from tokens, not literals |
+| `server/` | a dependency-free reference API on Node's own test runner, with the status machine from the data shape |
+| `.agents/` | the fifteen commands, the four skills, and the agents canon |
+| `standards/` | mission, roadmap, tech stack, the standards index and spec folders |
+| `TOOLKIT.md`, `docs/` | the tools, their real steps, the guides and the licences |
+| `product-plan/` | the handoff: instructions, prompts, milestones and the one-shot prompt |
+
+The export is not locked to React. `npm run export-check` compiles the same product to React,
+Vue 3, Svelte 5, Preact, Solid, Angular, Lit and web components, each with its own compiler.
+
+### The fifteen commands
+
+One folder, one markdown file per command — ten for the five stages, five for the standards
+layer. Any agent that reads markdown commands can run them; there is nothing to install.
+
+| Stage commands | Standards commands |
+| --- | --- |
+| `/prodops:product-vision`, `/prodops:product-roadmap` | `/prodops:plan-product` |
+| `/prodops:data-shape` | `/prodops:discover-standards`, `/prodops:index-standards` |
+| `/prodops:design-tokens`, `/prodops:design-shell` | `/prodops:inject-standards` |
+| `/prodops:shape-section`, `/prodops:sample-data`, `/prodops:design-screen`, `/prodops:screenshot-design` | `/prodops:shape-spec` |
+| `/prodops:export-product` | |
+
+### The eight builder tools, installed
 
 | Tool | Kind | Installed at |
 | --- | --- | --- |
 | **PRD Creator** | agent skill | `.agents/skills/prd-creator/` |
 | **Skill Builder** | agent skill | `.agents/skills/skill-builder/` |
-| **Design System** | agent skill | `.agents/skills/design-system/` (50 reference files) |
-| **Build New** | template | `template/build-new/` |
-| **agentcanon** | convention | `.agents/skills/agentcanon-{repo,manifest}/`, `AGENTS.md`, `scripts/link-agents.sh` |
+| **Design System** | agent skill | `.agents/skills/design-system/` |
+| **Starter** | template | `template/starter/` |
+| **Agents canon** | convention | `.agents/skills/agents-{repo,manifest}/`, `AGENTS.md`, `scripts/link-agents.sh` |
 | **Favicon Creator** | agent skill | `.agents/skills/favicon-creator/` |
-| **Agent OS** | workflow | `agent-os/` + `.claude/commands/agent-os/` (5 commands) |
-| **Design OS** | workflow | `product-plan/` + `.claude/commands/design-os/` (10 commands) |
+| **Standards** | workflow | `standards/` + the five standards commands |
+| **ProdOps flow** | workflow | `product-plan/` + the ten stage commands |
 
-Skills live once, in `.agents/skills/`; instructions live once, in `AGENTS.md`;
-`CLAUDE.md` and `.claude/skills` are symlinks created by `scripts/link-agents.sh`.
-The tooling's own documentation travels too — `docs/design-os/`, `docs/agent-os/`,
-`docs/agent-os-v2/`, `docs/bm-skills/`, `docs/agentcanon/`, licences included — and
-`requirements.md` states what the package needs to run and what is optional.
-`AUDIT.md` is the repository-by-repository review behind this table: what exists
-upstream, what was cloned into the package, and what was deliberately left out.
-
-`TOOLKIT.md` records each tool, its steps and where it is installed. The **Tools**
-page in the app lists the same eight with the steps parsed from the shipped
-`SKILL.md` files, so the page cannot drift from the text being shipped.
-
-### Not a React-only export
-
-The **UI runtime** decision on `/system` is the export target. Change it and the
-package changes — verified by compiling the output with each framework's own
-compiler on every `npm run check`.
-
-| Target | What is emitted | How it is proven |
-| --- | --- | --- |
-| **React** (default) | one hook component per screen, typed props, no data imports | `tsc` over every generated file |
-| **Vue 3** | one SFC per screen plus `AppShell.vue` / `MainNav.vue` | `@vue/compiler-sfc` parses, compiles script and template |
-| **Svelte 5** | one `.svelte` component per screen plus the shell | `svelte/compiler` compiles every file |
-| **Preact** | the React components on `preact/hooks` — one implementation, 3 kB runtime | assertions that no `react` import survives |
-| **Solid** | signal components, `innerHTML` from the renderer | `tsc` with `solid-js` types |
-| **Angular** | standalone components with an inline template | `@angular/compiler` parses every template |
-| **Lit** | `LitElement` with reactive `rows` and `unsafeHTML` | `tsc` with `lit` types and decorators |
-| **Web Components** | `<app-screen-…>` custom elements, no framework | `tsc` over the renderer (with the JSON IR) and the elements |
-
-Vue, Svelte and the web components share one **framework-free renderer**
-(`ui/renderer.ts` + `ui/screens.json`): the design system, tokens, Tailwind
-classes, types, data layer and API are the same files in every target, so a
-layout fixed once is fixed everywhere. React keeps its idiomatic components;
-`FRAMEWORK.md` in the package explains the wiring for whichever target you chose.
-
-### The backend is part of the handoff
-
-A design handoff that stops at the UI leaves the expensive half to the agent. The
-package therefore includes a working backend — dependency-free TypeScript on
-Node's own `http` module:
-
-| Path | What it is |
-| --- | --- |
-| `business-logic.md` | the rules, per entity: status journeys, terminal states, required fields, invariants |
-| `server/src/rules.ts` | the status machine (`canTransition`, `isTerminal`, `invariants`) |
-| `server/src/validate.ts` | field validation: required, types, enums, dates, emails, foreign keys |
-| `server/src/services.ts` | the business layer, plus an append-only event log |
-| `server/src/http.ts` | routes, roles, status codes — callable from a test with no socket |
-| `server/src/tests/*.test.ts` | the state machine and the API behaviour, on `node --test` |
-| `openapi.json` | the same API as an OpenAPI 3.1 contract: every route, every schema, every status journey |
-| `api/README.md` | the route table, roles and error codes, written for a client author |
-| `src/data/http-adapter.ts` | the same `DataLayer` interface the mock implements, now over HTTP |
-
-Rules are derived from the compiled data shape, not written per export: the status
-order comes from the entity options, required fields from the fields, foreign keys
-from the relationships, and money/percent/rating bounds from the field types. Two
-rules are worth calling out because they are where most generated backends give up:
-
-- **A status is a journey.** `PATCH` refuses to change it and points at
-  `POST /api/:entity/:id/transition`, which allows one step forward or a terminal
-  status — never backwards, never skipping.
-- **A rejected write names the field.** Validation returns a 422 with
-  `{ field, message }` per issue, so the form can render it inline.
-
-`npm run export-check` does not just typecheck this code: it writes the server to
-disk and runs its test suite with Node's own runner, for two archetypes.
-
-### Design OS and Agent OS, artefact by artefact
-
-The full audit, with the file for every claim and the deliberate differences, is in [PARITY.md](./PARITY.md). The short version:
-
-The export is the same file tree Design OS hands a coding agent, and the standards layer Agent OS expects:
-
-| Design OS | Here |
-| --- | --- |
-| `/product-vision` `/product-roadmap` | `product-overview.md`, `product-brief.md`, `roadmap.md` |
-| `/data-shape` `/sample-data` | `data-model.md`, `schema.sql`, `data-shapes/{README.md,overview.ts}`, `sections/*/sample-data.json`, `src/data/mock-adapter.ts` |
-| `/design-tokens` `/design-shell` | `design-system/{tokens.css,tokens.dtcg.json,fonts.md,tailwind-colors.md}`, `shell/components/{AppShell,MainNav,UserMenu}.tsx` |
-| `/shape-section` `/design-screen` | `sections/<id>/{README.md,tests.md,types.ts,sample-data.json,screenshot.svg,components/*.tsx}` |
-| `/screenshot-design` | `sections/<id>/screenshot.svg` and `shell/screenshot.svg` — drawn from the compiled blocks, so never stale |
-| `/export-product` | the ZIP, plus `prompts/{one-shot,section}-prompt.md` and `instructions/{one-shot-instructions, incremental/01-shell, NN-section}.md` |
-| Planning outputs | `product/{product-overview,product-roadmap}.md`, `product/data-shape/`, `product/design-system/{colors,typography}.json`, `product/shell/spec.md` |
-| Slash commands | `.claude/commands/design-os/*.md` (the ten Design OS commands) and `.claude/commands/agent-os/*.md` (the five Agent OS commands) — both sets copied verbatim from upstream, with `.claude/skills/frontend-design/SKILL.md` alongside them |
-| Agent OS `/plan-product` | `agent-os/product/{mission,roadmap,tech-stack}.md` |
-| Agent OS `/discover-standards` `/index-standards` | `agent-os/standards/{ui,data,quality,accessibility}/*.md` + `index.yml` with descriptions |
-| Agent OS `/shape-spec` | `agent-os/specs/<date>-<section>/{shape,plan,references,standards}.md` + `visuals/*.svg`, Task 1 = save the documentation |
-| Agent OS `/inject-standards` | `agent-os/specs/*/standards.md` inlines the full rule bodies it cites |
-| Agent OS config | `agent-os/config.yml` (`version: 3.0`, `default_profile: default`) beside the standards folders |
-
-Generated components are **props-only** (no data imports, no routing), responsive at every breakpoint in the token file, and typechecked in CI: `npm run export-check` writes them to disk and runs `tsc` against them for three archetypes.
-
-### What was wrong with the tools this replaces
-
-| Complaint | Countermeasure |
-| --- | --- |
-| Variables that only exist inside one tool | `design-system/tokens.dtcg.json` — W3C DTCG `$value`/`$type` primitives, readable by any tokens tool |
-| Layouts that only exist at one width | Four breakpoints compiled as tokens, audited (`Responsive contract`), used by every exported component; nav collapses, tables scroll inside their card |
-| Autolayout that guesses margins | The compiler emits the shell, content width, density, grid and spacing scale; components consume `--space-*`, never ad-hoc margins |
-| Hundreds of hand-crafted component states | States come from variant axes on registry components; screens are composed from the registry, never drawn once-off |
-| Inputs that are pictures of inputs | The prototype runs real `<input>`, `<select>`, `<textarea>` and `<button>` elements: type to filter, sort a table, submit a form with validation, create a record, navigate the shell |
-| Design knowledge lost in a chat | `wiki/` + `agent-os/` ship product, flows, system, standards and specs with the code, versioned by snapshots and branches |
-
-A new artefact that *is* pre-filled: screenshots. They used to be the one step left to a person; they are now rendered from the compiled blocks, which is why they can be regenerated and why every screen has one.
-
----
-
-## Why this exists
-
-Design-first workflows (Design OS, spec-driven development, "plan before you prompt") fixed the biggest problem with AI-assisted building: coding agents were being asked to invent the product and implement it at the same time. The fix was a design phase that produces a handoff package.
-
-But most implementations of that idea have a hidden dependency: **you must sit in a chat with a model, answer questions, and supply the product's domain knowledge before anything exists.** If you have no idea, no interviews, no copy, no data — you get a blank screen, or generic filler.
-
-ProdOps removes that dependency. It ships twelve domain packs (marketplace ops, clinical scheduling, dispatch, money ops, hiring, events and more), each with real entities, status machines, field definitions, requirements, risks and copy. From those, a **pure compiler** generates a product that is internally consistent — and then proves it with an audit that is computed, not asserted.
-
-The result is a workspace you can open on a Monday morning with zero preparation and still walk away with something a senior designer would recognise as a design system and a product spec.
-
----
-
-## What it produces
-
-| Artefact | Substance |
-| --- | --- |
-| **Product brief** | Problem framing with cost-of-inaction, 2 personas (labelled illustrative), jobs-to-be-done, 4 metrics, differentiators, 4 risks with mitigations, principles, voice, non-goals |
-| **Roadmap** | 4 phases with horizons, outcomes, entry/exit conditions and mapped sections |
-| **Data model** | 4–5 entities, 30–40 typed fields, foreign keys, 40–60 seeded sample rows, runnable PostgreSQL DDL with indexes and check constraints |
-| **Design system** | 7 contrast-checked colour families × 11 stops, semantic tokens (light + dark), 3 type roles, 7-step scale, space/radius/elevation/motion scales, layout shell, 10-component inventory |
-| **Sections & screens** | 5–7 feature areas, 12–18 screens built from real blocks, requirements with IDs and priorities, 4 states per screen, acceptance criteria, framework-agnostic tests |
-| **Audit** | 24 checks across accessibility, system, coverage and handoff — contrast ratios are calculated from the actual hex values |
-| **Handoff** | ~200 files: markdown specs, generated React components, prompts, milestones, screenshots, Agent OS standards and specs, `schema.sql`, `tokens.css`, `tailwind-theme.css`, `tokens.json`, per-section specs, tests, an implementation brief for a coding agent, `audit.md`, `devzign.json` |
-
-Everything is text. Everything is diffable. The ZIP is typically 200–800 KB depending on how many components and screenshots the product carries.
-
----
-
-## The three inputs
-
-### 1. Seed
-A number. It deterministically drives every random choice. `seedPhrase()` turns it into a readable handle (`amber-atlas`, `quiet-forge`) so you can talk about a compile without reading a hash.
-
-Each module gets its own derived stream (`brief`, `roadmap`, `data`, `design`, `sections`), which means **re-rolling the colour system never changes a requirement**. That isolation is what makes the re-roll buttons safe.
-
-### 2. Archetype
-Twelve domain packs, each with its own vocabulary, entities, status sets, personas, risks and metric language:
-
-| ID | Domain | Example product |
-| --- | --- | --- |
-| `marketplace` | Multi-vendor commerce | Soko, Stall & Co |
-| `saas` | B2B delivery workspace | Relay, Cadence |
-| `crm` | Sales pipeline | Signal Desk, Baton |
-| `learning` | Cohort learning | Forma, Cohort |
-| `clinic` | Clinic operations | Klinik, Sage Health |
-| `fintech` | Money & budgets | Tally, Ledgerly |
-| `logistics` | Dispatch & fleet | Routewell, Haul |
-| `creator` | Content studio | Pressline, Plotline |
-| `property` | Property management | Blockhouse, Keystone |
-| `fieldops` | Field service | Callout, Fieldkit |
-| `peopleops` | People operations | Cadre, Roster |
-| `events` | Event operations | Marquee, Gather |
-
-An archetype is not a template you fill in. It is a domain model with opinions: constrained status transitions, realistic entity relationships, and the failure modes that actually cost teams money.
-
-### 3. Genome
-Five 0–100 dials that derive the entire visual system:
-
-| Dial | Low | High | What it changes |
-| --- | --- | --- | --- |
-| Density | airy | compact | spacing rhythm, type sizes, shell (sidebar → rail) |
-| Warmth | cool | warm | neutral hue bias, canvas tint |
-| Contrast | soft | bold | ink strength, primary lightness, card style |
-| Expression | quiet | expressive | saturation, type ratio, motion durations |
-| Geometry | sharp | rounded | the entire radius scale |
-
-Change one dial and the design system re-derives: ramps, semantic tokens, shadows, motion, card style, type pairing. Nothing is patched by hand.
-
----
-
-## How the audit stays honest
-
-The score is a weighted calculation over checks that read the artefacts:
-
-- **Contrast** is computed with WCAG relative luminance: primary on white, ink on canvas, muted text, and the dark canvas. If the raw primary fails 4.5:1, the compiler *darkens it in HSL until it passes* and says so in the rationale.
-- **Schema** is parsed back out of the generated SQL — table count must equal entity count.
-- **Coverage** counts sections with ≥2 screens, screens with acceptance criteria, must-have requirements, entity references, and test statements.
-- **Design tension** is surfaced, not hidden: compact density raises a touch-target warning; above-budget motion raises a motion warning.
-
-Pass = full weight, warning = half, fail = zero. A comfortable genome scores 100; a compact, expressive genome scores 96 with two named warnings. The number can go down, which is the only reason it means anything.
+Skills live once, in `.agents/skills/`; instructions live once, in `AGENTS.md`; `CLAUDE.md` and
+`.claude/skills` are symlinks created by `scripts/link-agents.sh`.
 
 ---
 
@@ -314,146 +113,151 @@ Pass = full weight, warning = half, fail = zero. A comfortable genome scores 100
 
 ```bash
 npm install
-npm run dev        # http://localhost:5173
+npm run dev            # http://localhost:5173
 ```
 
 Build and verify:
 
 ```bash
 npm run build          # tsc + vite production build
-npm run render-check   # server-renders every view + proves the export contract
+npm run render-check   # server-renders every view, checks the shell, the animation and the export contract
 npm run export-check   # writes generated components to disk and typechecks them
 npm run smoke          # mounts the app in jsdom and clicks through it, including real form input
 npm run qa             # compiles all 12 archetypes × 3 seeds, checks invariants
-npm run walkthrough    # runs the whole process in jsdom with zero user input: idea → package
+npm run walkthrough    # the whole process in jsdom with zero user input: idea → package
+npm run browser-check  # the production bundle, seven storage scenarios, no console errors
 npm run example-app    # builds the exported package into a real Vite + Tailwind app
 npm run check          # all of the above, then the production build
 npm run standalone     # one self-contained HTML file — script, styles and fonts inlined
 npm run preview:static # serve dist/ on 0.0.0.0:5173 — no dev server, no websocket
 npm run snapshot       # every page as one static HTML file — no JavaScript at all
-npm run site-check     # the cloned site: pages, links, and the restored behaviour
-npm run preview:site   # the cloned site at / and the workspace at /workspace/
-npm run upstream-check # re-downloads all five buildermethods repos and diffs every vendored file
-npm run upstream-doc   # regenerates docs/UPSTREAM-REVIEW.md
+npm run site-check     # the reference site copy: pages, links, and the restored behaviour
+npm run preview:site   # the reference copy at / and the workspace at /workspace/
 ```
 
-There is no backend, no database and no network call at runtime. Projects are stored in `localStorage` (with automatic pruning if the quota is reached). Clearing site data clears projects; use **Export → Download package** to keep anything you care about.
+There is no backend, no database and no network call at runtime. Projects are stored in
+`localStorage`, with automatic pruning if the quota is reached. Clearing site data clears
+projects; use **Export → Download package** to keep anything you care about.
 
-The first load compiles the starter product (marketplace, seed `112233`) and captures its screens, so every *artefact* is on screen before you touch anything. There is no "new product" dialog: the Product phase opens on a description field with a placeholder and the four things a complete answer contains, and the compiler reads what you write — the archetype, the name, the brief's problem statement and the persona's segment all come from your words. Underneath the field it says what it will read before you commit, and rewriting it rebuilds the product and clears the ticks.
+There is no "new product" dialog. The Product stage opens on a description field with a
+placeholder and the four things a complete answer contains, and the compiler reads what you
+write — the archetype, the name, the problem statement and the persona's segment all come from
+your words. Rewriting it rebuilds the product and clears the ticks.
 
-A tick is earned, not compiled. Artefacts can be complete while a stage is still open; each phase ends with **Mark stage complete**, which stays disabled and lists what is missing until the stage's own artefacts are there. The next phase's button stays locked until the stage before it is confirmed, and completed stages can be reopened.
+A tick is earned, not compiled. Artefacts can be complete while a stage is still open; each
+stage ends with **Mark stage complete**, which stays disabled and lists what is missing until
+the stage's own artefacts are there. The next stage's button stays locked until the one before
+it is confirmed, and completed stages can be reopened.
 
-That claim is executed, not asserted. `npm run walkthrough` renders the app in jsdom, never
-uses a model and never asks a question, and then walks Product Planning → Data Shape →
-Design System → Section Design → Export, confirming each stage the way a builder does and
-checking the package it lands on: the whole Design OS file contract, one component per screen,
-the Agent OS layer, and a screenshot per section. `npm run browser-check` types a description
-into the real production bundle and asserts the product changes with it.
-`npm run example-app` goes one step further and treats the package as an app: it copies the
-tokens, shell, sections and data shapes into a scratch Vite project, writes a page per section
-from the exported components and `sample-data.json`, then runs a real `vite build` with
-Tailwind. If the handoff could not be compiled, that build fails.
+That claim is executed, not asserted. `npm run walkthrough` renders the app in jsdom, never uses
+a model and never asks a question, then walks Product → Data Shape → Design → Sections → Export,
+confirming each stage the way a builder does and checking the package it lands on.
+`npm run browser-check` types a description into the real production bundle and asserts the
+product changes with it. `npm run example-app` treats the package as an app: it copies the
+tokens, shell, sections and data shapes into a scratch Vite project and runs a real build. If
+the handoff could not be compiled, that build fails.
 
-### Every upstream repository, reviewed
+---
 
-ProdOps installs Builder Methods' tools rather than paraphrasing them, so all five public
-repositories were read in full and are pinned by commit in `src/export/upstream.ts`:
+## The reference site copy
 
-| Repository | What ProdOps takes | Verified |
-| --- | --- | --- |
-| [design-os](https://github.com/buildermethods/design-os) | 10 slash commands, the frontend-design skill, 8 docs pages | byte for byte |
-| [agent-os](https://github.com/buildermethods/agent-os) | 5 commands, the standards index, the v2 workflow blocks | byte for byte |
-| [bm-skills](https://github.com/buildermethods/bm-skills) | PRD Creator, Skill Builder, Design System, Favicon Creator — 73 files | byte for byte |
-| [build-new](https://github.com/buildermethods/build-new) | the starter's agent instructions, setup and deployment guide | byte for byte |
-| [agentcanon](https://github.com/buildermethods/agentcanon) | both skills and the convention, applied to the package | byte for byte |
+`site/` holds a captured copy of the public site this workspace was modelled on — 155 files, 92
+pages with real server-rendered content, served offline with absolute links rewritten to local
+paths and no analytics. It is kept because the workspace is meant to be judged against a real
+site's information architecture, tool pages and documentation, not against a mock.
 
-`docs/UPSTREAM-REVIEW.md` records what was *not* shipped and why — the marketplace wrapper, the
-Rails app, the install scripts — so the gaps are decisions, not oversights. `npm run
-upstream-check` re-downloads all five and fails on any drift; line endings are normalised, and
-nothing else is. The same review ships inside every exported package at
-`docs/UPSTREAM-REVIEW.md`.
+| URL | What you get |
+| --- | --- |
+| `/` | the reference copy: home, tools, the tool pages, articles, sessions, pro |
+| `/workspace/` | ProdOps itself — the five stages, the eight tools, the export |
+| `/prodops-standalone.html` | the workspace as one file, no server |
+| `/prodops-snapshot.html` | every workspace page as static markup, no JavaScript |
+
+`npm run site-check` walks the copy: it counts the pages, reads every internal link and image,
+and fails if a page is an empty shell or a link points at a file that was never captured. It
+also operates the served copy the way a visitor does — opens the mobile drawer, submits the
+newsletter form, opens a tool page — so "interactive" is a test result, not a claim.
+
+21 URLs came back as a bot challenge and are replaced at serve time with a local notice that
+says so and links back to the workspace. Teaser videos were never captured, so each player
+becomes a labelled panel and its play button is marked unavailable instead of doing nothing.
+
+---
+
+## Why this exists
+
+Product ideas do not fail for lack of code. They fail because the decisions behind the code were
+never made: who it is for, what the data actually is, which colours and spacing are allowed, what
+each screen has to do before it counts as done. An agent asked to invent all of that while
+building will invent it inconsistently, and every later change has to be negotiated twice.
+
+ProdOps makes those decisions artefacts. The screens are then a demonstration of the spec, and
+the spec is what you ship from.
+
+## The three inputs
+
+Every artefact is a pure function of three inputs, so the same inputs always produce a
+byte-identical package.
+
+1. **Seed** — a phrase, shown in the UI, that drives every random choice.
+2. **Archetype** — one of twelve domain packs (marketplace ops, clinical scheduling, dispatch,
+   money ops, hiring, events and more), each with real entities, status machines, field
+   definitions, requirements, risks and copy. Your description picks it, or you pick it.
+3. **Genome** — density, motion, contrast and card style. Re-rolling one module never silently
+   rewrites another.
+
+`devzign.json` in the export carries the inputs, so a package can be regenerated and diffed.
+
+## How the audit stays honest
+
+Every claim in **Coverage** and **Export** is computed from the built package, at click time:
+file counts, required paths, framework compilations, token contrast, test presence. If a row
+could not be checked, it would not be a row.
 
 ---
 
 ## Architecture
 
 ```
-src/
-  engine/                # the compiler — pure functions, zero React
-    packs.ts             # archetype registry
-    packs1.ts packs2.ts  # 12 domain packs (entities, sections, copy, metrics)
-    rng.ts               # mulberry32 + hash-based seed derivation
-    color.ts             # HSL/hex, WCAG luminance, contrast forcing, ramps
-    intake.ts            # reads the builder's description: archetype, actor, name
-    brief.ts             # problems, personas, jobs, metrics, risks
-    dataModel.ts         # entities → fields → seeded rows → relationships → SQL
-    design.ts            # genome → colours, type, scale, tokens (CSS/Tailwind/JSON)
-    screens.ts           # screen kinds → blocks built from real records
-    sections.ts          # requirements, tests, out-of-scope per section
-    roadmap.ts           # priority → phases with entry/exit conditions
-    audit.ts             # 22 computed checks + weighted score
-    index.ts             # compileProject() — the only entry point
-  export/package.ts      # assembles the package: specs, SQL, tokens, components, prompts
-  export/handoff.ts      # generated React components, prompts, milestones, design-system notes
-  export/agentos.ts      # Agent OS product docs, indexed standards, specs, design skill
-  export/screenshots.ts  # deterministic SVG screenshots drawn from the compiled blocks
-  components/
-    BriefComposer.tsx    # the description field: placeholder, guidance, read-back
-    StageConfirm.tsx     # "Mark stage complete" — the tick is earned, not compiled
-    AppPreview.tsx       # renders a screen using the project's own tokens
-    PreviewStage.tsx     # 30/60/100 % device canvas, edge grips, fullscreen
-    ui.tsx               # phase header, step rail, collapsibles, empty states, banner
-  views/                 # the five phases + FlowsPage, SystemPage, PrototypePage,
-                         # EditorPage, WikiPage
-  engine/flows.ts        # user flows derived from compiled screens
-  engine/system.ts       # stack, component registry, AppShell, data layer
-  export/systemFiles.ts  # generated src/data/*, app-shell.tsx, system/*, wiki/*
-  views/CoveragePage.tsx # parity audit, verified against the built package
-  styles/app.css         # Design OS skin: stone palette, DM Sans, header nav, cards
-  styles/preview.css     # the generated artefact's own token-driven styles
-  lib/                   # store (projects, captures, token edits, versions), router,
-                         # progress, wiki, formatting
+src/engine/        the compiler: intake, archetypes, brief, data, design, screens, audit
+src/export/        package generation: components, tokens, API, tests, docs, handoff
+src/views/         one file per route
+src/components/    the shell, the guide, the stage confirm, the registry previews
+src/lib/           router, store, storage, progress, migrations
+scripts/           the checks: render, export, walkthrough, qa, smoke, browser, site
 ```
 
-The compiler is deliberately separate from the UI. `compileProject()` takes plain data and returns a plain object; you could run it in a worker, a CLI or a test with no DOM.
-
-```ts
-import { compileProject } from './src/engine'
-
-const project = compileProject({
-  idea: 'a marketplace for township artisans', // optional
-  seed: 741293,
-  archetypeId: 'marketplace',
-  genome: { density: 44, warmth: 68, contrast: 54, expression: 44, geometry: 30 },
-  currency: 'ZAR',
-})
-```
-
-Same inputs → byte-identical package, forever. `devzign.json` in the export carries the inputs so a package can be regenerated and diffed.
-
----
+The data layer is separated from the UI in the app and in the export. Tokens are W3C DTCG. Every
+design is responsive by default, and every prototype input is a real input.
 
 ## What this is not
 
-- **Not user research.** Personas and quotes are synthetic and labelled as such, in the product and in the export. The brief explicitly tells you to validate with three real interviews before locking a roadmap.
+- **Not user research.** Personas and quotes are synthetic and labelled as such. The brief tells
+  you to validate with three real interviews before locking a roadmap.
 - **Not a benchmark.** Targets are directional design goals, not measured averages.
-- **Not a replacement for taste.** It compiles a defensible starting system; choosing which parts to keep is still a human job.
-- **Not affiliated with Builder Methods.** The five-phase flow, the skin and the exported contract follow Design OS; the standards and spec layer follows Agent OS; the agent skills are installed from the Builder Methods free tools. The implementation is independent: no model dependency, no accounts, no keys.
-
----
+- **Not a replacement for taste.** It compiles a defensible starting system; choosing which parts
+  to keep is still a human job.
+- **Not an AI service.** No model is called, at build time or at run time. There are no keys and
+  no accounts.
 
 ## Design principles of the compiler
 
 1. **Determinism over novelty.** A design decision you cannot reproduce is not a decision.
-2. **Artefacts must be checkable.** If a claim cannot be computed from the output, it does not belong in the audit.
+2. **Artefacts must be checkable.** If a claim cannot be computed from the output, it does not
+   belong in the audit.
 3. **Module isolation.** Re-rolling one module must not silently rewrite another.
-4. **Honest seams.** Synthetic personas, directional metrics and unimplemented components are labelled, not disguised.
-5. **The handoff is the product.** The screens are a demonstration of the spec; the spec is what you ship from.
+4. **Honest seams.** Synthetic personas, directional metrics and unimplemented components are
+   labelled, not disguised.
+5. **The handoff is the product.** The screens are a demonstration of the spec; the spec is what
+   you ship from.
 
 ---
 
-*ProdOps is designed and developed by Lulamile Mkhungela. Built as a working answer to a simple
-question: what if the design phase required nothing from you but a description of what you want?*
+*ProdOps is designed and developed by **Lulamile Mkhungela**. Built as a working answer to a
+simple question: what if the whole design phase required nothing from you but a description of
+what you want built?*
 
-*The tools it installs — Design OS, Agent OS, bm-skills and agentcanon — are by Brian Casel /
-Builder Methods, MIT licensed, and installed verbatim. `docs/UPSTREAM-REVIEW.md` has the details.*
+*Some agent instructions and command files in the package are redistributed under the MIT
+licence; their notices are in `src/export/licenses.ts` and ship at `docs/LICENSES.md`. Nothing
+else in the product, its file names, its commands or its documentation comes from anywhere but
+this repository.*

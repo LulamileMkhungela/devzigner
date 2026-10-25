@@ -1,7 +1,7 @@
 /**
  * The backend half of the handoff.
  *
- * Design OS hands a coding agent a UI. This hands it a working product: domain
+ * ProdOps hands a coding agent a UI. This hands it a working product: domain
  * rules, an HTTP API, a repository, seeds from the section sample data, and the
  * tests that prove the rules. Everything is dependency-free TypeScript that
  * runs on Node's own `http` module and its own test runner, so the generated

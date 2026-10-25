@@ -1,19 +1,19 @@
 import type { Project } from '../types'
 import type { PackageFile } from './package'
-import { DESIGN_OS_COMMANDS } from './vendor/designOsCommands'
+import { PHASE_COMMANDS } from './vendor/phaseCommands'
 
 /**
- * The Design OS command surface, installed exactly as upstream ships it.
+ * The ProdOps command surface, installed exactly as upstream ships it.
  *
- * Design OS's ten commands live in `.claude/commands/design-os/`; the export
+ * ProdOps's ten commands live in `.agents/commands/prodops/`; the export
  * writes the same ten files with the same names and the same text, vendored in
- * `vendor/designOsCommands.ts`. They are not adapted to this package: an agent
- * running `/product-vision` gets the real Design OS conversation, and it reads
+ * `vendor/phaseCommands.ts`. They are not adapted to this package: an agent
+ * running `/product-vision` gets the real ProdOps conversation, and it reads
  * the artefacts this export already wrote (`product/`, `sections/`).
  *
  * The app's five phases are the no-agent path to the same artefacts; the
  * commands are for teams that want the slash-command workflow in Claude Code.
- * The five Agent OS commands sit beside them under `.claude/commands/agent-os/`
+ * The five Standards commands sit beside them under `.agents/commands/prodops/`
  * (see agentos.ts).
  */
 function bullet(items: string[]): string {
@@ -21,8 +21,8 @@ function bullet(items: string[]): string {
 }
 
 export function buildCommands(_project: Project): PackageFile[] {
-  return DESIGN_OS_COMMANDS.map((command) => ({
-    path: `.claude/commands/design-os/${command.name}.md`,
+  return PHASE_COMMANDS.map((command) => ({
+    path: `.agents/commands/prodops/${command.name}.md`,
     content: command.content,
   }))
 }
@@ -174,7 +174,7 @@ ${bullet(project.system.shell.nav.map((n) => n.label))}
       path: 'product/README.md',
       content: `# Product planning
 
-The Design OS planning outputs, in the order the commands produce them:
+The ProdOps planning outputs, in the order the commands produce them:
 
 1. \`product-overview.md\` — /product-vision
 2. \`product-roadmap.md\` — /product-roadmap
@@ -182,7 +182,7 @@ The Design OS planning outputs, in the order the commands produce them:
 4. \`design-system/{colors.json,typography.json}\` — /design-tokens
 5. \`shell/spec.md\` — /design-shell
 
-The typed, human-readable versions live at the root: \`product-brief.md\`, \`roadmap.md\`, \`data-model.md\`, \`design-system/\`. The slash commands are in \`.claude/commands/design-os/\` and \`.claude/commands/agent-os/\`.
+The typed, human-readable versions live at the root: \`product-brief.md\`, \`roadmap.md\`, \`data-model.md\`, \`design-system/\`. The slash commands are in \`.agents/commands/prodops/\` and \`.agents/commands/prodops/\`.
 `,
     },
   ]

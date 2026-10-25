@@ -5,7 +5,7 @@ import { frameworkDoc, frameworkFiles, resolveFramework, screenFile } from './fr
 import { camel, componentName, kebab, pascal } from './naming'
 
 /**
- * The handoff package, matching the shape Design OS produces:
+ * The handoff package, matching the shape ProdOps produces:
  *
  *   product-overview.md
  *   prompts/{one-shot-prompt,section-prompt}.md
@@ -14,11 +14,11 @@ import { camel, componentName, kebab, pascal } from './naming'
  *   data-shapes/{README.md,overview.ts}
  *   shell/components/{AppShell,MainNav,UserMenu,index}
  *   sections/<id>/{README.md,tests.md,types.ts,sample-data.json,components/*}
- *   standards/*            (Agent OS)
- *   specs/<id>/{requirements,plan,tasks}.md   (Agent OS)
+ *   standards/*            (Standards)
+ *   specs/<id>/{requirements,plan,tasks}.md   (Standards)
  *
  * Components are props-based, Tailwind-styled from the exported tokens, and
- * never import sample data — the same contract Design OS hands to an agent.
+ * never import sample data — the same contract ProdOps hands to an agent.
  */
 
 const TYPES: Record<string, string> = {
@@ -1216,7 +1216,7 @@ function standards(project: Project): PackageFile[] {
   return [
     {
       path: 'standards/index.md',
-      content: `# Engineering standards\n\nThese are the standards the implementation is reviewed against (Agent OS style).\n\n- [Tech stack](./tech-stack.md)\n- [Code style](./code-style.md)\n- [Testing](./testing.md)\n`,
+      content: `# Engineering standards\n\nThese are the standards the implementation is reviewed against (Standards style).\n\n- [Tech stack](./tech-stack.md)\n- [Code style](./code-style.md)\n- [Testing](./testing.md)\n`,
     },
     {
       path: 'standards/tech-stack.md',
@@ -1318,7 +1318,7 @@ git add docs/product-plan && git commit -m "Add ${project.name} design package"
 
 ## One worktree per exploration
 
-Design OS iterations are cheap; give each its own working tree so a prototype never blocks a fix.
+ProdOps iterations are cheap; give each its own working tree so a prototype never blocks a fix.
 
 \`\`\`bash
 git worktree add ../${project.id}-explore explorer
@@ -1341,7 +1341,7 @@ git commit -m "02 ${project.sections[0]?.id ?? 'section'}: ${project.sections[0]
 - The diff touches no raw colour, radius, spacing or font value.
 - \`sections/*/tests.md\` statements exist as tests.
 - Screenshots in \`sections/*/screenshot.svg\` still match the components (regenerate by re-exporting).
-- \`agent-os/standards/index.yml\` is unchanged, or the change is deliberate.
+- \`standards/standards/index.yml\` is unchanged, or the change is deliberate.
 `,
   }
 }

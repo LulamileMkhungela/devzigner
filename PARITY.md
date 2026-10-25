@@ -1,4 +1,7 @@
-# Parity report — Design OS, Agent OS, the free tools, and the backend
+# Parity report — the five stages, the standards layer, the tools, and the backend
+
+*What the five stages promise, and what the package actually contains. Every ✅ below is
+re-derived by `/coverage` and `npm run check`; nothing here is a claim about intent.*
 
 This is the coverage audit for **ProdOps**. Every row is verifiable two ways:
 
@@ -20,34 +23,35 @@ A representative product (clinic, seed 4242) exports:
 | Screenshots (SVG) | 26 |
 | Tests specs | 7 (`sections/*/tests.md`) |
 | Instructions | 9 (`instructions/one-shot-instructions.md` + `01-shell` + one per section) |
-| Agent OS files | 69 (specs, standards, product docs, skills) |
-| Free-tool files | 78 under `.agents/skills/`, 4 under `template/build-new/` |
+| Standards-layer files | 69 (specs, standards, product docs, skills) |
+| Free-tool files | 78 under `.agents/skills/`, 4 under `template/starter/` |
 | Backend files | 15 (`server/`), 11 executable tests |
-| Slash commands | 15 (10 Design OS, 5 Agent OS, verbatim) |
+| Slash commands | 15 (ten stage commands, five standards commands) |
 | Audit checks | 24 |
 
 ---
 
-## 1. Design OS — the ten commands
+## 1. The five stages — the ten commands
 
-Design OS is a set of slash commands plus an export contract. Both are reproduced.
+The framework is a set of slash commands plus an export contract. Both are reproduced, and
+the UI walks the same five stages in the same order.
 
-| Design OS command | What it produces there | Where it is here |
+| Command | What it produces | Where it is here |
 | --- | --- | --- |
 | `/product-vision` | problem, personas, value proposition | `product-brief.md`, `product/product-overview.md` |
 | `/product-roadmap` | phased plan mapped to features | `roadmap.md`, `product/product-roadmap.md` |
 | `/data-shape` | entities, fields, relationships | `data-model.md`, `schema.sql`, `data-shapes/{README.md,overview.ts}`, `product/data-shape/data-shape.md` |
 | `/design-tokens` | colours, typography, Tailwind config | `design-system/{tokens.css,tokens.dtcg.json,fonts.md,tailwind-colors.md}`, `product/design-system/{colors,typography}.json` |
 | `/design-shell` | shell spec + shell components | `shell/README.md`, `shell/components/{AppShell,MainNav,UserMenu,index}.tsx`, `product/shell/spec.md`, `shell/screenshot.svg` |
-| `/shape-section` | a spec per section | `sections/<id>/README.md`, `specs/<id>/{requirements,plan,tasks}.md`, `agent-os/specs/<date>-<section>/shape.md` |
+| `/shape-section` | a spec per section | `sections/<id>/README.md`, `specs/<id>/{requirements,plan,tasks}.md`, `standards/specs/<date>-<section>/shape.md` |
 | `/sample-data` | seeded rows per section | `sections/<id>/sample-data.json`, `src/data/mock-adapter.ts` |
 | `/design-screen` | a designed screen per route | `sections/<id>/components/<Screen>.tsx` |
-| `/screenshot-design` | a visual per section | `sections/<id>/screenshot.svg`, `agent-os/specs/*/visuals/*.svg` |
-| `/export-product` | the zip | Download on **Export**, plus `prompts/`, `instructions/`, `.claude/commands/{design-os,agent-os}/` |
+| `/screenshot-design` | a visual per section | `sections/<id>/screenshot.svg`, `standards/specs/*/visuals/*.svg` |
+| `/export-product` | the zip | Download on **Export**, plus `prompts/`, `instructions/`, `.agents/commands/prodops/` |
 
 ### Export contract, file by file
 
-| Design OS file | Status here | Notes |
+| Handoff file | Status here | Notes |
 | --- | --- | --- |
 | `product-overview.md` | ✅ | Also `product-brief.md` and `roadmap.md` |
 | `product-overview.md` | ✅ | Summary, planned sections, product entities, design system, implementation sequence |
@@ -60,7 +64,7 @@ Design OS is a set of slash commands plus an export contract. Both are reproduce
 | `design-system/fonts.md` | ✅ | Families, weights, stacks, loading |
 | `data-shapes/README.md`, `overview.ts` | ✅ | Component prop contracts |
 | `shell/components/{AppShell,MainNav,UserMenu,index}.tsx` | ✅ | Layout-only, no data fetching |
-| `shell/screenshot` | ✅ `.svg` | Rendered from compiled blocks (Design OS ships PNG) |
+| `shell/screenshot` | ✅ `.svg` | Rendered from compiled blocks |
 | `sections/<id>/README.md` | ✅ | Overview, priority, user flows with outcomes, design decisions, data shapes, callback props table, screens |
 | `sections/<id>/tests.md` | ✅ | `# Test Specs`, user-flow success + failure, empty states, component interactions, edge cases, accessibility, sample data |
 | `sections/<id>/types.ts` | ✅ | Typed props per component |
@@ -68,9 +72,9 @@ Design OS is a set of slash commands plus an export contract. Both are reproduce
 | `sections/<id>/components/*.tsx` | ✅ | Props-only, responsive, typechecked |
 | `sections/<id>/screenshot` | ✅ `.svg` | One per section |
 | `product/` planning folder | ✅ | `product-overview`, `product-roadmap`, `data-shape/`, `design-system/*.json`, `shell/spec.md` |
-| Slash commands | ✅ | `.claude/commands/design-os/*.md` — the ten Design OS commands, vendored verbatim (`vendor/designOsCommands.ts`) |
-| `.claude/skills/frontend-design/SKILL.md` | ✅ | Design OS's own skill, verbatim; the compiled per-product one sits beside it at `.claude/skills/project-design-system/SKILL.md` |
-| `.claude/commands/agent-os/*.md` | ✅ | The five Agent OS commands, copied verbatim from `buildermethods/agent-os` |
+| Slash commands | ✅ | `.agents/commands/prodops/*.md` — the ten stage commands (`vendor/phaseCommands.ts`) |
+| `.agents/skills/frontend-design/SKILL.md` | ✅ | the design skill; the compiled per-product one sits beside it at `.agents/skills/project-design-system/SKILL.md` |
+| `.agents/commands/prodops/*.md` | ✅ | the five standards commands, in the same folder as the stage commands |
 
 **Deliberate difference:** screenshots are SVG, drawn deterministically from the
 compiled screen blocks and tokens. They cannot go stale and they need no
@@ -78,28 +82,28 @@ headless browser; a PNG would add a build dependency for no extra information.
 
 ---
 
-## 2. Agent OS — standards, product docs, specs
+## 2. The standards layer — standards, product docs, specs
 
-| Agent OS | Where it is here |
+| Standards command | Where it is here |
 | --- | --- |
-| `/plan-product` → `agent-os/product/{mission,roadmap,tech-stack}.md` | ✅ all three, written from the brief, roadmap and stack; the command text (including the existing-docs *Start fresh / Update specific / Cancel* choice and the `To be defined` fallback) ships verbatim |
-| `/discover-standards` → `agent-os/standards/<domain>/*.md` | ✅ 8 rules across `ui`, `data`, `quality`, `accessibility`, alphabetized |
-| `/index-standards` → `agent-os/standards/index.yml` | ✅ `folder: { file: description }`, one line per rule |
-| `/inject-standards` | ✅ `agent-os/specs/*/standards.md` inlines the full rule bodies it cites |
+| `/plan-product` → `standards/product/{mission,roadmap,tech-stack}.md` | ✅ all three, written from the brief, roadmap and stack; the command text (including the existing-docs *Start fresh / Update specific / Cancel* choice and the `To be defined` fallback) ships verbatim |
+| `/discover-standards` → `standards/standards/<domain>/*.md` | ✅ 8 rules across `ui`, `data`, `quality`, `accessibility`, alphabetized |
+| `/index-standards` → `standards/standards/index.yml` | ✅ `folder: { file: description }`, one line per rule |
+| `/inject-standards` | ✅ `standards/specs/*/standards.md` inlines the full rule bodies it cites |
 | `/shape-spec` → `specs/<date>-<slug>/{plan,shape,references,standards}.md` + `visuals/` | ✅ per section, with the screens' SVGs; Task 1 saves the documentation |
-| Commands | ✅ `.claude/commands/agent-os/{discover-standards,index-standards,inject-standards,plan-product,shape-spec}.md` |
-| Config | ✅ `agent-os/config.yml` — `version: 3.0`, `default_profile: default` |
-| Skills | ✅ `.claude/skills/frontend-design/SKILL.md` (Design OS, verbatim) + `.claude/skills/project-design-system/SKILL.md` (compiled) |
+| Commands | ✅ `.agents/commands/prodops/{discover-standards,index-standards,inject-standards,plan-product,shape-spec}.md` |
+| Config | ✅ `standards/config.yml` — `version: 3.0`, `default_profile: default` |
+| Skills | ✅ `.agents/skills/frontend-design/SKILL.md` + `.agents/skills/project-design-system/SKILL.md` (compiled for this product) |
 
 The standards are not generic advice: they are derived from the compiled system
 (the real token names, the real breakpoints, the real entity count), and each one
-is a rule plus the reason, in the shape Agent OS prescribes.
+is a rule plus the reason, in the shape the standards layer prescribes.
 
 ---
 
 ## 3. The process, run from start to finish
 
-The four Design OS steps are not just available — they are executed on every `npm run check`,
+The five stages are not just available — they are executed on every `npm run check`,
 with no idea typed, no question answered, and no key configured.
 
 `npm run walkthrough` mounts the real app in jsdom and asserts, in order:
@@ -109,7 +113,7 @@ with no idea typed, no question answered, and no key configured.
 3. **Data Shape** — every entity is on the page and the schema is generated.
 4. **Design System** — the primary and accent ramps, the role count, the typography and the link into shell design render.
 5. **Section Design** — the four-step rail, requirements and sample data, a captured screen, and a screen design that opens.
-6. **Export** — the readiness board has no failures, the audit renders, and the package carries the whole Design OS contract, one component per screen, the Agent OS layer and a screenshot per section.
+6. **Export** — the readiness board has no failures, the audit renders, and the package carries the whole handoff contract, one component per screen, the standards layer and a screenshot per section.
 
 `npm run example-app` closes the loop by building the thing the export promises. It writes the
 package into `node_modules/.example-app`, adds `vite`, `react` and `@tailwindcss/vite`, copies
@@ -127,22 +131,22 @@ ok  Careline: shell + 6 sections built with vite + tailwind
 
 ## 4. The free tools, all eight
 
-Every tool on buildermethods.com/tools is installed. The skill files are vendored
-verbatim from their repositories, so the steps below are the tools' own.
+Every tool in the toolkit is installed. The steps below are the tools' own, parsed from
+the instruction files that ship with them.
 
 | Tool | Kind | Installed at | Evidence |
 | --- | --- | --- | --- |
 | PRD Creator | Agent skill | `.agents/skills/prd-creator/` (13 files) | `/coverage`, `/tools` |
 | Skill Builder | Agent skill | `.agents/skills/skill-builder/` (9 files) | `/coverage`, `/tools` |
 | Design System | Agent skill | `.agents/skills/design-system/` (50 files) | `/coverage`, `/tools` |
-| Build New | Template | `template/build-new/` (AGENTS.md, `.agents/setup`, docs) | `/coverage`, `/tools` |
-| agentcanon | Convention | `.agents/skills/agentcanon-{repo,manifest}/`, `AGENTS.md`, `scripts/link-agents.sh` | `render-check` asserts `.claude/skills` holds no real skill |
+| Build New | Template | `template/starter/` (AGENTS.md, `.agents/setup`, docs) | `/coverage`, `/tools` |
+| Agents canon | Convention | `.agents/skills/agents-{repo,manifest}/`, `AGENTS.md`, `scripts/link-agents.sh` | `render-check` asserts `.claude/skills` holds no real skill |
 | Favicon Creator | Agent skill | `.agents/skills/favicon-creator/` | `/coverage`, `/tools` |
-| Agent OS | Workflow | `agent-os/` + `.claude/commands/agent-os/` (5) | `/coverage` |
-| Design OS | Workflow | `product-plan/` + `.claude/commands/design-os/` (10) | `/coverage` |
+| Standards | Workflow | `standards/` + the five standards commands | `/coverage` |
+| ProdOps flow | Workflow | `product-plan/` + the ten stage commands | `/coverage` |
 | The cloned site | Clone | `site/` — 92 pages with content, served at `/` offline | `npm run site-check` (links, assets, no shells, no challenge pages) |
 | Framework targets | Export | React, Vue 3, Svelte 5, Preact, Solid, Angular, Lit, Web Components from one product | `export-check` compiles each with its own compiler |
-| Manuals | Documentation | `requirements.md`, `docs/` (40 files: Design OS, Agent OS v3, Agent OS v2 workflows, bm-skills, agentcanon, licences) | `render-check`, `npm test` |
+| Guides | Documentation | `requirements.md`, `docs/guides/` (seven pages), `docs/LICENSES.md` | `render-check`, `npm test` |
 
 The **Tools** page reads the steps out of the shipped `SKILL.md` headings rather
 than a hand-written list, so a tool whose process changes changes the page.
@@ -173,7 +177,7 @@ for two archetypes on every `npm run check`.
 | Hundreds of hand-crafted component states | States come from variant axes on registry entries; screens compose the registry | `system/registry.json`, `data-component` on every prototype block |
 | Inputs that are pictures of inputs | The prototype contains real `input`/`select`/`textarea`/`button`: type to filter, sort, submit with validation, create a record, navigate | `AppPreview`, `npm run smoke` |
 | A page assembled from bespoke UI | Every block renders through a named registry component; the mapping is exported and tested | `engine/system.ts`, `render-check` |
-| Design knowledge lost in a chat | Wiki + Agent OS layer shipped beside the code, versioned by snapshots/branches; worktree workflow documented | `wiki/`, `agent-os/`, `git-workflow.md` |
+| Design knowledge lost in a chat | Wiki + the standards layer layer shipped beside the code, versioned by snapshots/branches; worktree workflow documented | `wiki/`, `standards/`, `git-workflow.md` |
 | Needing a model, a key, or data to start | The whole package is a pure function of seed + archetype + genome | `devzign.json`, `npm run qa` (36 runs, 0 failures) |
 | No freeform canvas | By design: the editable surface is the token editor and the flow builder, and everything downstream recompiles | `/editor`, `/flows` |
 

@@ -103,12 +103,13 @@ test('all eight free tools are in the package', () => {
   const files = buildPackage(compileProject(input as never))
   const paths = new Set(files.map((f) => f.path))
   assert.equal(TOOLS.length, 8)
-  for (const skill of ['prd-creator', 'skill-builder', 'design-system', 'favicon-creator', 'agentcanon-repo', 'agentcanon-manifest']) {
+  for (const skill of ['prd-creator', 'skill-builder', 'design-system', 'favicon-creator', 'agents-repo', 'agents-manifest']) {
     assert.ok([...paths].some((p) => p.startsWith(`.agents/skills/${skill}/`)), `${skill} missing`)
   }
-  assert.ok(paths.has('template/build-new/AGENTS.md'))
-  assert.equal([...paths].filter((p) => p.startsWith('.claude/commands/design-os/')).length, 10)
-  assert.equal([...paths].filter((p) => p.startsWith('.claude/commands/agent-os/')).length, 5)
+  assert.ok(paths.has('template/starter/AGENTS.md'))
+  // Ten phase commands and five standards commands, in one folder so an agent
+  // that reads markdown commands needs a single path.
+  assert.equal([...paths].filter((p) => p.startsWith('.agents/commands/prodops/')).length, 15)
   assert.ok(paths.has('AGENTS.md') && paths.has('TOOLKIT.md') && paths.has('scripts/link-agents.sh'))
   assert.ok(paths.has('_build_plan/prd.md'), 'PRD Creator should leave a PRD behind')
   assert.ok([...paths].filter((p) => p.startsWith('_build_plan/milestones/')).length >= 3, 'one prompt per milestone')
@@ -190,29 +191,45 @@ test('openapi.json describes every entity and its status journey', () => {
   assert.ok(spec.paths['/api/health']?.get, 'no health route')
 })
 
-test('the manuals, licences and requirements travel with the package', () => {
-  const paths = new Set(buildPackage(compileProject(input as never)).map((f) => f.path))
+test('the package documents itself and carries its licences', () => {
+  const files = buildPackage(compileProject(input as never))
+  const paths = new Set(files.map((f) => f.path))
   for (const path of [
     'requirements.md',
     'docs/README.md',
-    'docs/design-os/requirements.md',
-    'docs/design-os/LICENSE',
-    'docs/agent-os/README.md',
-    'docs/agent-os/LICENSE',
-    'docs/agent-os-v2/README.md',
-    'docs/agent-os-v2/UPSTREAM-README.md',
-    'docs/bm-skills/LICENSE',
-    'docs/agentcanon/LICENSE',
+    'docs/LICENSES.md',
+    'docs/guides/process.md',
+    'docs/guides/commands.md',
+    'docs/guides/toolkit.md',
+    'docs/guides/standards.md',
+    'docs/guides/tokens.md',
+    'docs/guides/codebase-implementation.md',
+    'docs/guides/versioning.md',
   ]) {
     assert.ok(paths.has(path), `${path} missing from the package`)
   }
-  requireWorkflows(paths)
+
+  // A guide that points at a file which is not in the package is worse than no
+  // guide, so the pages are checked against what actually ships.
+  for (const file of files.filter((f) => f.path.startsWith('docs/guides/'))) {
+    for (const [, target] of file.content.matchAll(/\]((\.\.\/)?[\w./-]+\.md)/g)) {
+      const resolved = target.startsWith('../') ? target.slice(3) : `docs/guides/${target}`
+      assert.ok(paths.has(resolved), `${file.path} links to ${target}, which is not in the package`)
+    }
+  }
 })
 
-function requireWorkflows(paths: Set<string>) {
-  const workflows = [...paths].filter((p) => p.startsWith('docs/agent-os-v2/workflows/'))
-  assert.equal(workflows.length, 15, 'the v2 workflow set is incomplete')
-}
+test('the only third-party name in the package is in the licences', () => {
+  // The product carries its own name throughout: files, commands, guides, code.
+  // MIT requires the notices to travel, so they live in one file and nowhere
+  // else.
+  const suspects = /builder\s?methods|buildermethods|design\s?os|agent\s?os|bm-skills|agentcanon|casjam/i
+  const leaks = buildPackage(compileProject(input as never))
+    .filter((file) => file.path !== 'docs/LICENSES.md' && suspects.test(file.content))
+    .map((file) => file.path)
+  assert.deepEqual(leaks, [])
+  assert.ok(buildPackage(compileProject(input as never)).some((file) => file.path === 'docs/LICENSES.md' && /MIT/i.test(file.content)))
+})
 
 test('every framework target emits a component for every screen', () => {
   const base = compileProject(input as never)

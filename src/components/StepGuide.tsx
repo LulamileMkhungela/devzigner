@@ -4,7 +4,7 @@
  * The workspace has no "create project" prompt: the starter product is compiled
  * before the page paints, so the five phases are always walkable. What a new
  * builder needs instead is the instruction that goes with each phase — the
- * Design OS command it corresponds to, and the four or five moves that make the
+ * ProdOps command it corresponds to, and the four or five moves that make the
  * phase done. That is what this panel is, once per phase.
  */
 import { useState } from 'react'
@@ -27,7 +27,7 @@ const GUIDES: Record<GuidePhase, Guide> = {
     title: 'How to shape the product',
     intro:
       'Decide what is being built, for whom, and what is out of scope. Everything downstream — the data shape, the tokens, the screens — is derived from this page, so this is the only phase where you write prose.',
-    command: '/design-os:product-vision → /design-os:product-roadmap',
+    command: '/prodops:product-vision → /prodops:product-roadmap',
     steps: [
       { do: 'Write the one-line idea, then the problem and the people who have it.', where: 'The brief above' },
       { do: 'Accept or rewrite the roadmap: four milestones, each with an outcome.', where: 'Roadmap card' },
@@ -41,7 +41,7 @@ const GUIDES: Record<GuidePhase, Guide> = {
     title: 'How to shape the data',
     intro:
       'Screens are only as good as the records behind them. Define the entities, their fields and the relationships first; every table, form and detail view later composes these rows.',
-    command: '/design-os:data-shape → /design-os:sample-data',
+    command: '/prodops:data-shape → /prodops:sample-data',
     steps: [
       { do: 'Check each entity: the six or so fields a real row needs, and nothing else.', where: 'Entities grid' },
       { do: 'Confirm the status field — the API refuses updates that skip a step.', where: 'Field list' },
@@ -55,7 +55,7 @@ const GUIDES: Record<GuidePhase, Guide> = {
     title: 'How to decide the design system',
     intro:
       'Tokens before screens. Colours, type, spacing and radii are compiled to a W3C DTCG file; the shell and every exported component read those tokens and nothing else.',
-    command: '/design-os:design-tokens → /design-os:design-shell',
+    command: '/prodops:design-tokens → /prodops:design-shell',
     steps: [
       { do: 'Pick the primary hue and radius; watch the contrast column while you do.', where: 'Token editor' },
       { do: 'Check the type scale and the four breakpoints.', where: 'Type / Scale' },
@@ -69,7 +69,7 @@ const GUIDES: Record<GuidePhase, Guide> = {
     title: 'How to build the sections',
     intro:
       'One section at a time, four steps each: spec, sample data, screen designs, screenshots. A section is done when all four are ticked — not when the screen looks right.',
-    command: '/design-os:shape-section → /design-os:design-screen → /design-os:screenshot-design',
+    command: '/prodops:shape-section → /prodops:design-screen → /prodops:screenshot-design',
     steps: [
       { do: 'Write the spec: what it does, the acceptance criteria, what is out of scope.', where: 'Section → Spec' },
       { do: 'Bind the entities the section reads.', where: 'Section → Sample data' },
@@ -83,7 +83,7 @@ const GUIDES: Record<GuidePhase, Guide> = {
     title: 'How to hand it over',
     intro:
       'The export is a folder, not a PDF: components, tokens, data shapes, the API, its tests and the agent tooling. Hand it to a builder or an agent and it builds the app in the order the instructions give.',
-    command: '/design-os:export-product',
+    command: '/prodops:export-product',
     steps: [
       { do: 'Clear the readiness checklist — it names the phase that is short.', where: 'Checklist' },
       { do: 'Choose Option A (incremental, shell then sections) or Option B (one-shot).', where: 'How to use this' },

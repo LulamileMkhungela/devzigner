@@ -73,7 +73,7 @@ export function CoveragePage({ project }: { project: Project }) {
       evidence,
     })
 
-    const designOsCommands: [string, string, boolean, string[]][] = [
+    const phaseCommands: [string, string, boolean, string[]][] = [
       ['/product-vision', 'problem, persona, value proposition and non-goals', has('product-brief.md'), ['product-brief.md', 'product-overview.md']],
       ['/product-roadmap', 'phased sequencing tied to sections', has('roadmap.md'), ['roadmap.md']],
       ['/data-shape', 'entities, fields, relations and a runnable schema', has('schema.sql') && has('data-shapes/overview.ts'), ['data-model.md', 'schema.sql', 'data-shapes/overview.ts']],
@@ -90,15 +90,15 @@ export function CoveragePage({ project }: { project: Project }) {
 
     return [
       {
-        id: 'design-os',
-        title: 'Design OS — commands',
-        note: 'The ten commands in the Design OS flow. Each one has an artefact here; nothing is a stub.',
-        rows: designOsCommands.map(([label, detail, ok, evidence]) => row(label, detail, ok, evidence)),
+        id: 'prodops',
+        title: 'ProdOps — commands',
+        note: 'The ten commands in the ProdOps flow. Each one has an artefact here; nothing is a stub.',
+        rows: phaseCommands.map(([label, detail, ok, evidence]) => row(label, detail, ok, evidence)),
       },
       {
-        id: 'design-os-files',
-        title: 'Design OS — export contract',
-        note: 'The file tree Design OS hands to a coding agent, checked against the real package.',
+        id: 'prodops-files',
+        title: 'ProdOps — export contract',
+        note: 'The file tree ProdOps hands to a coding agent, checked against the real package.',
         rows: [
           row('Product overview', 'product, problems, personas and roadmap on one page', has('product-overview.md'), ['product-overview.md']),
           row('One-shot prompt', 'a single prompt that points an agent at every file', has('prompts/one-shot-prompt.md'), ['prompts/one-shot-prompt.md']),
@@ -122,46 +122,45 @@ export function CoveragePage({ project }: { project: Project }) {
           row('Planning outputs', 'product/ mirror written by the planning commands', has('product/product-overview.md') && has('product/data-shape/data-shape.md') && has('product/shell/spec.md'), ['product/product-overview.md', 'product/data-shape/data-shape.md', 'product/shell/spec.md']),
           row(
             'Slash commands',
-            'Design OS (10) + Agent OS (5, verbatim) in .claude/commands',
-            countPrefix('.claude/commands/design-os/') >= 10 && countPrefix('.claude/commands/agent-os/') === 5,
-            [`.claude/commands/design-os/ (${countPrefix('.claude/commands/design-os/')})`, `.claude/commands/agent-os/ (${countPrefix('.claude/commands/agent-os/')})`],
+            'fifteen command files in one folder: ten for the stages, five for standards',
+            countPrefix('.agents/commands/prodops/') === 15,
+            [`.agents/commands/prodops/ (${countPrefix('.agents/commands/prodops/')} files)`],
           ),
           row('Git workflow', 'branch, worktree and milestone commits', has('git-workflow.md'), ['git-workflow.md']),
         ],
       },
       {
-        id: 'agent-os',
-        title: 'Agent OS — standards and specs',
+        id: 'standards',
+        title: 'Standards — standards and specs',
         note: 'Product docs, an indexed standards library, and persistent specs with visuals.',
         rows: [
-          row('Mission', 'vision, users and problems', has('agent-os/product/mission.md'), ['agent-os/product/mission.md']),
-          row('Roadmap', 'phased plan with priorities', has('agent-os/product/roadmap.md'), ['agent-os/product/roadmap.md']),
-          row('Tech stack', 'frontend, data and design-system decisions', has('agent-os/product/tech-stack.md'), ['agent-os/product/tech-stack.md']),
-          row('Standards index', 'folder → file → description, Agent OS format', has('agent-os/standards/index.yml') && files.find((f) => f.path === 'agent-os/standards/index.yml')!.content.includes(':') && files.find((f) => f.path === 'agent-os/standards/index.yml')!.content.includes('    description:'), ['agent-os/standards/index.yml']),
-          row('Agent OS config', 'version and default profile', has('agent-os/config.yml'), ['agent-os/config.yml']),
-          row('Standards files', 'concise rules with the why', countPrefix('agent-os/standards/') >= 8, [`${countPrefix('agent-os/standards/')} files across ui, data, quality, accessibility`]),
-          row('Specs', 'shape, plan, references and standards per section', countPrefix('agent-os/specs/') >= project.sections.length * 4, [`${countPrefix('agent-os/specs/')} files`]),
-          row('Spec plan starts with Task 1', 'plan.md saves the spec documentation first, as Agent OS requires', [...paths].filter((p) => p.includes('agent-os/specs/') && p.endsWith('/plan.md')).every((p) => files.find((f) => f.path === p)!.content.includes('## Task 1: Save Spec Documentation')), ['agent-os/specs/<date>-<section>/plan.md']),
-          row('Spec visuals', 'the screens each spec refers to', [...paths].some((p) => /agent-os\/specs\/.+\/visuals\/.+\.svg$/.test(p)), ['agent-os/specs/<date>-<section>/visuals/*.svg']),
-          row('Design skill', 'Design OS’s own frontend-design skill, plus this product’s compiled version', has('.agents/skills/frontend-design/SKILL.md') && has('.agents/skills/project-design-system/SKILL.md'), ['.agents/skills/frontend-design/SKILL.md', '.agents/skills/project-design-system/SKILL.md']),
+          row('Mission', 'vision, users and problems', has('standards/product/mission.md'), ['standards/product/mission.md']),
+          row('Roadmap', 'phased plan with priorities', has('standards/product/roadmap.md'), ['standards/product/roadmap.md']),
+          row('Tech stack', 'frontend, data and design-system decisions', has('standards/product/tech-stack.md'), ['standards/product/tech-stack.md']),
+          row('Standards index', 'folder → file → description, Standards format', has('standards/standards/index.yml') && files.find((f) => f.path === 'standards/standards/index.yml')!.content.includes(':') && files.find((f) => f.path === 'standards/standards/index.yml')!.content.includes('    description:'), ['standards/standards/index.yml']),
+          row('Standards config', 'version and default profile', has('standards/config.yml'), ['standards/config.yml']),
+          row('Standards files', 'concise rules with the why', countPrefix('standards/standards/') >= 8, [`${countPrefix('standards/standards/')} files across ui, data, quality, accessibility`]),
+          row('Specs', 'shape, plan, references and standards per section', countPrefix('standards/specs/') >= project.sections.length * 4, [`${countPrefix('standards/specs/')} files`]),
+          row('Spec plan starts with Task 1', 'plan.md saves the spec documentation first, as Standards requires', [...paths].filter((p) => p.includes('standards/specs/') && p.endsWith('/plan.md')).every((p) => files.find((f) => f.path === p)!.content.includes('## Task 1: Save Spec Documentation')), ['standards/specs/<date>-<section>/plan.md']),
+          row('Spec visuals', 'the screens each spec refers to', [...paths].some((p) => /standards\/specs\/.+\/visuals\/.+\.svg$/.test(p)), ['standards/specs/<date>-<section>/visuals/*.svg']),
+          row('Design skill', 'ProdOps’s own frontend-design skill, plus this product’s compiled version', has('.agents/skills/frontend-design/SKILL.md') && has('.agents/skills/project-design-system/SKILL.md'), ['.agents/skills/frontend-design/SKILL.md', '.agents/skills/project-design-system/SKILL.md']),
         ],
       },
       {
         id: 'tools',
-        title: 'The eight free tools, installed',
-        note: 'buildermethods.com/tools ships eight tools. All eight are in the package, with the real skill text.',
+        title: 'The eight builder tools, installed',
+        note: 'Every tool in the toolkit is in the package, with its real instruction text.',
         rows: [
-          row('Design OS', 'ten commands, verbatim, plus the artefacts they produce', countPrefix('.claude/commands/design-os/') === 10 && has('product-overview.md') && hasPrefix('sections/'), ['.claude/commands/design-os/ (10)', 'product-overview.md']),
-          row('Agent OS', 'five commands, verbatim, plus product docs and standards', countPrefix('.claude/commands/agent-os/') === 5 && has('agent-os/config.yml') && has('agent-os/standards/index.yml'), ['.claude/commands/agent-os/ (5)', 'agent-os/config.yml']),
+          row('The commands', 'fifteen: ten for the five stages, five for the standards layer', countPrefix('.agents/commands/prodops/') === 15 && has('product-overview.md') && hasPrefix('sections/'), ['.agents/commands/prodops/ (15)', 'product-overview.md']),
+          row('Standards layer', 'product docs, standards index and spec folders', has('standards/config.yml') && has('standards/standards/index.yml'), ['standards/config.yml', 'standards/standards/index.yml']),
           row('PRD Creator', 'the skill, plus the PRD and milestone prompts it produces', countPrefix('.agents/skills/prd-creator/') >= 10 && has('_build_plan/prd.md') && countPrefix('_build_plan/milestones/') === 3, [`.agents/skills/prd-creator/ (${countPrefix('.agents/skills/prd-creator/')} files)`, '_build_plan/prd.md', '_build_plan/milestones/<n>/prompt.md']),
           row('Skill Builder', 'the skill that designs, writes and verifies new skills', countPrefix('.agents/skills/skill-builder/') >= 8, [`.agents/skills/skill-builder/ (${countPrefix('.agents/skills/skill-builder/')} files)`]),
           row('Design System', 'the skill that scaffolds a design system and its docs page', countPrefix('.agents/skills/design-system/') >= 40, [`.agents/skills/design-system/ (${countPrefix('.agents/skills/design-system/')} files)`]),
           row('Favicon Creator', 'the skill that generates the icon set, plus the deterministic stand-in icon', has('.agents/skills/favicon-creator/SKILL.md') && has('favicon.svg'), ['.agents/skills/favicon-creator/SKILL.md', 'favicon.svg']),
-          row('Build New', 'the Rails + React starter conventions and agent setup', has('template/build-new/AGENTS.md') && has('template/build-new/.agents/setup'), ['template/build-new/AGENTS.md', 'template/build-new/.agents/setup']),
-          row('agentcanon', 'skills in .agents/skills, instructions in AGENTS.md, symlinks for the rest', has('.agents/skills/agentcanon-repo/SKILL.md') && has('AGENTS.md') && has('scripts/link-agents.sh'), ['.agents/skills/agentcanon-repo/', 'AGENTS.md', 'scripts/link-agents.sh']),
+          row('Starter', 'the Rails + React starter conventions and agent setup', has('template/starter/AGENTS.md') && has('template/starter/.agents/setup'), ['template/starter/AGENTS.md', 'template/starter/.agents/setup']),
+          row('Agents canon', 'skills in .agents/skills, instructions in AGENTS.md, symlinks for the rest', has('.agents/skills/agents-repo/SKILL.md') && has('AGENTS.md') && has('scripts/link-agents.sh'), ['.agents/skills/agents-repo/', 'AGENTS.md', 'scripts/link-agents.sh']),
           row('Toolkit guide', 'every tool, its steps and where it is installed', has('TOOLKIT.md'), ['TOOLKIT.md']),
-          row('Manuals and licences', 'the tools\' own documentation travels with the package', has('docs/design-os/requirements.md') && has('docs/design-os/LICENSE') && has('docs/agent-os/README.md') && has('docs/bm-skills/LICENSE') && has('docs/agentcanon/LICENSE'), ['docs/design-os/', 'docs/agent-os/', 'docs/bm-skills/', 'docs/agentcanon/']),
-          row('Agent OS v2 workflows', 'the workflows the docs page describes, vendored because v3 removed the compiler', countPrefix('docs/agent-os-v2/workflows/') >= 15, [`${countPrefix('docs/agent-os-v2/workflows/')} workflow files`]),
+          row('Documentation', 'the package explains itself, page by page, and carries its licences', ['docs/README.md', 'docs/LICENSES.md', 'docs/guides/process.md', 'docs/guides/toolkit.md'].every((path) => has(path)), ['docs/guides/', 'docs/LICENSES.md']),
           row(
             'Framework targets',
             'one product, five targets: React hooks, Vue SFCs, Svelte components, Preact and plain custom elements',
@@ -303,7 +302,7 @@ export function CoveragePage({ project }: { project: Project }) {
           <div className="lz-card" key={group.id}>
             <div className="lz-card-h" style={{ marginBottom: 4 }}>
               <div className="lz-card-hL">
-                <Icon name={group.id === 'manifesto' ? 'ShieldCheck' : group.id === 'agent-os' ? 'Layers' : 'FolderOpen'} size={15} />
+                <Icon name={group.id === 'manifesto' ? 'ShieldCheck' : group.id === 'standards' ? 'Layers' : 'FolderOpen'} size={15} />
                 <h2>{group.title}</h2>
               </div>
               <span className="lz-pill">{group.rows.filter((r) => r.state === 'pass').length}/{group.rows.length}</span>

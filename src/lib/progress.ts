@@ -7,7 +7,7 @@ export interface PhaseDef {
   icon: string
 }
 
-/** The five phases of the Design OS flow, in order. */
+/** The five phases of the ProdOps flow, in order. */
 export const PHASES: PhaseDef[] = [
   { id: 'product', label: 'Product', path: '', icon: 'FileText' },
   { id: 'data-shape', label: 'Data Shape', path: 'data-shape', icon: 'Boxes' },

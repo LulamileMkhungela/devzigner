@@ -1,7 +1,7 @@
 /**
  * The free-tools half of the handoff.
  *
- * Everything the Builder Methods toolkit ships is installed where the agentcanon
+ * Everything the ProdOps toolkit ships is installed where the agents canon
  * convention says it belongs: real files in `.agents/skills/`, instructions in
  * `AGENTS.md`, and a one-line script that creates the symlinks the holdout tools
  * (Claude Code) need. The skill files are vendored verbatim — not rewritten.
@@ -26,9 +26,9 @@ UI contract, a working API and a test suite. Read this before changing anything.
 | \`sections/\` | per-section props contracts, sample data and screenshots |
 | \`design-system/\` | tokens (CSS + DTCG), typography, Tailwind notes |
 | \`shell/\` | the app shell components |
-| \`agent-os/\` | product docs, indexed standards, specs |
-| \`.agents/skills/\` | the canonical skills (agentcanon) |
-| \`.claude/commands/\` | the Design OS and Agent OS slash commands |
+| \`standards/\` | product docs, indexed standards, specs |
+| \`.agents/skills/\` | the canonical skills (agents canon) |
+| \`.agents/commands/\` | the fifteen ProdOps slash commands |
 
 ## Rules
 
@@ -46,7 +46,7 @@ UI contract, a working API and a test suite. Read this before changing anything.
 `
 
 const linker = `#!/usr/bin/env bash
-# agentcanon: one real copy, symlinks for the tools that look elsewhere.
+# agents canon: one real copy, symlinks for the tools that look elsewhere.
 set -euo pipefail
 root="$(cd "$(dirname "\${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$root"
@@ -214,7 +214,7 @@ export function buildToolkit(project: Project): PackageFile[] {
     'CLAUDE.md',
     `Refer to @AGENTS.md
 
-This file is a placeholder until \`scripts/link-agents.sh\` runs. agentcanon makes it
+This file is a placeholder until \`scripts/link-agents.sh\` runs. agents canon makes it
 a symlink to AGENTS.md, so there is exactly one copy of the instructions.
 `,
   )
@@ -223,8 +223,7 @@ a symlink to AGENTS.md, so there is exactly one copy of the instructions.
   files.push(...prdPlan(project))
 
   const rows = TOOLS.map(
-    (tool, index) =>
-      `| ${index + 1} | **${tool.name}** | ${tool.kind} | ${tool.ships} | [${tool.url.replace('https://', '')}](${tool.url}) |`,
+    (tool, index) => `| ${index + 1} | **${tool.name}** | ${tool.kind} | ${tool.ships} |`,
   ).join('\n')
 
   // Each step names the file it runs from, so the list can be checked against
@@ -244,18 +243,18 @@ a symlink to AGENTS.md, so there is exactly one copy of the instructions.
     'TOOLKIT.md',
     `# The builder toolkit — all eight free tools
 
-These are the free tools from [buildermethods.com/tools](https://buildermethods.com/tools),
-installed in this repo rather than linked from a browser tab. The skill files are
+These are the eight free tools for builders, installed in this repo rather
+than linked from a browser tab. The skill files are
 vendored verbatim from their repositories, so a coding agent runs the real process,
 not a summary of it.
 
-| # | Tool | Kind | Installed at | Source |
-| --- | --- | --- | --- | --- |
+| # | Tool | Kind | Installed at |
+| --- | --- | --- | --- |
 ${rows}
 
 ## The convention they follow
 
-\`agentcanon\`: skills live once, in \`.agents/skills/\`. Instructions live once, in
+\`agents canon\`: skills live once, in \`.agents/skills/\`. Instructions live once, in
 \`AGENTS.md\`. \`CLAUDE.md\` and \`.claude/skills\` are symlinks, created by:
 
 \`\`\`bash
@@ -267,10 +266,10 @@ ${rows}
 ${steps}
 ## Which of them this repo runs itself
 
-- **Design OS** produced the artefacts in this package. Its ten commands are in
-  \`.claude/commands/design-os/\` if you want to re-run a phase conversationally.
-- **Agent OS** produced \`agent-os/product\`, \`agent-os/standards\` and the specs. Its
-  five commands are in \`.claude/commands/agent-os/\`.
+- **ProdOps** produced the artefacts in this package. Its ten commands are in
+  \`.agents/commands/prodops/\` if you want to re-run a phase conversationally.
+- **Standards** produced \`standards/product\`, \`standards/standards\` and the specs. Its
+  five commands are in \`.agents/commands/prodops/\`.
 - **PRD Creator** has already run: \`_build_plan/prd.md\` is the locked PRD and
   \`_build_plan/milestones/<n>-<name>/prompt.md\` is one prompt per milestone. Start a
   session with the first prompt and write its milestone log before moving on.
@@ -280,9 +279,9 @@ ${steps}
   ships \`favicon.svg\` — the same square, tight-radius, centred-initial rule the skill
   uses — so there is a working icon before the full set is generated.
 - **Build New** is a Rails starter: use it when the target is a Rails + React app.
-  The template's instructions and agent setup are in \`template/build-new/\`.
+  The template's instructions and agent setup are in \`template/starter/\`.
 - **Skill Builder** writes new skills to \`.agents/skills/\`.
-- **agentcanon** is the convention the rest of them assume.
+- **agents canon** is the convention the rest of them assume.
 
 ## Checks
 

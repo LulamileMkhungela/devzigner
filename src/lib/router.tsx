@@ -3,7 +3,7 @@ import type { ReactNode, AnchorHTMLAttributes } from 'react'
 
 /**
  * Hash routing for the five-phase flow. Every route in the app is a real
- * address, so refresh, back and forward all behave the way the Design OS
+ * address, so refresh, back and forward all behave the way the ProdOps
  * flow expects.
  *
  *   /                                    Product

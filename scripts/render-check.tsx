@@ -250,7 +250,7 @@ const custom = compileProject({
 checks.push(['stack override applied', custom.system.stack.find((s) => s.layer === 'Data')?.choice === 'Raw SQL'])
 checks.push(['custom component registered', custom.system.components.some((c) => c.name === 'DisputeBanner')])
 checks.push(['custom component reaches the package', buildPackage(custom).some((f) => f.path === 'system/registry.json' && f.content.includes('DisputeBanner'))])
-// Design OS + Agent OS parity, proven from the package rather than asserted
+// ProdOps + Standards parity, proven from the package rather than asserted
 const pkg = buildPackage(project)
 const pkgPaths = new Set(pkg.map((f) => f.path))
 const pkgHas = (path: string) => pkgPaths.has(path)
@@ -272,14 +272,18 @@ checks.push(
   })()],
   ['breakpoints are tokens and audited', project.design.breakpoints.length >= 4 && project.audit.checks.some((c) => c.id === 'responsive' && c.status === 'pass')],
   ['breakpoint tokens documented for Tailwind', pkg.find((f) => f.path === 'design-system/tailwind-colors.md')!.content.includes('--breakpoint')],
-  ['agent-os product docs exported', pkgHas('agent-os/product/mission.md') && pkgHas('agent-os/product/roadmap.md') && pkgHas('agent-os/product/tech-stack.md')],
-  ['agent-os standards indexed', pkgHas('agent-os/standards/index.yml') && pkgPrefix('agent-os/standards/') >= 8],
-  ['agent-os specs with visuals', pkgPrefix('agent-os/specs/') >= project.sections.length * 4],
+  ['standards product docs exported', pkgHas('standards/product/mission.md') && pkgHas('standards/product/roadmap.md') && pkgHas('standards/product/tech-stack.md')],
+  ['standards standards indexed', pkgHas('standards/standards/index.yml') && pkgPrefix('standards/standards/') >= 8],
+  ['standards specs with visuals', pkgPrefix('standards/specs/') >= project.sections.length * 4],
   ['product planning outputs exported', pkgHas('product/product-overview.md') && pkgHas('product/product-roadmap.md') && pkgHas('product/data-shape/data-shape.md') && pkgHas('product/design-system/colors.json') && pkgHas('product/design-system/typography.json') && pkgHas('product/shell/spec.md')],
-  ['design-os commands installed verbatim', pkgPrefix('.claude/commands/design-os/') === 10 && pkg.find((f) => f.path === '.claude/commands/design-os/product-vision.md')!.content.startsWith('# Product Vision\n\nYou are helping the user define their product vision for Design OS') && pkg.find((f) => f.path === '.claude/commands/design-os/export-product.md')!.content.includes('product-plan/instructions/incremental/01-shell.md')],
-  ['design-os skill vendored into the canon', pkg.find((f) => f.path === '.agents/skills/frontend-design/SKILL.md')!.content.startsWith('---\nname: frontend-design') && pkg.some((f) => f.path === '.agents/skills/project-design-system/SKILL.md')],
-  ['manuals and licences ship with the package', ['docs/design-os/requirements.md', 'docs/design-os/LICENSE', 'docs/agent-os/README.md', 'docs/agent-os/CHANGELOG.md', 'docs/agent-os/LICENSE', 'docs/bm-skills/README.md', 'docs/bm-skills/LICENSE', 'docs/agentcanon/LICENSE', 'requirements.md'].every((path) => pkgHas(path))],
-  ['agent-os v2 workflows are kept', pkgPrefix('docs/agent-os-v2/workflows/') >= 15 && pkg.find((f) => f.path === 'docs/agent-os-v2/README.md')!.content.includes('v3 does not compile')],
+  ['the fifteen commands are installed', pkgPrefix('.agents/commands/prodops/') === 15 && pkg.find((f) => f.path === '.agents/commands/prodops/product-vision.md')!.content.startsWith('# Product Vision') && pkg.find((f) => f.path === '.agents/commands/prodops/export-product.md')!.content.includes('product-plan/instructions/incremental/01-shell.md')],
+  ['prodops skill vendored into the canon', pkg.find((f) => f.path === '.agents/skills/frontend-design/SKILL.md')!.content.startsWith('---\nname: frontend-design') && pkg.some((f) => f.path === '.agents/skills/project-design-system/SKILL.md')],
+  ['the package documents itself', ['docs/README.md', 'docs/LICENSES.md', 'docs/guides/process.md', 'docs/guides/commands.md', 'docs/guides/toolkit.md', 'docs/guides/standards.md', 'docs/guides/tokens.md', 'docs/guides/codebase-implementation.md', 'requirements.md'].every((path) => pkgHas(path))],
+  ['no page in the package names a third party outside the licences', (() => {
+    const suspects = /builder\s?methods|buildermethods|design\s?os|agent\s?os|bm-skills|agentcanon|brian casel/i
+    const leaks = pkg.filter((f) => f.path !== 'docs/LICENSES.md' && suspects.test(f.content)).map((f) => f.path)
+    return leaks.length === 0
+  })()],
   ['openapi describes every entity', (() => {
     const file = pkg.find((f) => f.path === 'openapi.json')
     if (!file) return false
@@ -296,19 +300,19 @@ checks.push(
     )
   })()],
   ['prd-creator output is real', pkgHas('_build_plan/prd.md') && pkgPrefix('_build_plan/milestones/') === 3 && pkg.find((f) => f.path.startsWith('_build_plan/milestones/'))!.content.includes('milestone-log.md') && pkgHas('favicon.svg')],
-  ['all eight free tools installed', ['prd-creator', 'skill-builder', 'design-system', 'favicon-creator', 'agentcanon-repo', 'agentcanon-manifest'].every((skill) => pkg.some((f) => f.path.startsWith('.agents/skills/' + skill + '/'))) && pkgHas('template/build-new/AGENTS.md') && pkgHas('.claude/commands/design-os/product-vision.md') && pkgHas('.claude/commands/agent-os/plan-product.md') && pkgHas('TOOLKIT.md')],
-  ['agentcanon convention wired', pkg.find((f) => f.path === 'AGENTS.md')!.content.includes('## Rules') && pkg.find((f) => f.path === 'CLAUDE.md')!.content.includes('AGENTS.md') && pkg.find((f) => f.path === 'scripts/link-agents.sh')!.content.includes('ln -sfn ../.agents/skills .claude/skills') && !pkg.some((f) => f.path.startsWith('.claude/skills/'))],
+  ['all eight free tools installed', ['prd-creator', 'skill-builder', 'design-system', 'favicon-creator', 'agents-repo', 'agents-manifest'].every((skill) => pkg.some((f) => f.path.startsWith('.agents/skills/' + skill + '/'))) && pkgHas('template/starter/AGENTS.md') && pkgHas('.agents/commands/prodops/product-vision.md') && pkgHas('.agents/commands/prodops/plan-product.md') && pkgHas('TOOLKIT.md')],
+  ['agents canon convention wired', pkg.find((f) => f.path === 'AGENTS.md')!.content.includes('## Rules') && pkg.find((f) => f.path === 'CLAUDE.md')!.content.includes('AGENTS.md') && pkg.find((f) => f.path === 'scripts/link-agents.sh')!.content.includes('ln -sfn ../.agents/skills .claude/skills') && !pkg.some((f) => f.path.startsWith('.claude/skills/'))],
   ['backend ships rules, API and tests', pkgHas('business-logic.md') && pkgHas('server/src/rules.ts') && pkgHas('server/src/services.ts') && pkgHas('server/src/http.ts') && pkgHas('server/src/validate.ts') && pkgHas('server/src/tests/rules.test.ts') && pkgHas('server/src/tests/api.test.ts') && pkgHas('server/API.md')],
   ['backend is dependency-free and wired to the UI', pkg.find((f) => f.path === 'server/package.json')!.content.includes('--experimental-strip-types') && !pkg.find((f) => f.path === 'server/package.json')!.content.includes('dependencies') && pkgHas('src/data/http-adapter.ts')],
-  ['agent-os commands installed verbatim', pkgPrefix('.claude/commands/agent-os/') === 5 && pkg.find((f) => f.path === '.claude/commands/agent-os/shape-spec.md')!.content.includes('agent-os/specs/{YYYY-MM-DD-HHMM-feature-slug}')],
-  ['agent-os index uses folder → file → description', (() => {
-    const index = pkg.find((f) => f.path === 'agent-os/standards/index.yml')!.content
+  ['the standards commands are installed', pkg.find((f) => f.path === '.agents/commands/prodops/shape-spec.md')!.content.includes('standards/specs/{YYYY-MM-DD-HHMM-feature-slug}')],
+  ['standards index uses folder → file → description', (() => {
+    const index = pkg.find((f) => f.path === 'standards/standards/index.yml')!.content
     return /^ui:\n  components-from-registry:\n    description: /m.test(index) && index.includes('global:') && index.includes('    description: ')
   })()],
-  ['agent-os spec plan saves documentation first', pkg.filter((f) => /agent-os\/specs\/.+\/plan\.md$/.test(f.path)).every((f) => f.content.includes('## Task 1: Save Spec Documentation'))],
-  ['agent-os shape follows the shaping questions', pkg.filter((f) => /agent-os\/specs\/.+\/shape\.md$/.test(f.path)).every((f) => f.content.includes('## Scope') && f.content.includes('## Decisions') && f.content.includes('## Standards Applied'))],
+  ['standards spec plan saves documentation first', pkg.filter((f) => /standards\/specs\/.+\/plan\.md$/.test(f.path)).every((f) => f.content.includes('## Task 1: Save Spec Documentation'))],
+  ['standards shape follows the shaping questions', pkg.filter((f) => /standards\/specs\/.+\/shape\.md$/.test(f.path)).every((f) => f.content.includes('## Scope') && f.content.includes('## Decisions') && f.content.includes('## Standards Applied'))],
   ['handoff instructions carry the preamble', pkg.find((f) => f.path === 'instructions/incremental/01-shell.md')!.content.includes('## About This Handoff') && pkg.find((f) => f.path === 'instructions/one-shot-instructions.md')!.content.includes('## About This Handoff')],
-  ['section tests follow the design-os spec format', pkg.filter((f) => /sections\/.+\/tests\.md$/.test(f.path)).every((f) => f.content.includes('## User Flow Tests') && f.content.includes('## Empty State Tests') && f.content.includes('## Accessibility Checks'))],
+  ['section tests follow the prodops spec format', pkg.filter((f) => /sections\/.+\/tests\.md$/.test(f.path)).every((f) => f.content.includes('## User Flow Tests') && f.content.includes('## Empty State Tests') && f.content.includes('## Accessibility Checks'))],
   ['planning JSON is valid', (() => {
     try {
       const colors = JSON.parse(pkg.find((f) => f.path === 'product/design-system/colors.json')!.content)

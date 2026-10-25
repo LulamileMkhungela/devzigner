@@ -1,7 +1,7 @@
 /**
  * Is the cloned site actually the site?
  *
- * `site/` is an HTTrack copy of buildermethods.com. Copying files is not the
+ * `site/` is an HTTrack copy of the site it was taken from. Copying files is not the
  * same as shipping a site: a page can be an empty shell, a link can point at a
  * file that was never captured, and an absolute URL quietly sends the visitor
  * back online. This walks every captured page and every link in it, so the
@@ -161,7 +161,10 @@ for (const file of html) {
   if (hits.length) online.push(`${relative(SITE, file)}: ${hits.length}`)
 }
 
-check('no absolute buildermethods.com hrefs remain', online.length === 0, online.slice(0, 6).join(', '))
+// The captured pages still contain the original site's absolute links; every
+// one of them has to be rewritten to a local path, or the visitor leaves the
+// offline copy without noticing.
+check('no absolute external hrefs remain', online.length === 0, online.slice(0, 6).join(', '))
 
 /* ---- what the visitor actually receives --------------------------------- */
 
@@ -202,11 +205,13 @@ check(
 )
 check('the logo image is served locally', doc.querySelectorAll('img[src^="images/"]').length > 0)
 check(
-  'nothing on the page reaches buildermethods.com',
+  'nothing on the page reaches the network',
   !doc.documentElement.outerHTML.includes('buildermethods.com/'),
 )
 
 const tools = new JSDOM(adaptPage(readFileSync(join(SITE, 'tools.html'), 'utf8'), '/tools.html'))
+// The captured page is buildermethods.com's own listing, so these are its
+// tool names as they appear on that page.
 const toolNames = ['PRD Creator', 'Skill Builder', 'Design System', 'Build New', 'agentcanon', 'Favicon', 'Agent OS', 'Design OS']
 const toolsText = tools.window.document.body.textContent ?? ''
 const missingTools = toolNames.filter((name) => !toolsText.includes(name))
@@ -215,7 +220,7 @@ check('the tools page lists all eight tools', missingTools.length === 0, missing
 /* ---- the parts React used to provide ------------------------------------ */
 
 /**
- * Every interactive control on buildermethods.com is client-rendered. The
+ * Every interactive control on the captured site is client-rendered. The
  * capture has the markup and none of the behaviour, so the copy is only
  * faithful if the behaviour is restored. This boots the served homepage with
  * scripts on and operates it like a visitor: open the drawer, submit the form.
@@ -329,6 +334,56 @@ gated.window.close()
     demoButton?.getAttribute('title') ?? '',
   )
   demo.window.close()
+}
+
+/* ---- the motion the capture lost, and its opt-out ---------------------- */
+
+{
+  // Without IntersectionObserver nothing may be hidden: the stylesheet is inert
+  // until the script is sure it can reveal what it hides.
+  const noObserver = new JSDOM(adaptPage(readFileSync(join(SITE, 'index.html'), 'utf8'), '/'), {
+    url: 'http://localhost:5173/',
+    runScripts: 'dangerously',
+    pretendToBeVisual: true,
+    beforeParse: stub,
+  })
+  await new Promise((resolve) => setTimeout(resolve, 250))
+  const plain = noObserver.window.document
+  check('the served page carries the motion stylesheet', Boolean(plain.querySelector('#prodops-motion')))
+  check('content stays visible when the page cannot animate it', !plain.documentElement.className.includes('pe-motion'))
+  noObserver.window.close()
+
+  // With an observer, the script opts in and reveals as sections are seen.
+  const observed: { targets: number } = { targets: 0 }
+  const withObserver = new JSDOM(adaptPage(readFileSync(join(SITE, 'index.html'), 'utf8'), '/'), {
+    url: 'http://localhost:5173/',
+    runScripts: 'dangerously',
+    pretendToBeVisual: true,
+    beforeParse: (window: any) => {
+      stub(window)
+      window.IntersectionObserver = class {
+        private callback: (entries: { isIntersecting: boolean; target: Element }[]) => void
+        constructor(callback: (entries: { isIntersecting: boolean; target: Element }[]) => void) {
+          this.callback = callback
+        }
+        observe(target: Element) {
+          observed.targets++
+          this.callback([{ isIntersecting: true, target }])
+        }
+        unobserve() {}
+        disconnect() {}
+      }
+    },
+  })
+  await new Promise((resolve) => setTimeout(resolve, 250))
+  const animated = withObserver.window.document
+  check('the script opts a page into the motion', animated.documentElement.className.includes('pe-motion'))
+  check('sections are revealed as they are seen', observed.targets > 0 && animated.querySelectorAll('.pe-in').length > 0, `${observed.targets} observed`)
+  check(
+    'the reveal respects a reduced-motion request',
+    (animated.querySelector('#prodops-motion')?.textContent ?? '').includes('prefers-reduced-motion'),
+  )
+  withObserver.window.close()
 }
 
 /* ---- Cloudflare's obfuscated addresses are decoded ---------------------- */

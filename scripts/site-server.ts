@@ -1,7 +1,7 @@
 /**
  * Serves the real site, and the workspace beside it.
  *
- * `site/` is an HTTrack clone of buildermethods.com that was pushed to `main`:
+ * `site/` is an HTTrack clone of the captured site that was pushed to `main`:
  * 155 files, server-rendered HTML, so every page has its content in the markup
  * and does not need a client, a websocket or a backend to display.
  *
@@ -10,7 +10,7 @@
  *
  * Two things are fixed at serve time rather than by editing 155 files:
  *
- *   1. Absolute `https://buildermethods.com/...` links become local paths, so
+ *   1. Absolute links to the original host become local paths, so
  *      the copy is genuinely offline instead of bouncing the visitor online.
  *   2. Every page gets one small pill pointing at the workspace. The clone's
  *      tool pages are behind an email gate; this copy is not, so the pill is how

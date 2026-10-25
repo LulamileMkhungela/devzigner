@@ -1,20 +1,20 @@
 import type { Project } from '../types'
 import type { PackageFile } from './package'
 import { screenScreenshot } from './screenshots'
-import { AGENT_OS_COMMANDS } from './vendor/agentOsCommands'
-import { DESIGN_OS_SKILL } from './vendor/designOsCommands'
+import { STANDARDS_COMMANDS } from './vendor/standardsCommands'
+import { PHASE_SKILL } from './vendor/phaseCommands'
 
 /**
- * Agent OS parity — cloned from github.com/buildermethods/agent-os (MIT).
+ * The standards layer of the package.
  *
- * Agent OS is *not* the Design OS four-step product-design process. It is a
+ * Standards is *not* the ProdOps four-step product-design process. It is a
  * standards-and-spec layer that sits in the target codebase:
  *
- *   agent-os/product/{mission,roadmap,tech-stack}.md   ← /plan-product
- *   agent-os/standards/<folder>/<name>.md + index.yml  ← /discover-standards, /index-standards
- *   agent-os/specs/<YYYY-MM-DD-HHMM>-<slug>/           ← /shape-spec
+ *   standards/product/{mission,roadmap,tech-stack}.md   ← /plan-product
+ *   standards/standards/<folder>/<name>.md + index.yml  ← /discover-standards, /index-standards
+ *   standards/specs/<YYYY-MM-DD-HHMM>-<slug>/           ← /shape-spec
  *     {plan,shape,references,standards}.md + visuals/
- *   .claude/commands/agent-os/*.md                     ← installed commands (verbatim)
+ *   .agents/commands/prodops/*.md                     ← installed commands (verbatim)
  *   config.yml                                         ← version + default profile
  *
  * File names, folder rules, index format and spec-folder structure follow the
@@ -217,7 +217,7 @@ ${bullets(data.map((s) => `${s.choice} ${s.version} — ${s.reason}`))}
 function indexYml(list: Standard[]): string {
   const folders = Array.from(new Set(list.map((s) => s.folder))).sort()
   const lines = [
-    '# Agent OS standards index.',
+    '# Standards standards index.',
     '# Structure: folder → file-name (no .md) → description.',
     '# /inject-standards matches against these descriptions without reading the files.',
     '',
@@ -239,7 +239,7 @@ function productDocs(project: Project): PackageFile[] {
 
   return [
     {
-      path: 'agent-os/product/mission.md',
+      path: 'standards/product/mission.md',
       content: `# Product Mission
 
 ## Problem
@@ -266,7 +266,7 @@ ${bullets(project.brief.nonGoals)}
 `,
     },
     {
-      path: 'agent-os/product/roadmap.md',
+      path: 'standards/product/roadmap.md',
       content: `# Product Roadmap
 
 ## Phase 1: MVP
@@ -296,7 +296,7 @@ ${project.roadmap.sequencingNote}
 `,
     },
     {
-      path: 'agent-os/product/tech-stack.md',
+      path: 'standards/product/tech-stack.md',
       content: `${techStackBody(project)}
 ## Other
 
@@ -306,36 +306,42 @@ ${project.roadmap.sequencingNote}
 `,
     },
     {
-      path: 'agent-os/config.yml',
+      path: 'standards/config.yml',
       content: `version: 3.0
 default_profile: default
 `,
     },
     {
-      path: 'agent-os/README.md',
-      content: `# Agent OS
+      path: 'standards/README.md',
+      content: `# Standards
 
-Cloned from [buildermethods/agent-os](https://github.com/buildermethods/agent-os) (MIT), filled in from this product.
+Standards is the second layer of ProdOps: a standards-and-spec system that lives
+in the target codebase so an agent builds the way your team builds. Every rule
+below was written from this product's own decisions.
 
-## Agent OS is not Design OS
+## Standards is not the five stages
 
-Design OS runs the four-step product-design process (Product Planning → Design System → Section Design → Export). **Agent OS has no such flow.** It is a lightweight standards-and-spec system that lives in the target codebase so an agent builds the way your team builds:
+The five stages (Product → Data Shape → Design → Sections → Export) decide what
+the product is and what its UI should look like. **Standards has no such flow.**
+It records the conventions the code has to keep — naming, error handling,
+accessibility, token discipline — and makes them available to every later task:
 
-| Agent OS command | Here |
+| Standards command | Here |
 | --- | --- |
-| \`/plan-product\` | \`agent-os/product/{mission,roadmap,tech-stack}.md\` |
-| \`/discover-standards\` | \`agent-os/standards/<folder>/*.md\` |
-| \`/index-standards\` | \`agent-os/standards/index.yml\` (folder → file → description) |
+| \`/plan-product\` | \`standards/product/{mission,roadmap,tech-stack}.md\` |
+| \`/discover-standards\` | \`standards/standards/<folder>/*.md\` |
+| \`/index-standards\` | \`standards/standards/index.yml\` (folder → file → description) |
 | \`/inject-standards\` | \`specs/*/standards.md\` inlines the rules that apply |
-| \`/shape-spec\` | \`agent-os/specs/<YYYY-MM-DD-HHMM>-<slug>/{plan,shape,references,standards}.md\` + \`visuals/\` |
+| \`/shape-spec\` | \`standards/specs/<YYYY-MM-DD-HHMM>-<slug>/{plan,shape,references,standards}.md\` + \`visuals/\` |
 
-The five commands are installed verbatim at \`.claude/commands/agent-os/\`.
+The five standards commands are installed at \`.agents/commands/prodops/\`, beside
+the ten phase commands.
 
 ## Install
 
 \`\`\`bash
-cp -R agent-os/ /path/to/your-app/agent-os
-cp -R .claude/commands/agent-os /path/to/your-app/.claude/commands/
+cp -R standards/ /path/to/your-app/standards
+cp -R .agents/commands/prodops /path/to/your-app/.agents/commands/
 \`\`\`
 
 Then run \`/plan-product\` to confirm or replace these docs, and \`/shape-spec\` for the next feature.
@@ -357,7 +363,7 @@ function specFiles(project: Project): PackageFile[] {
   const list = standards(project)
 
   return project.sections.flatMap((section, index) => {
-    const folder = `agent-os/specs/${date}-${slug(section.name)}`
+    const folder = `standards/specs/${date}-${slug(section.name)}`
     const flows = project.flows.filter((f) => f.steps.some((s) => s.sectionId === section.id))
     const entityNames = section.entityIds.map((id) => project.data.entities.find((e) => e.id === id)?.name ?? id)
     const relevant = list.filter(
@@ -415,7 +421,7 @@ Milestone ${String(index + 2).padStart(2, '0')} of the implementation. Task 1 sa
 
 ## Task 1: Save Spec Documentation
 
-Write \`agent-os/specs/${date}-${slug(section.name)}/\` with:
+Write \`standards/specs/${date}-${slug(section.name)}/\` with:
 
 - **plan.md** — this file
 - **shape.md** — scope, decisions, context
@@ -518,9 +524,9 @@ function skills(project: Project): PackageFile[] {
   const design = project.design
   return [
     {
-      // Design OS's own skill, vendored byte for byte.
+      // ProdOps's own skill, vendored byte for byte.
       path: '.agents/skills/frontend-design/SKILL.md',
-      content: DESIGN_OS_SKILL,
+      content: PHASE_SKILL,
     },
     {
       // The project-specific continuation of it: the compiled tokens, registry
@@ -543,11 +549,11 @@ description: Compose ${project.name} screens from the generated design system an
 
 ## Standards to include
 
-- @agent-os/standards/ui/tokens-only-styling.md
-- @agent-os/standards/ui/components-from-registry.md
-- @agent-os/standards/ui/real-controls.md
-- @agent-os/standards/ui/responsive-by-default.md
-- @agent-os/standards/accessibility/a11y-baseline.md
+- @standards/standards/ui/tokens-only-styling.md
+- @standards/standards/ui/components-from-registry.md
+- @standards/standards/ui/real-controls.md
+- @standards/standards/ui/responsive-by-default.md
+- @standards/standards/accessibility/a11y-baseline.md
 
 ## Composition rules
 
@@ -575,16 +581,16 @@ export function buildAgentOs(project: Project): PackageFile[] {
   files.push(...productDocs(project))
   for (const standard of list) {
     files.push({
-      path: `agent-os/standards/${standard.folder}/${standard.name}.md`,
+      path: `standards/standards/${standard.folder}/${standard.name}.md`,
       content: `# ${standard.name}\n\n${standard.description}\n\n${standard.body}\n`,
     })
   }
-  files.push({ path: 'agent-os/standards/index.yml', content: indexYml(list) })
+  files.push({ path: 'standards/standards/index.yml', content: indexYml(list) })
   files.push(...specFiles(project))
   files.push(...skills(project))
 
-  for (const command of AGENT_OS_COMMANDS) {
-    files.push({ path: `.claude/commands/agent-os/${command.name}.md`, content: command.content })
+  for (const command of STANDARDS_COMMANDS) {
+    files.push({ path: `.agents/commands/prodops/${command.name}.md`, content: command.content })
   }
 
   return files

@@ -13,7 +13,7 @@ const KIND_ICON: Record<string, string> = {
 }
 
 /**
- * The eight free tools from buildermethods.com/tools, with the steps each one
+ * The eight free tools, with the steps each one
  * actually runs — parsed from the skill's own instruction file, so an eleven-phase
  * skill shows eleven phases, and each one names the step file it lives in. The
  * text is shipped verbatim in the package, so this page is an index of real files
@@ -27,7 +27,7 @@ export function ToolsPage({ project }: { project: Project }) {
         steps={[{ id: 'tools', label: 'Tools', path: 'tools' }, ...TRACK.filter((t) => t.id !== 'tools')]}
         current="tools"
         title="The builder toolkit"
-        subtitle="All eight free tools from buildermethods.com/tools, installed in this package with their own steps and prompts. No keys, no accounts."
+        subtitle="All eight free tools, installed in this package with their own steps and prompts. No keys, no accounts."
         actions={
           <Link to="export" className="lz-btn small primary">
             <Icon name="Download" size={13} /> Open the package
@@ -53,9 +53,9 @@ export function ToolsPage({ project }: { project: Project }) {
                     </p>
                   </div>
                 </div>
-                <a className="lz-btn small" href={tool.url} target="_blank" rel="noreferrer">
-                  Source <Icon name="ArrowUpRight" size={12} />
-                </a>
+                {/* Nothing to link out to: the tool is in the package. The
+                    count beside the name is the file count on disk. */}
+                <span className="lz-pill quiet">{count ? `${count} files` : tool.kind}</span>
               </div>
 
               <p style={{ marginTop: 12 }}>{tool.blurb}</p>
@@ -90,8 +90,8 @@ export function ToolsPage({ project }: { project: Project }) {
           <code>scripts/link-agents.sh</code>, so there is nothing to keep in sync by hand.
         </p>
         <p className="lz-sub">
-          Design OS and Agent OS commands are the exception: they stay in <code>.claude/commands/</code>, where their
-          installers put them.
+          The fifteen commands live together in <code>.agents/commands/prodops/</code>, one markdown file each,
+          so an agent that reads markdown can run them and nothing else has to be installed.
         </p>
         <div className="lz-row" style={{ gap: 8, marginTop: 12 }}>
           <Link to="coverage" className="lz-btn small">

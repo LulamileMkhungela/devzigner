@@ -1,5 +1,5 @@
 /**
- * Runs the Design OS process from start to finish, through the real UI.
+ * Runs the ProdOps process from start to finish, through the real UI.
  *
  * Product Planning → Data Shape → Design System → Section Design → Export.
  * The point is to prove the promise "zero input, every artefact on first load":
@@ -212,7 +212,7 @@ const files = buildPackage(stored(), JSON.parse(w.localStorage.getItem('prodops.
 const paths = files.map((f) => f.path)
 step('package is complete', paths.length > 180, `${paths.length} files`)
 step(
-  'package contains the Design OS contract',
+  'package contains the ProdOps contract',
   ['product-overview.md', 'prompts/one-shot-prompt.md', 'prompts/section-prompt.md', 'instructions/one-shot-instructions.md', 'instructions/incremental/01-shell.md', 'design-system/tokens.css', 'design-system/tailwind-colors.md', 'design-system/fonts.md', 'data-shapes/overview.ts', 'shell/components/AppShell.tsx'].every((p) => paths.includes(p)),
 )
 step(
@@ -221,15 +221,15 @@ step(
     stored().sections.reduce((n: number, s: { screens: unknown[] }) => n + s.screens.length, 0),
 )
 step(
-  'package contains the Agent OS layer',
-  paths.includes('agent-os/product/mission.md') &&
-    paths.includes('agent-os/standards/index.yml') &&
-    paths.includes('.claude/commands/agent-os/shape-spec.md') &&
-    paths.some((p) => p.startsWith('agent-os/specs/')),
+  'package contains the Standards layer',
+  paths.includes('standards/product/mission.md') &&
+    paths.includes('standards/standards/index.yml') &&
+    paths.includes('.agents/commands/prodops/shape-spec.md') &&
+    paths.some((p) => p.startsWith('standards/specs/')),
 )
 step(
   'every free tool is in the package',
-  ['TOOLKIT.md', 'AGENTS.md', 'scripts/link-agents.sh', '.agents/skills/prd-creator/SKILL.md', '.agents/skills/skill-builder/SKILL.md', '.agents/skills/design-system/SKILL.md', '.agents/skills/favicon-creator/SKILL.md', '.agents/skills/agentcanon-repo/SKILL.md', 'template/build-new/AGENTS.md'].every((p) => paths.includes(p)),
+  ['TOOLKIT.md', 'AGENTS.md', 'scripts/link-agents.sh', '.agents/skills/prd-creator/SKILL.md', '.agents/skills/skill-builder/SKILL.md', '.agents/skills/design-system/SKILL.md', '.agents/skills/favicon-creator/SKILL.md', '.agents/skills/agents-repo/SKILL.md', 'template/starter/AGENTS.md'].every((p) => paths.includes(p)),
 )
 step(
   'the package carries a tested backend',
@@ -248,7 +248,7 @@ const toolsHtml = text()
 step('Tools route', w.location.hash === '#/tools')
 step(
   'all eight free tools are listed with steps',
-  ['PRD Creator', 'Skill Builder', 'Design System', 'Build New', 'agentcanon', 'Favicon Creator', 'Agent OS', 'Design OS'].every((name) => toolsHtml.includes(name)),
+  ['PRD Creator', 'Skill Builder', 'Design System', 'Starter', 'Agents canon', 'Favicon Creator', 'Standards', 'ProdOps flow'].every((name) => toolsHtml.includes(name)),
 )
 
 console.log(

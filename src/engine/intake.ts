@@ -1,7 +1,7 @@
 /**
  * Reading the builder's own description.
  *
- * Design OS starts with a question — what is this product for, and who is it
+ * ProdOps starts with a question — what is this product for, and who is it
  * for — and a model answers it. Here nothing calls a model, so the description
  * has to be read by rules, and every rule has to be visible in the output: the
  * archetype it picks, the words it keeps, the name it builds.

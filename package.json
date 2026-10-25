@@ -20,9 +20,7 @@
     "walkthrough": "tsx --tsconfig tsconfig.scripts.json scripts/walkthrough.tsx",
     "example-app": "tsx --tsconfig tsconfig.scripts.json scripts/example-app.ts",
     "test": "node --import tsx --test scripts/unit.test.ts",
-    "site-check": "tsx --tsconfig tsconfig.scripts.json scripts/site-check.ts",
-    "upstream-check": "tsx --tsconfig tsconfig.scripts.json scripts/upstream-check.ts",
-    "upstream-doc": "tsx --tsconfig tsconfig.scripts.json scripts/upstream-doc.ts"
+    "site-check": "tsx --tsconfig tsconfig.scripts.json scripts/site-check.ts"
   },
   "dependencies": {
     "jszip": "^3.10.1",
@@ -51,6 +49,13 @@
     "vue": "^3.5.44"
   },
   "license": "MIT",
-  "description": "ProdOps — a deterministic design compiler by Lulamile Mkhungela. One description to a full product package: brief, data model, design system, screens, tests and agent handoff.",
-  "author": "Lulamile Mkhungela"
+  "description": "ProdOps — a product-planning and UI-design framework by Lulamile Mkhungela. Five stages from an idea to a handoff: product, data shape, design system, sections, export.",
+  "author": "Lulamile Mkhungela",
+  "keywords": [
+    "design-system",
+    "dtcg",
+    "product-planning",
+    "prototype",
+    "handoff"
+  ]
 }

@@ -3,7 +3,7 @@ import type { Block, Project, Screen, Section } from '../types'
 /**
  * Deterministic SVG screenshots.
  *
- * Design OS ships a screenshot per section so the reader can see the design
+ * ProdOps ships a screenshot per section so the reader can see the design
  * without running anything. We have no headless browser in this app, so the
  * screenshot is drawn from the same compiled blocks that render the live
  * prototype: same shell, same content, same tokens. It is a real artefact,

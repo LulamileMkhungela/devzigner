@@ -37,7 +37,7 @@ export function useCopy() {
 }
 
 /* -------------------------------------------------------------------------
-   collapsible card — the Design OS fold, used for every section of a page
+   collapsible card — the ProdOps fold, used for every section of a page
    ------------------------------------------------------------------------- */
 
 export function Collapsible({
@@ -259,7 +259,7 @@ export function SubHeader({
 }
 
 /* -------------------------------------------------------------------------
-   numbered step rail (Design OS StepIndicator)
+   numbered step rail (ProdOps StepIndicator)
    ------------------------------------------------------------------------- */
 
 export interface RailStep {

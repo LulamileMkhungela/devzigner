@@ -1,13 +1,13 @@
 /**
  * What the captured clone actually contains, and how to serve it.
  *
- * ProdOps serves buildermethods.com from a local capture. The capture is
+ * ProdOps serves the captured site from a local copy. The capture is
  * server-rendered markup without the Rails/Inertia bundle behind it, so every
  * page needs three repairs before it is served: no bot challenge, no analytics
  * or hydration payload reaching a dead origin, and the behaviour React would
  * have provided (`./runtime.ts`).
  *
- * HTTrack got most of buildermethods.com, but 21 pages came back as Cloudflare
+ * HTTrack got most of the site, but 21 pages came back as Cloudflare
  * "Just a moment…" challenge screens — the crawler was treated as a bot. Those
  * files are in the repo and they look like pages, so they must be handled
  * explicitly: served as a plain local notice, never as a live challenge, which
@@ -30,6 +30,37 @@ export const PILL = `
   <a href="/workspace/" style="padding:6px 10px;border-radius:999px;background:#ff5c1a;color:#0a0a0a;text-decoration:none;font-weight:600">Open ProdOps</a>
 </div>`
 
+/**
+ * The motion and colour the captured markup lost.
+ *
+ * The live site's sections fade up as they enter the viewport and its buttons
+ * and links carry an accent that moves on hover. All of it lived in the React
+ * bundle, so the capture has none of it. Two rules, both inert until the
+ * runtime sets `pe-motion` on `<html>` — a page without JavaScript, or a reader
+ * who asked for reduced motion, sees the plain document.
+ */
+const MOTION_CSS = `<style id="prodops-motion">
+  html.pe-motion main section,
+  html.pe-motion main article {
+    opacity: 0;
+    transform: translateY(14px);
+    transition: opacity .55s cubic-bezier(.2,.7,.3,1), transform .55s cubic-bezier(.2,.7,.3,1);
+  }
+  html.pe-motion main section.pe-in,
+  html.pe-motion main article.pe-in {
+    opacity: 1;
+    transform: none;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    html.pe-motion main section,
+    html.pe-motion main article { opacity: 1 !important; transform: none !important; transition: none !important; }
+  }
+  /* The accent answers the pointer, on both of the site's button shapes. */
+  a[href], button { transition: color .18s ease, background-color .18s ease, border-color .18s ease, transform .18s ease; }
+  a[href]:hover, button:hover { color: #ff5c1a; }
+  a[href]:active, button:active { transform: translateY(1px); }
+</style>`
+
 /** The tool pages get one extra line: the gate they open with is already satisfied. */
 const TOOLBAR = `<div id="prodops-toolbar" style="padding:10px 16px;border-bottom:1px solid #2b2b2b;background:#111;color:#fafafa;
   font:500 12.5px/1.4 system-ui,-apple-system,'Segoe UI',sans-serif">
@@ -37,7 +68,7 @@ const TOOLBAR = `<div id="prodops-toolbar" style="padding:10px 16px;border-botto
   <a href="/workspace/" style="color:#ff5c1a;margin-left:6px">Open it →</a>
 </div>`
 
-const TOOL_PAGE = /^\/(tools|prd-creator|skill-builder|ai-design-system|favicon-creator|agentcanon|build-new|rails-react-template|design-os|agent-os)(\/|\.html$|$)/
+const TOOL_PAGE = /^\/(tools|prd-creator|skill-builder|ai-design-system|favicon-creator|agentcanon|starter|rails-react-template|design-os|agent-os)(\/|\.html$|$)/
 
 /** A standalone page for a capture that failed, in the site's own palette. */
 export function blockedPage(path: string): string {
@@ -74,7 +105,7 @@ export function blockedPage(path: string): string {
     <p><code>${path}</code></p>
     <p>
       The eight free tools are not affected: they are installed in ProdOps, along with
-      Design OS's ten commands, Agent OS's five and the four bm-skills.
+      ProdOps's ten commands, Standards's five and the four toolkit.
     </p>
     <p>
       <a class="btn primary" href="/workspace/">Open ProdOps</a>
@@ -127,5 +158,5 @@ export function adaptPage(html: string, path: string): string {
     out = out.replace('<body>', `<body>\n${TOOLBAR}`)
   }
 
-  return out.replace('</body>', `${PILL}\n${RUNTIME}\n</body>`)
+  return out.replace('</body>', `${MOTION_CSS}\n${PILL}\n${RUNTIME}\n</body>`)
 }

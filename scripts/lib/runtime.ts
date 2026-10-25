@@ -1,7 +1,7 @@
 /**
  * The behaviour the captured HTML lost.
  *
- * buildermethods.com is a Rails + Inertia app: every interactive control
+ * The captured site is a Rails + Inertia app: every interactive control
  * (the mobile navigation drawer, the newsletter capture, the "Access Free"
  * email gates) is rendered by React in the browser. A capture keeps the
  * server-rendered markup and none of the behaviour, so those controls look
@@ -216,7 +216,49 @@ export const RUNTIME = `<script id="prodops-runtime">
     }
   }
 
-  /* ---- 4. external links open safely ---------------------------------- */
+  /* ---- 4. the motion the React app did -------------------------------- */
+  /**
+   * The real site fades its sections up as they scroll in and lights up its
+   * buttons on hover; both were CSS-in-React, so the capture has neither and
+   * the copy reads as a static document. This adds them back, conservatively:
+   *
+   *   - nothing is hidden until the script has run and set pe-motion on the
+   *     document, so a page without JavaScript is fully visible;
+   *   - anything the observer never sees is revealed by a timer anyway, so a
+   *     broken observer can never leave a blank page;
+   *   - prefers-reduced-motion opts out completely.
+   */
+  function wireMotion() {
+    var root = document.documentElement;
+    if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+    var targets = document.querySelectorAll('main section, main article');
+    if (!targets.length || !('IntersectionObserver' in window)) return;
+    root.className += ' pe-motion';
+
+    var reveal = function (node) {
+      node.className = (node.className ? node.className + ' ' : '') + 'pe-in';
+    };
+
+    var observer = new IntersectionObserver(
+      function (entries) {
+        for (var i = 0; i < entries.length; i++) {
+          if (!entries[i].isIntersecting) continue;
+          reveal(entries[i].target);
+          observer.unobserve(entries[i].target);
+        }
+      },
+      { rootMargin: '0px 0px -8% 0px', threshold: 0.06 },
+    );
+    for (var i = 0; i < targets.length; i++) observer.observe(targets[i]);
+
+    // Belt and braces: whatever has not been seen within two seconds is shown.
+    window.setTimeout(function () {
+      for (var j = 0; j < targets.length; j++) reveal(targets[j]);
+    }, 2000);
+  }
+
+  /* ---- 5. external links open safely ---------------------------------- */
   function wireLinks() {
     var links = document.querySelectorAll('a[href^="http"]');
     for (var i = 0; i < links.length; i++) {
@@ -227,7 +269,7 @@ export const RUNTIME = `<script id="prodops-runtime">
     }
   }
 
-  /* ---- 5. the workspace pill answers the keyboard ---------------------- */
+  /* ---- 6. the workspace pill answers the keyboard ---------------------- */
   function wirePill() {
     var pill = document.getElementById('prodops-pill');
     if (!pill) return;
@@ -239,6 +281,7 @@ export const RUNTIME = `<script id="prodops-runtime">
     buildDrawer();
     wireForms();
     wireVideos();
+    wireMotion();
     wireLinks();
     wirePill();
   }

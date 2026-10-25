@@ -13,6 +13,7 @@
  * `localStorage` payload and fails if `#root` stays empty or anything logged.
  */
 import { build } from 'vite'
+import { compileProject } from '../src/engine'
 import react from '@vitejs/plugin-react'
 import { JSDOM } from 'jsdom'
 import { readFile, readdir, rm } from 'node:fs/promises'
@@ -53,6 +54,20 @@ const legacyProject = {
   updatedAt: 1_700_000_000_000,
 }
 
+/* The product the previous release auto-seeded: a complete marketplace record
+   compiled before sections were scoped, so it still carries Control room. The
+   workspace must open on the description field instead of recompiling it. */
+const previousSample = (() => {
+  const sample = compileProject({
+    idea: 'A marketplace where township artisans sell directly to buyers across South Africa',
+    archetypeId: 'marketplace',
+    seed: 112233,
+  })
+  const record = JSON.parse(JSON.stringify(sample)) as Record<string, unknown>
+  delete record.compiler
+  return record
+})()
+
 const scenarios: { name: string; storage: Record<string, string> }[] = [
   { name: 'first visit (empty storage)', storage: {} },
   {
@@ -72,6 +87,10 @@ const scenarios: { name: string; storage: Record<string, string> }[] = [
     // the old keys; the rename must read them, not silently start empty.
     name: 'a workspace saved under the old name',
     storage: { 'lula.devzign.projects.v1': JSON.stringify([{ ...legacyProject, id: 'legacy-old', name: 'Old Careline' }]) },
+  },
+  {
+    name: 'the sample product the last release opened on',
+    storage: { [STORAGE_KEY]: JSON.stringify([previousSample]) },
   },
   { name: 'corrupt JSON in storage', storage: { [STORAGE_KEY]: '{"broken": ' } },
   { name: 'junk in storage', storage: { [STORAGE_KEY]: JSON.stringify([null, 42, 'nope', { id: 'x' }]) } },
@@ -121,6 +140,15 @@ for (const scenario of scenarios) {
 
   check(`${scenario.name} · mounts`, nodes > 20 && text.length > 200 && !problems.some((p) => p.startsWith('threw')), detail)
   check(`${scenario.name} · renders the shell`, /Data Shape|Sections/i.test(text))
+  if (scenario.name === 'the sample product the last release opened on') {
+    // Somebody else's marketplace is not the builder's product: the workspace
+    // opens on the description field, with no Control room in sight.
+    check(
+      'the old auto-seeded sample opens on the description field',
+      /what happens when you build/i.test(text) && !/Control room/.test(text),
+      text.slice(0, 60),
+    )
+  }
   if (scenario.name === 'a workspace saved under the old name') {
     check('the pre-rename workspace survives the rename', text.includes('Old Careline'), 'project name shown in the shell')
   }

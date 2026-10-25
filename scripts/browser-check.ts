@@ -274,6 +274,29 @@ for (const scenario of scenarios) {
     ;(reopened as HTMLElement | undefined)?.click()
     await new Promise((resolve) => setTimeout(resolve, 250))
     check('reopening clears the completion', root.querySelectorAll('.lz-stage-done').length === 0)
+
+    /* Provenance must not cost the builder their work: the record this session
+       just wrote is reopened as-is on the next visit, with the section they
+       removed still removed. */
+    const mine = JSON.parse(w.localStorage.getItem('prodops.projects.v1') ?? '[]')[0]
+    check('a product the builder described carries proof of it', mine?.described === true)
+    const second = new JSDOM('<!doctype html><html><body><div id="root"></div></body></html>', {
+      url: 'http://localhost:5173/',
+      pretendToBeVisual: true,
+      runScripts: 'outside-only',
+    })
+    const w2 = second.window as unknown as Window & typeof globalThis
+    w2.localStorage.setItem(STORAGE_KEY, JSON.stringify([mine]))
+    w2.localStorage.setItem('prodops.active.v1', JSON.stringify(mine.id))
+    w2.eval(code)
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    const again = (w2.document.getElementById('root')?.textContent ?? '').replace(/\s+/g, ' ')
+    check(
+      'and the next visit opens the same product, not an empty field',
+      again.includes(mine.name) && again.includes(mine.archetypeLabel) && !/Untitled product/.test(again),
+      `${mine.name} / ${mine.archetypeLabel}`,
+    )
+    w2.close()
   }
 
   w.close()

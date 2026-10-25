@@ -236,6 +236,20 @@ for (const scenario of scenarios) {
     )
 
     // Now that there is a product, the stage control exists — and behaves.
+    /* The scope is the builder's to change: a section the compiler kept can be
+       taken out, and the product recompiles without it. */
+    const remove = [...root.querySelectorAll('.lz-scope-remove')][0] as HTMLButtonElement | undefined
+    const before = saved?.sections?.length ?? 0
+    check('a compiled section can be removed from the scope', Boolean(remove), remove?.textContent?.trim())
+    remove?.click()
+    await new Promise((resolve) => setTimeout(resolve, 400))
+    const afterRemove = JSON.parse(w.localStorage.getItem('prodops.projects.v1') ?? '[]')[0]
+    check(
+      'removing a section recompiles the product without it',
+      (afterRemove?.sections?.length ?? 0) === before - 1 && (afterRemove?.scope ?? []).some((d: { included: boolean }) => !d.included),
+      `${before} → ${afterRemove?.sections?.length} sections`,
+    )
+
     const confirm = [...root.querySelectorAll('button')].find((b) => /mark stage complete/i.test(b.textContent ?? ''))
     check('a described product can be completed', Boolean(confirm) && !confirm!.disabled)
     ;(confirm as HTMLElement | undefined)?.click()

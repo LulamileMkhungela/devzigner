@@ -1223,13 +1223,6 @@ pre {
   color: var(--muted);
   line-height: 1.65;
 }
-.lz-awaiting-label {
-  margin-top: 16px !important;
-  font-size: 12px;
-  letter-spacing: 0.06em;
-  text-transform: uppercase;
-  color: var(--faint) !important;
-}
 .lz-awaiting-list {
   list-style: none;
   margin: 10px 0 0;

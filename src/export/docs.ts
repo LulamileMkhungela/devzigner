@@ -10,6 +10,7 @@
 import type { Project } from '../types'
 import type { PackageFile } from './package'
 import { MANUALS } from './vendor/manuals'
+import { upstreamReviewMarkdown } from './upstream'
 
 const REQUIRED_STACK = `# Requirements
 
@@ -89,6 +90,8 @@ ${layer(/chart|registry|other/i, 'Component registry generated from the compiled
 
 export function buildDocs(project: Project): PackageFile[] {
   const files: PackageFile[] = [...MANUALS]
+  // Which upstream version each installed tool came from, and what was checked.
+  files.push({ path: 'docs/UPSTREAM-REVIEW.md', content: `${upstreamReviewMarkdown()}\n` })
   files.push({ path: 'requirements.md', content: REQUIRED_STACK })
   files.push({ path: 'agent-os/profiles/default/global/tech-stack.md', content: profileTechStack(project) })
   files.push({
@@ -106,6 +109,7 @@ verbatim, with their licences.
 | \`docs/bm-skills/\` | The PRD Creator, Skill Builder, Design System and Favicon Creator skills, with the repo's agent instructions |
 | \`docs/agentcanon/\` | The convention behind \`.agents/skills/\` and \`AGENTS.md\` |
 | \`template/build-new/\` | The Build New starter's agent setup, conventions and licence |
+| \`docs/UPSTREAM-REVIEW.md\` | All five upstream repos: the commit reviewed, every file shipped, everything deliberately left out and why |
 
 ## Where to start
 

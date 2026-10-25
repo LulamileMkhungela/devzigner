@@ -19,7 +19,7 @@ import { readFile, readdir, rm } from 'node:fs/promises'
 import { join } from 'node:path'
 
 const OUT = 'node_modules/.browser-check'
-const STORAGE_KEY = 'lula.devzign.projects.v1'
+const STORAGE_KEY = 'prodops.projects.v1'
 
 await rm(OUT, { recursive: true, force: true })
 await build({
@@ -66,6 +66,12 @@ const scenarios: { name: string; storage: Record<string, string> }[] = [
   {
     name: 'a project whose sections were saved empty',
     storage: { [STORAGE_KEY]: JSON.stringify([{ ...legacyProject, flows: [], sections: [] }]) },
+  },
+  {
+    // ProdOps was Lula DevZign until this release. A returning visitor still has
+    // the old keys; the rename must read them, not silently start empty.
+    name: 'a workspace saved under the old name',
+    storage: { 'lula.devzign.projects.v1': JSON.stringify([{ ...legacyProject, id: 'legacy-old', name: 'Old Careline' }]) },
   },
   { name: 'corrupt JSON in storage', storage: { [STORAGE_KEY]: '{"broken": ' } },
   { name: 'junk in storage', storage: { [STORAGE_KEY]: JSON.stringify([null, 42, 'nope', { id: 'x' }]) } },
@@ -115,6 +121,9 @@ for (const scenario of scenarios) {
 
   check(`${scenario.name} · mounts`, nodes > 20 && text.length > 200 && !problems.some((p) => p.startsWith('threw')), detail)
   check(`${scenario.name} · renders the shell`, /Data Shape|Sections/i.test(text))
+  if (scenario.name === 'a workspace saved under the old name') {
+    check('the pre-rename workspace survives the rename', text.includes('Old Careline'), 'project name shown in the shell')
+  }
   check(`${scenario.name} · no console errors`, problems.length === 0, problems.slice(0, 2).join(' | '))
 
   // A tick means the stage is done, so a freshly compiled product has none —
@@ -167,7 +176,7 @@ for (const scenario of scenarios) {
     await new Promise((resolve) => setTimeout(resolve, 600))
 
     const rebuilt = (root.textContent ?? '').replace(/\s+/g, ' ').trim()
-    const saved = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]
+    const saved = JSON.parse(w.localStorage.getItem('prodops.projects.v1') ?? '[]')[0]
     check('the description is stored verbatim', saved?.idea === 'A tool for scheduling volunteer shifts at a food bank', saved?.idea)
     check('and it decided the product', saved?.archetypeId === 'peopleops', saved?.archetypeId)
     check('the name follows the description', /^Shift /.test(saved?.name ?? ''), saved?.name)

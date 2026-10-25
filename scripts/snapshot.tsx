@@ -4,7 +4,7 @@
  * The live app needs a browser with modules and storage; a preview pane, a
  * mail client, a code review tool or a PDF printer may have neither. This
  * renders the real components to markup, inlines the real stylesheet and the
- * real fonts, and writes `public/lula-devzign-snapshot.html`. What you see is
+ * real fonts, and writes `public/prodops-snapshot.html`. What you see is
  * the app's own DOM, not a screenshot and not a mock-up.
  */
 import { readFileSync, readdirSync, writeFileSync, mkdirSync } from 'node:fs'
@@ -109,16 +109,23 @@ const body = pages
   )
   .join('\n')
 
+/** The masthead is the only branding in here: mark, name, who built it. */
+const mark = readFileSync('public/prodops-mark.svg', 'utf8')
+const markData = `data:image/svg+xml;base64,${Buffer.from(mark).toString('base64')}`
+
 const html = `<!doctype html>
 <html lang="en">
   <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <title>Lula DevZign — static snapshot of every page</title>
+    <title>ProdOps — static snapshot of every page</title>
     <style>${css}</style>
     <style>
       body { margin: 0; background: #fafaf9; color: #1c1917; font-family: 'DM Sans', system-ui, sans-serif; }
       .snapshot { max-width: 1080px; margin: 0 auto; padding: 28px 20px 80px; }
+      .snapshot-brand { display: flex; align-items: center; gap: 12px; padding-bottom: 16px; }
+      .snapshot-brand strong { display: block; font-size: 17px; letter-spacing: -.02em; }
+      .snapshot-brand span { display: block; font-size: 12px; color: #78716c; }
       .snapshot-nav { position: sticky; top: 0; z-index: 5; display: flex; flex-wrap: wrap; gap: 6px;
         padding: 10px 0 14px; background: rgba(250,250,249,.94); backdrop-filter: blur(6px);
         border-bottom: 1px solid #e7e5e4; }
@@ -126,6 +133,13 @@ const html = `<!doctype html>
   </head>
   <body>
     <div class="snapshot">
+      <header class="snapshot-brand">
+        <img src="${markData}" alt="" width="34" height="34" />
+        <div>
+          <strong>ProdOps</strong>
+          <span>Every page, rendered as static markup. Developed by Lulamile Mkhungela.</span>
+        </div>
+      </header>
       <nav class="snapshot-nav">${nav}</nav>
       <p style="margin:14px 0 4px;font-size:12px;color:#78716c">
         A static render of the real components — no JavaScript, no server. The live app is at <code>/</code>.
@@ -136,6 +150,9 @@ const html = `<!doctype html>
 </html>
 `
 
+// No filesystem siblings in a snapshot: every mark reference travels inside it.
+const withMark = html.replaceAll('/prodops-mark.svg', markData)
+
 mkdirSync('public', { recursive: true })
-writeFileSync('public/lula-devzign-snapshot.html', html)
-console.log(`public/lula-devzign-snapshot.html — ${Math.round(Buffer.byteLength(html) / 1024)} KB, ${pages.length} pages, no JavaScript`)
+writeFileSync('public/prodops-snapshot.html', withMark)
+console.log(`public/prodops-snapshot.html — ${Math.round(Buffer.byteLength(html) / 1024)} KB, ${pages.length} pages, no JavaScript`)

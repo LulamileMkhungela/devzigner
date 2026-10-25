@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" role="img" aria-labelledby="prodops-mark-title">
+  <title id="prodops-mark-title">ProdOps</title>
+  <!--
+    ProdOps — the mark.
+
+    The accent square is the workspace; the check is the one thing ProdOps
+    insists on: a stage is done when the builder says it is, not when the
+    compiler finishes. Drawn on a 64 grid so it stays legible at 16px (favicon)
+    and at 512px (app icon); no strokes thinner than 6 units.
+  -->
+  <defs>
+    <linearGradient id="prodops-accent" x1="8" y1="4" x2="56" y2="60" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff7a3d" />
+      <stop offset="1" stop-color="#d83c0b" />
+    </linearGradient>
+  </defs>
+  <rect width="64" height="64" rx="15" fill="url(#prodops-accent)" />
+  <rect x="1" y="1" width="62" height="62" rx="14" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="1.5" />
+  <path
+    d="M17 33.5 L27.5 44 L47.5 20.5"
+    fill="none"
+    stroke="#ffffff"
+    stroke-width="7.5"
+    stroke-linecap="round"
+    stroke-linejoin="round"
+  />
+</svg>

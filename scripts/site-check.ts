@@ -11,6 +11,7 @@ import { readFileSync, readdirSync, statSync } from 'node:fs'
 import { dirname, join, normalize, relative, sep } from 'node:path'
 import { JSDOM } from 'jsdom'
 import { adaptPage, blockedPage, isBlocked } from './lib/clone'
+import { decodeCfEmail, restoreEmails } from './lib/runtime'
 
 const SITE = 'site'
 
@@ -135,7 +136,11 @@ check(`all ${internal} internal links and images resolve`, broken.length === 0, 
 /* ---- teaser videos are replaced, not left as dead players ---------------- */
 {
   const players = clips.map((entry) => entry.split(' → ')[0])
-  const stillPlayer = [...new Set(players)].filter((page) => /<video\b/i.test(adaptPage(readFileSync(join(SITE, page), 'utf8'), page)))
+  // Parsed, not grepped: the injected runtime mentions video players in prose,
+  // and a regex would count the explanation as a player.
+  const stillPlayer = [...new Set(players)].filter(
+    (page) => new JSDOM(adaptPage(readFileSync(join(SITE, page), 'utf8'), page)).window.document.querySelectorAll('video').length > 0,
+  )
   check(
     `${clips.length} teaser video${clips.length === 1 ? '' : 's'} replaced with a labelled panel`,
     stillPlayer.length === 0,
@@ -160,17 +165,17 @@ check('no absolute buildermethods.com hrefs remain', online.length === 0, online
 
 /* ---- what the visitor actually receives --------------------------------- */
 
-const unreplaced = html.filter((file) => isBlocked(readFileSync(file, 'utf8')) && !blockedPage(file).includes('Open the workspace'))
+const unreplaced = html.filter((file) => isBlocked(readFileSync(file, 'utf8')) && !blockedPage(file).includes('Open ProdOps'))
 check('the blocked-page template stands on its own', unreplaced.length === 0)
 
 const home = readFileSync(join(SITE, 'index.html'), 'utf8')
 const served = adaptPage(home, '/')
 check('the homepage is served offline', !/https:\/\/(?:www\.)?buildermethods\.com\//.test(served))
 check('the analytics tag is stripped', !served.includes('plausible.io'))
-check('every page carries the workspace pill', served.includes('lula-local') && served.includes('/workspace/'))
+check('every page carries the workspace pill', served.includes('prodops-pill') && served.includes('/workspace/'))
 
 const toolPage = adaptPage(readFileSync(join(SITE, 'tools.html'), 'utf8'), '/tools.html')
-check('tool pages say the tool is installed locally', toolPage.includes('lula-toolbar') && toolPage.includes('runs locally'))
+check('tool pages say the tool is installed locally', toolPage.includes('prodops-toolbar') && toolPage.includes('runs locally'))
 
 /* ---- the build's own assets --------------------------------------------- */
 
@@ -206,6 +211,159 @@ const toolNames = ['PRD Creator', 'Skill Builder', 'Design System', 'Build New',
 const toolsText = tools.window.document.body.textContent ?? ''
 const missingTools = toolNames.filter((name) => !toolsText.includes(name))
 check('the tools page lists all eight tools', missingTools.length === 0, missingTools.join(', '))
+
+/* ---- the parts React used to provide ------------------------------------ */
+
+/**
+ * Every interactive control on buildermethods.com is client-rendered. The
+ * capture has the markup and none of the behaviour, so the copy is only
+ * faithful if the behaviour is restored. This boots the served homepage with
+ * scripts on and operates it like a visitor: open the drawer, submit the form.
+ */
+const stub = (window: any) => {
+  window.matchMedia = () => ({
+    matches: false,
+    addEventListener() {},
+    removeEventListener() {},
+    addListener() {},
+    removeListener() {},
+  })
+}
+
+const live = new JSDOM(adaptPage(home, '/'), {
+  url: 'http://localhost:5173/',
+  runScripts: 'dangerously',
+  pretendToBeVisual: true,
+  beforeParse: stub,
+})
+await new Promise((resolve) => setTimeout(resolve, 250))
+const liveDoc = live.window.document
+
+check('the behaviour layer is served with the page', Boolean(liveDoc.getElementById('prodops-runtime')))
+check('the Inertia entrypoint is not served', !liveDoc.querySelector('script[src*="inertia"]'))
+check('no Cloudflare challenge survives', !liveDoc.documentElement.outerHTML.includes('challenge-platform'))
+check('the dead hydration payload is stripped', !liveDoc.getElementById('app')?.hasAttribute('data-page'))
+check('the theme is still resolved before first paint', /prefers-color-scheme/.test(liveDoc.documentElement.outerHTML))
+
+const navToggle = liveDoc.querySelector('.ds-nav-toggle') as HTMLElement | null
+check('the navigation has its toggle', Boolean(navToggle))
+navToggle?.click()
+await new Promise((resolve) => setTimeout(resolve, 80))
+const drawer = liveDoc.querySelector('.ds-nav-mobile')
+check(
+  'the toggle opens a drawer with the real navigation',
+  Boolean(drawer) && (drawer?.querySelectorAll('a').length ?? 0) >= 5,
+  [...(drawer?.querySelectorAll('a') ?? [])].map((a) => a.textContent?.trim()).slice(0, 6).join(' · '),
+)
+check('the toggle reports its state', navToggle?.getAttribute('aria-expanded') === 'true')
+navToggle?.click()
+await new Promise((resolve) => setTimeout(resolve, 80))
+check('and closes it again', !liveDoc.querySelector('.ds-nav-mobile'))
+
+const capture = liveDoc.querySelector('form.capture') as HTMLFormElement | null
+check('the newsletter form is on the page', Boolean(capture))
+capture?.dispatchEvent(new live.window.Event('submit', { bubbles: true, cancelable: true }))
+await new Promise((resolve) => setTimeout(resolve, 60))
+check(
+  'submitting it empty is answered, not ignored',
+  /Enter an email address first/.test(liveDoc.querySelector('.local-form-note')?.textContent ?? ''),
+  liveDoc.querySelector('.local-form-note')?.textContent ?? '',
+)
+const emailField = capture?.querySelector('input') as HTMLInputElement | null
+if (emailField) emailField.value = 'reader@example.com'
+capture?.dispatchEvent(new live.window.Event('submit', { bubbles: true, cancelable: true }))
+await new Promise((resolve) => setTimeout(resolve, 60))
+check(
+  'a real submission says what this copy did with it',
+  /Saved in this browser/.test(liveDoc.querySelector('.local-form-note')?.textContent ?? ''),
+  liveDoc.querySelector('.local-form-note')?.textContent ?? '',
+)
+check(
+  'the submission is kept in the browser, not posted',
+  JSON.parse(live.window.localStorage.getItem('prodops.site.signups.v1') ?? '[]').length === 1,
+)
+live.window.close()
+
+/* ---- tool pages: the email gate is satisfied, and says so ---------------- */
+
+const gated = new JSDOM(adaptPage(readFileSync(join(SITE, 'prd-creator.html'), 'utf8'), '/prd-creator.html'), {
+  url: 'http://localhost:5173/',
+  runScripts: 'dangerously',
+  pretendToBeVisual: true,
+  beforeParse: stub,
+})
+await new Promise((resolve) => setTimeout(resolve, 250))
+const gatedDoc = gated.window.document
+check(
+  'a tool\'s email gate becomes an installed-in-ProdOps notice',
+  Boolean(gatedDoc.querySelector('[data-local-gate]')) &&
+    /no email, key or account needed/.test(gatedDoc.querySelector('[data-local-gate]')?.textContent ?? ''),
+)
+check(
+  'the gate form is gone, not left dead',
+  ![...gatedDoc.querySelectorAll('form')].some((form) => /access free/i.test(form.textContent ?? '')),
+  `${gatedDoc.querySelectorAll('form').length} form(s) left: ${[...gatedDoc.querySelectorAll('form')]
+    .map((form) => (form.textContent ?? '').trim().slice(0, 24))
+    .join(' | ')}`,
+)
+gated.window.close()
+
+/* ---- a control with nothing behind it says so --------------------------- */
+
+{
+  // design-os.html opens with "Watch the demo", whose video was never captured.
+  // A button that looks live and does nothing is the failure this fixes.
+  const demo = new JSDOM(adaptPage(readFileSync(join(SITE, 'design-os.html'), 'utf8'), '/design-os.html'), {
+    url: 'http://localhost:5173/',
+    runScripts: 'dangerously',
+    pretendToBeVisual: true,
+    beforeParse: stub,
+  })
+  await new Promise((resolve) => setTimeout(resolve, 250))
+  const doc = demo.window.document
+  check('the demo page shows a labelled video panel', Boolean(doc.querySelector('.prodops-video-note')))
+  const demoButton = [...doc.querySelectorAll('button')].find((button) => /watch the demo|teaser/i.test(button.textContent ?? '') || button.hasAttribute('aria-disabled'))
+  check(
+    'the "Watch the demo" control is marked unavailable, not left clickable',
+    Boolean(demoButton) && demoButton!.getAttribute('aria-disabled') === 'true',
+    demoButton?.getAttribute('title') ?? '',
+  )
+  demo.window.close()
+}
+
+/* ---- Cloudflare's obfuscated addresses are decoded ---------------------- */
+
+check(
+  'the obfuscated email addresses are decoded',
+  decodeCfEmail('2f5c5a5f5f405d5b6f4d5a46434b4a5d424a5b47404b5c014c4042') === 'support@buildermethods.com',
+  decodeCfEmail('2f5c5a5f5f405d5b6f4d5a46434b4a5d424a5b47404b5c014c4042'),
+)
+const privacy = readFileSync(join(SITE, 'privacy.html'), 'utf8')
+check(
+  'a page that shipped `[email protected]` now shows the address',
+  restoreEmails(privacy).includes('mailto:') && !restoreEmails(privacy).includes('[email&#160;protected]'),
+)
+
+/* ---- every page gets the same repairs ---------------------------------- */
+
+const unrepaired: string[] = []
+const stillScripted: string[] = []
+// Blocked captures are served as a local notice instead of the page, so they
+// are the only pages that legitimately have no layer to carry.
+let repaired = 0
+for (const file of html) {
+  const page = relative(SITE, file)
+  const source = readFileSync(file, 'utf8')
+  const out = adaptPage(source, `/${page.replace(/\.html$/, '')}`)
+  if (isBlocked(source)) {
+    if (isBlocked(out)) unrepaired.push(page)
+    continue
+  }
+  repaired++
+  if (!out.includes('prodops-runtime')) stillScripted.push(page)
+}
+check(`all ${repaired} captured pages carry the behaviour layer`, stillScripted.length === 0, stillScripted.slice(0, 5).join(', '))
+check('no served page is a live challenge', unrepaired.length === 0, unrepaired.slice(0, 5).join(', '))
 
 if (failures > 0) {
   console.error(`\n${failures} check(s) failed`)

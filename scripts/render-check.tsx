@@ -92,6 +92,87 @@ const checks = [
   ['data layer separated', wrap(<ExportPage project={project} />).includes('src/data/mock-adapter.ts')],
   ['wiki generated', wrap(<WikiPage project={project} />).includes('wiki/') && wrap(<WikiPage project={project} />).includes('Component registry')],
   ['token editor present', wrap(<EditorPage project={project} />).includes('Primary hue')],
+
+  /* ---- layout order: the same anatomy on every phase page ---------------- */
+  /**
+   * Each phase page reads top to bottom: header (where you are), guide (what to
+   * do), content (the artefacts), confirm (the tick). Anything else is an
+   * alignment bug a reader sees as a panel floating out of place, so the order
+   * is asserted rather than eyeballed.
+   */
+  ...(
+    [
+      ['product', () => wrap(<ProductPage project={project} />)],
+      ['data-shape', () => wrap(<DataShapePage project={project} />)],
+      ['design', () => wrap(<DesignPage project={project} />)],
+      ['sections', () => wrap(<SectionsPage project={project} />)],
+      ['export', () => wrap(<ExportPage project={project} />)],
+    ] as [string, () => string][]
+  ).map(([phase, html]) => {
+    const out = html()
+    const at = (needle: string) => out.indexOf(needle)
+    const order = [at('lz-pagehead'), at('lz-guide'), at('lz-stage'), at('lz-stage-done')]
+    const confirmAt = Math.max(order[2], order[3])
+    return [`${phase}: header → guide → content → confirm`, order[0] > -1 && order[1] > order[0] && confirmAt > order[1]] as [string, boolean]
+  }),
+
+  /* ---- the composer is the first thing on the Product page --------------- */
+  ['product: the description field leads', (() => {
+    const out = wrap(<ProductPage project={project} />)
+    const compose = out.indexOf('lz-compose')
+    return compose > -1 && compose < out.indexOf('lz-rail') && out.includes('What do you want built?')
+  })()],
+  ['product: the field carries a placeholder and guidance', (() => {
+    const out = wrap(<ProductPage project={project} />)
+    return (
+      /placeholder="e\.g\. A booking tool/.test(out) &&
+      ['Name the problem', 'Say who uses it', 'State the must-haves', 'Mention constraints'].every((line) => out.includes(line)) &&
+      out.includes('Or start from an example') &&
+      out.includes('Write at least a sentence')
+    )
+  })()],
+  ['product: every phase ends with a completion control', ['product', 'data-shape', 'design', 'sections', 'export'].every((phase) => {
+    const out = { product: wrap(<ProductPage project={project} />), 'data-shape': wrap(<DataShapePage project={project} />), design: wrap(<DesignPage project={project} />), sections: wrap(<SectionsPage project={project} />), export: wrap(<ExportPage project={project} />) }[phase]!
+    return /Mark stage complete|Stage \d complete/.test(out)
+  })],
+
+  /* ---- branding -------------------------------------------------------- */
+  ['the brand mark is the product one', (() => {
+    const app = renderToString(<StoreProvider><App /></StoreProvider>)
+    return app.includes('/prodops-mark.svg') && !app.includes('lz-brand-dot')
+  })()],
+  ['the credit is in the document', (() => {
+    const app = renderToString(<StoreProvider><App /></StoreProvider>)
+    return app.includes('developed by') && app.includes('Lulamile Mkhungela')
+  })()],
+  ['the starter shows no earned tick', (starterHtml.match(/lz-step is-done/g) ?? []).length === 0],
+
+  /* ---- alignment: the tick comes before the button it unlocks ------------ */
+  /**
+   * "Mark this stage complete above to unlock the next phase" is only true if
+   * the control really is above the button. Rendering order is the fix, so the
+   * order is what the check asserts.
+   */
+  ...(
+    [
+      ['product', () => wrap(<ProductPage project={project} />)],
+      ['data-shape', () => wrap(<DataShapePage project={project} />)],
+      ['design', () => wrap(<DesignPage project={project} />)],
+      ['sections', () => wrap(<SectionsPage project={project} />)],
+    ] as [string, () => string][]
+  ).map(([phase, html]) => {
+    const out = html()
+    const confirmAt = out.indexOf('lz-stage')
+    const nextAt = out.indexOf('Continue to')
+    return [`${phase}: confirm sits above the continue button`, confirmAt > -1 && nextAt > -1 && confirmAt < nextAt] as [string, boolean]
+  }),
+
+  /* ---- stat tiles stack, and never overflow their card ------------------ */
+  ['stat tiles are label-above-value', (() => {
+    const out = wrap(<ProductPage project={project} />)
+    return (out.match(/lz-stat-label/g) ?? []).length === 4 && out.includes('lz-stat-value')
+  })()],
+  ['the composer keeps its idea line to one ellipsis', wrap(<ProductPage project={project} />).includes('lz-compose-current-idea')],
 ]
 
 // inline token edits must re-derive tokens, screens and audit together

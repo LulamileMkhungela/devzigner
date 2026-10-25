@@ -20,8 +20,6 @@ export function DesignPage({ project }: { project: Project }) {
 
   return (
     <div className="lz-view">
-      <StepGuide phase="design" />
-      <StageConfirm phase="design" />
       <PhaseHeader
         project={project}
         current="design"
@@ -38,6 +36,8 @@ export function DesignPage({ project }: { project: Project }) {
           </>
         }
       />
+
+      <StepGuide phase="design" />
 
       <div className="lz-stack">
         <div className="lz-rail">
@@ -200,6 +200,7 @@ export function DesignPage({ project }: { project: Project }) {
           <pre className="lz-code">{design.tokensCss}</pre>
         </Collapsible>
 
+        <StageConfirm phase="design" />
         <NextPhase
           to="sections"
           label="Continue to Sections"

@@ -161,7 +161,7 @@ function describeField(field: { name: string; type: string; options?: string[] }
 
 export function generateSql(entities: Entity[], relationships: Relationship[]): string {
   const lines: string[] = [
-    '-- Lula DevZign — generated schema (PostgreSQL)',
+    '-- ProdOps — generated schema (PostgreSQL)',
     '-- Deterministic output: the same seed always produces this file.',
     'create extension if not exists "pgcrypto";',
     'create extension if not exists "citext";',

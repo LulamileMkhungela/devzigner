@@ -1,6 +1,6 @@
 # Parity report — Design OS, Agent OS, the free tools, and the backend
 
-This is the coverage audit for **Lula DevZign**. Every row is verifiable two ways:
+This is the coverage audit for **ProdOps**. Every row is verifiable two ways:
 
 - in the app, at **`#/coverage`** — each row rebuilds the export package and checks the artefact is inside it;
 - in CI, via `npm run check` (render-check → export-check → walkthrough → example-app → smoke → qa → production build).

@@ -1,4 +1,15 @@
-# Lula DevZign
+<img src="public/prodops-wordmark.svg" alt="ProdOps" width="260" />
+
+# ProdOps
+
+**A product-operations workspace and design compiler, built by [Lulamile Mkhungela](https://github.com/LulamileMkhungela).**
+
+Describe what you want built, and ProdOps compiles the whole product package — brief, data
+shape, design system, sections, screens, tests, backend and agent handoff — in the browser, with
+no model, no key and no data leaving the page. It also serves the buildermethods.com site it is
+built to work with, locally, page for page.
+
+---
 
 ## Two things, side by side
 
@@ -11,14 +22,36 @@ analytics. `npm run preview:site` serves it at `/` and the workspace at
 | URL | What you get |
 | --- | --- |
 | `/` | the cloned site: home, tools, Design OS, Agent OS, articles, sessions, pro |
-| `/workspace/` | Lula DevZign — the five Design OS phases, the eight tools, the export |
+| `/workspace/` | ProdOps — the five Design OS phases, the eight tools, the export |
 | `/workspace/#/system` | where the framework target is chosen (eight of them) |
-| `/lula-devzign-standalone.html` | the workspace as one file, no server |
-| `/lula-devzign-snapshot.html` | every workspace page as static markup, no JavaScript |
+| `/prodops-standalone.html` | the workspace as one file, no server |
+| `/prodops-snapshot.html` | every workspace page as static markup, no JavaScript |
 
 `npm run site-check` walks the clone: it counts the pages, reads every internal
 link and image (4,926 of them), and fails if a page is an empty shell or a link
-points at a file that was never captured.
+points at a file that was never captured. It also operates the served copy the
+way a visitor does — opens the mobile drawer, submits the newsletter form,
+opens a tool page — so "interactive" is a test result, not a claim.
+
+### What the capture lost, and what is put back
+
+buildermethods.com renders its behaviour in the browser: the navigation drawer,
+the newsletter capture and the "Access Free" gates are all React. A capture
+keeps the markup and none of it. `scripts/lib/runtime.ts` restores exactly the
+behaviour the markup needs, in one dependency-free script per page:
+
+| Control on the real site | In this copy |
+| --- | --- |
+| Mobile nav toggle | opens a drawer built from the same five links, `aria-expanded` follows, Escape and resize close it |
+| Builder Briefing signup | validates the address, then saves it to this browser and says so — nothing is posted |
+| "Access Free" email gate on a tool page | replaced by an *already installed in ProdOps* notice that links to the tool |
+| Theme | still resolved before first paint from the OS, exactly as upstream does |
+| Cloudflare's `[email protected]` | decoded at serve time to the real address |
+| Teaser videos | the files were never captured, so each player becomes a labelled 16:9 panel |
+
+Everything else — pages, navigation, copy, links, images, the eight tool pages,
+the Design OS and Agent OS documentation — is upstream's own markup, served
+offline with absolute links rewritten to local paths.
 
 ### The 21 pages the crawler did not get
 
@@ -200,7 +233,7 @@ Design-first workflows (Design OS, spec-driven development, "plan before you pro
 
 But most implementations of that idea have a hidden dependency: **you must sit in a chat with a model, answer questions, and supply the product's domain knowledge before anything exists.** If you have no idea, no interviews, no copy, no data — you get a blank screen, or generic filler.
 
-Lula DevZign removes that dependency. It ships twelve domain packs (marketplace ops, clinical scheduling, dispatch, money ops, hiring, events and more), each with real entities, status machines, field definitions, requirements, risks and copy. From those, a **pure compiler** generates a product that is internally consistent — and then proves it with an audit that is computed, not asserted.
+ProdOps removes that dependency. It ships twelve domain packs (marketplace ops, clinical scheduling, dispatch, money ops, hiring, events and more), each with real entities, status machines, field definitions, requirements, risks and copy. From those, a **pure compiler** generates a product that is internally consistent — and then proves it with an audit that is computed, not asserted.
 
 The result is a workspace you can open on a Monday morning with zero preparation and still walk away with something a senior designer would recognise as a design system and a product spec.
 
@@ -298,6 +331,10 @@ npm run check          # all of the above, then the production build
 npm run standalone     # one self-contained HTML file — script, styles and fonts inlined
 npm run preview:static # serve dist/ on 0.0.0.0:5173 — no dev server, no websocket
 npm run snapshot       # every page as one static HTML file — no JavaScript at all
+npm run site-check     # the cloned site: pages, links, and the restored behaviour
+npm run preview:site   # the cloned site at / and the workspace at /workspace/
+npm run upstream-check # re-downloads all five buildermethods repos and diffs every vendored file
+npm run upstream-doc   # regenerates docs/UPSTREAM-REVIEW.md
 ```
 
 There is no backend, no database and no network call at runtime. Projects are stored in `localStorage` (with automatic pruning if the quota is reached). Clearing site data clears projects; use **Export → Download package** to keep anything you care about.
@@ -316,6 +353,25 @@ into the real production bundle and asserts the product changes with it.
 tokens, shell, sections and data shapes into a scratch Vite project, writes a page per section
 from the exported components and `sample-data.json`, then runs a real `vite build` with
 Tailwind. If the handoff could not be compiled, that build fails.
+
+### Every upstream repository, reviewed
+
+ProdOps installs Builder Methods' tools rather than paraphrasing them, so all five public
+repositories were read in full and are pinned by commit in `src/export/upstream.ts`:
+
+| Repository | What ProdOps takes | Verified |
+| --- | --- | --- |
+| [design-os](https://github.com/buildermethods/design-os) | 10 slash commands, the frontend-design skill, 8 docs pages | byte for byte |
+| [agent-os](https://github.com/buildermethods/agent-os) | 5 commands, the standards index, the v2 workflow blocks | byte for byte |
+| [bm-skills](https://github.com/buildermethods/bm-skills) | PRD Creator, Skill Builder, Design System, Favicon Creator — 73 files | byte for byte |
+| [build-new](https://github.com/buildermethods/build-new) | the starter's agent instructions, setup and deployment guide | byte for byte |
+| [agentcanon](https://github.com/buildermethods/agentcanon) | both skills and the convention, applied to the package | byte for byte |
+
+`docs/UPSTREAM-REVIEW.md` records what was *not* shipped and why — the marketplace wrapper, the
+Rails app, the install scripts — so the gaps are decisions, not oversights. `npm run
+upstream-check` re-downloads all five and fails on any drift; line endings are normalised, and
+nothing else is. The same review ships inside every exported package at
+`docs/UPSTREAM-REVIEW.md`.
 
 ---
 
@@ -396,4 +452,8 @@ Same inputs → byte-identical package, forever. `devzign.json` in the export ca
 
 ---
 
-*Built as a working answer to a simple question: what if the design phase required nothing from you but a seed?*
+*ProdOps is designed and developed by Lulamile Mkhungela. Built as a working answer to a simple
+question: what if the design phase required nothing from you but a description of what you want?*
+
+*The tools it installs — Design OS, Agent OS, bm-skills and agentcanon — are by Brian Casel /
+Builder Methods, MIT licensed, and installed verbatim. `docs/UPSTREAM-REVIEW.md` has the details.*

@@ -1,7 +1,7 @@
 import type { Brief, Persona } from '../types'
 import type { Pack } from './packTypes'
 import type { Rng } from './rng'
-import type { Intake } from './intake'
+import { asSentence, type Intake } from './intake'
 
 const RISK_TEMPLATES: { risk: string; mitigation: string }[] = [
   {
@@ -86,7 +86,7 @@ export function compileBrief(pack: Pack, rng: Rng, name: string, idea: string, i
     personas[0] = {
       ...personas[0],
       segment: described.actor,
-      quote: `“${described.sentence.replace(/[“”"]/g, '').replace(/\.$/, '')}” — the description this brief was compiled from.`,
+      quote: `“${asSentence(described.sentence).replace(/[“”"]/g, '').replace(/\.$/, '')}” — the description this brief was compiled from.`,
     }
   }
 
@@ -111,7 +111,7 @@ export function compileBrief(pack: Pack, rng: Rng, name: string, idea: string, i
 
   const elevator = described
     ? `${name} is a ${pack.category.toLowerCase()} workspace built for ${described.actor || 'the people in the description'}. ` +
-      `It was asked for in these words: ${described.sentence.replace(/\.$/, '')}. ` +
+      `It was asked for in these words: ${asSentence(described.sentence).replace(/\.$/, '')}. ` +
       `The archetype that fits it is ${pack.label}, so the expensive failure to design against is ${lowerFirst(pack.problems[0].title)} — ` +
       `and the cost of leaving it unsolved is ${lowerFirst(pack.problems[0].cost)}.`
     : `${name} is a ${pack.category.toLowerCase()} workspace. ${pack.blurb} ` +
@@ -123,7 +123,7 @@ export function compileBrief(pack: Pack, rng: Rng, name: string, idea: string, i
     category: pack.category,
     tagline: pack.taglines[rng.int(0, pack.taglines.length - 1)].replace('{object}', pack.objects[0]),
     summary:
-      (described ? `${described.sentence} ` : '') +
+      (described ? `${asSentence(described.sentence)} ` : '') +
       `${pack.blurb} ${name} keeps the work, the money and the exceptions in one traceable surface, ` +
       `so the answer to "what needs attention today" takes one screen instead of five tools.` +
       (idea.trim() && !described ? ` Seed direction: ${idea.trim().slice(0, 180)}` : ''),
@@ -134,7 +134,7 @@ export function compileBrief(pack: Pack, rng: Rng, name: string, idea: string, i
           index === 0
             ? {
                 ...problem,
-                detail: `${problem.detail} In this product's own words: ${described.sentence.replace(/\.$/, '')}.`,
+                detail: `${problem.detail} In this product's own words: ${asSentence(described.sentence).replace(/\.$/, '')}.`,
               }
             : { ...problem },
         )

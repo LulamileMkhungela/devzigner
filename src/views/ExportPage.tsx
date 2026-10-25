@@ -50,8 +50,6 @@ export function ExportPage({ project }: { project: Project }) {
 
   return (
     <div className="lz-view">
-      <StepGuide phase="export" />
-      <StageConfirm phase="export" />
       <PhaseHeader
         project={project}
         current="export"
@@ -63,6 +61,8 @@ export function ExportPage({ project }: { project: Project }) {
           </button>
         }
       />
+
+      <StepGuide phase="export" />
 
       <div className="lz-stack">
         <div className="lz-card">
@@ -155,7 +155,7 @@ export function ExportPage({ project }: { project: Project }) {
               <li>Build <b>sections/{project.sections[0]?.id}.md</b> first, then run the acceptance tests in <code>tests.md</code>.</li>
               <li>Move to the next section only when its screens pass.</li>
             </ol>
-            <CommandBox command={`lula build --section ${project.sections[0]?.id ?? 'section'}`} />
+            <CommandBox command={`prodops build --section ${project.sections[0]?.id ?? 'section'}`} />
           </Collapsible>
 
           <Collapsible title="Option B — one shot" icon="Zap" meta="whole product">
@@ -166,7 +166,7 @@ export function ExportPage({ project }: { project: Project }) {
               <li>Apply <code>tokens.css</code> and <code>schema.sql</code> before any component work.</li>
               <li>Use <code>audit.md</code> as the definition of done.</li>
             </ol>
-            <CommandBox command="lula build --all --from agent-implementation-brief.md" />
+            <CommandBox command="prodops build --all --from agent-implementation-brief.md" />
           </Collapsible>
         </div>
 
@@ -206,6 +206,7 @@ export function ExportPage({ project }: { project: Project }) {
           </button>
         </div>
       </div>
+      <StageConfirm phase="export" />
     </div>
   )
 }

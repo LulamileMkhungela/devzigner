@@ -150,7 +150,7 @@ const props = `rows: Row[]
 
 function vueComponent(section: Section, screen: Screen): string {
   const name = componentName(section, screen)
-  return `<!-- ${name} — exported by Lula DevZign. Props only: no data imports, no fetch. -->
+  return `<!-- ${name} — exported by ProdOps. Props only: no data imports, no fetch. -->
 <script setup lang="ts">
 import { computed, ref } from 'vue'
 import {
@@ -196,7 +196,7 @@ function onSubmit(event: Event) {
 
 function svelteComponent(section: Section, screen: Screen): string {
   const name = componentName(section, screen)
-  return `<!-- ${name} — exported by Lula DevZign. Props only: no data imports, no fetch. -->
+  return `<!-- ${name} — exported by ProdOps. Props only: no data imports, no fetch. -->
 <script lang="ts">
   import {
     handleClick,
@@ -244,7 +244,7 @@ function svelteComponent(section: Section, screen: Screen): string {
 
 function solidComponent(section: Section, screen: Screen): string {
   const name = componentName(section, screen)
-  return `// ${name} — exported by Lula DevZign. Props only: no data imports, no fetch.
+  return `// ${name} — exported by ProdOps. Props only: no data imports, no fetch.
 import { createSignal } from 'solid-js'
 import {
   handleClick,
@@ -293,7 +293,7 @@ export function ${name}(props: ${name}Props) {
 function angularComponent(section: Section, screen: Screen): string {
   const name = componentName(section, screen)
   const tag = `app-${kebab(name)}`
-  return `// ${name} — exported by Lula DevZign. A standalone component: \`<${tag} [rows]="rows">\`.
+  return `// ${name} — exported by ProdOps. A standalone component: \`<${tag} [rows]="rows">\`.
 import { ChangeDetectionStrategy, Component, Input, ViewEncapsulation } from '@angular/core'
 import {
   handleClick,
@@ -355,7 +355,7 @@ export class ${name}Component {
 function litComponent(section: Section, screen: Screen): string {
   const name = componentName(section, screen)
   const tag = `app-screen-${kebab(name)}`
-  return `// ${name} — exported by Lula DevZign. A Lit element: \`<${tag}>\`.
+  return `// ${name} — exported by ProdOps. A Lit element: \`<${tag}>\`.
 import { LitElement, html } from 'lit'
 import { customElement, property, state as reactive } from 'lit/decorators.js'
 import { unsafeHTML } from 'lit/directives/unsafe-html.js'
@@ -430,7 +430,7 @@ declare global {
 function vanillaComponent(section: Section, screen: Screen): string {
   const name = componentName(section, screen)
   const tag = `app-screen-${kebab(name)}`
-  return `// ${name} — exported by Lula DevZign. A custom element: \`<${tag}>\`.
+  return `// ${name} — exported by ProdOps. A custom element: \`<${tag}>\`.
 // Props only: assign \`rows\`, listen for \`screen-open\` / \`screen-create\`.
 import {
   handleClick,
@@ -731,7 +731,7 @@ function vanillaShell(project: Project): PackageFile[] {
   return [
     {
       path: 'shell/components/app-shell.ts',
-      content: `// AppShell — the frame every screen sits in. Exported by Lula DevZign.
+      content: `// AppShell — the frame every screen sits in. Exported by ProdOps.
 const NAV = ${JSON.stringify(items, null, 2)}
 
 export class AppShellElement extends HTMLElement {

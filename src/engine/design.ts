@@ -323,8 +323,8 @@ export function compileDesign(
   const tailwindTheme = buildTailwind(semantic, typography, radii, primary, accent, neutral)
   const tokensJson = JSON.stringify(
     {
-      $schema: 'lula-devzign/design-tokens@1',
-      meta: { product: productName, archetype: pack.id, generatedBy: 'Lula DevZign', deterministic: true },
+      $schema: 'prodops/design-tokens@1',
+      meta: { product: productName, archetype: pack.id, generatedBy: 'ProdOps', deterministic: true },
       color: Object.fromEntries(
         [primary, accent, neutral, success, warning, danger, info].map((c) => [
           c.id,
@@ -492,7 +492,7 @@ function buildTokensCss(
   const light = Object.entries(semantic)
   const dark = Object.entries(darkSemantic)
   const lines: string[] = [
-    '/* Lula DevZign — generated tokens. Do not hand-edit; re-generate instead. */',
+    '/* ProdOps — generated tokens. Do not hand-edit; re-generate instead. */',
     ':root {',
     '  /* Color */',
     ...light.map(([k, v]) => `  ${k}: ${v};`),

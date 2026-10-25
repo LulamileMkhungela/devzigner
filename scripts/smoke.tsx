@@ -56,7 +56,7 @@ const wait = (ms = 60) => new Promise((r) => setTimeout(r, ms))
 const routes = ['/', '/data-shape', '/design', '/shell/design', '/sections', '/export', '/flows', '/system', '/prototype', '/editor', '/wiki', '/coverage']
 
 await wait(150)
-const store = w.localStorage.getItem('lula.devzign.projects.v1')
+const store = w.localStorage.getItem('prodops.projects.v1')
 const project = JSON.parse(store ?? '[]')[0]
 if (project) routes.push(`/sections/${project.sections[0].id}`, `/sections/${project.sections[0].id}/screen-designs/${project.sections[0].screens[0].id}`)
 
@@ -107,8 +107,8 @@ for (const route of ['/', '/data-shape', '/design', '/sections', '/export']) {
 console.log(`${guided === 5 ? 'ok ' : 'ERR'} every phase carries a how-to panel (${guided}/5)`)
 
 // the capture empty state still exists: drop the stored captures and revisit
-const uncaptured = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]
-w.localStorage.setItem('lula.devzign.captures.v1', '{}')
+const uncaptured = JSON.parse(w.localStorage.getItem('prodops.projects.v1') ?? '[]')[0]
+w.localStorage.setItem('prodops.captures.v1', '{}')
 w.location.hash = `#/sections/${uncaptured.sections[0].id}`
 await wait(60)
 w.location.hash = `#/sections/${uncaptured.sections[0].id}?uncaptured=1`
@@ -117,7 +117,7 @@ await wait(60)
 // ---- prototype track -------------------------------------------------------
 w.location.hash = '#/flows'
 await wait(90)
-const flowsBefore = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0].flows.length
+const flowsBefore = JSON.parse(w.localStorage.getItem('prodops.projects.v1') ?? '[]')[0].flows.length
 const newFlowBtn = Array.from(w.document.querySelectorAll('button')).find((b) => b.textContent?.includes('New flow'))
 click(newFlowBtn ?? null)
 await wait(50)
@@ -138,7 +138,7 @@ if (flowModal) {
   const addBtn = Array.from(flowModal.querySelectorAll('button')).find((b) => b.textContent?.includes('Add flow'))
   click(addBtn ?? null)
   await wait(90)
-  const after = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0].flows.length
+  const after = JSON.parse(w.localStorage.getItem('prodops.projects.v1') ?? '[]')[0].flows.length
   console.log(`${after === flowsBefore + 1 ? 'ok ' : 'ERR'} flow added to the product (${flowsBefore} → ${after})`)
 }
 
@@ -146,14 +146,14 @@ if (flowModal) {
 w.location.hash = '#/editor'
 await wait(100)
 const range = w.document.querySelector('input[type=range]') as HTMLInputElement | null
-const before = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0].design.colors[0].base
+const before = JSON.parse(w.localStorage.getItem('prodops.projects.v1') ?? '[]')[0].design.colors[0].base
 if (range) {
   const setter = Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype, 'value')?.set
   setter?.call(range, '205')
   range.dispatchEvent(new w.Event('input', { bubbles: true }))
   await wait(120)
 }
-const editedProject = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]
+const editedProject = JSON.parse(w.localStorage.getItem('prodops.projects.v1') ?? '[]')[0]
 console.log(`${editedProject.design.colors[0].base !== before ? 'ok ' : 'ERR'} token editor re-derives the palette (${before} → ${editedProject.design.colors[0].base})`)
 console.log(`${editedProject.overrides?.primaryHue === 205 ? 'ok ' : 'ERR'} override persisted (${JSON.stringify(editedProject.overrides)})`)
 
@@ -163,7 +163,7 @@ await wait(100)
 const commitBtn = Array.from(w.document.querySelectorAll('.lz-head button')).find((b) => b.textContent?.includes('Commit'))
 click(commitBtn ?? null)
 await wait(120)
-const book = JSON.parse(w.localStorage.getItem('lula.devzign.versions.v1') ?? '{}')
+const book = JSON.parse(w.localStorage.getItem('prodops.versions.v1') ?? '{}')
 const versionCount = book[editedProject.id]?.versions?.length ?? 0
 console.log(`${versionCount > 0 ? 'ok ' : 'ERR'} wiki committed a snapshot (${versionCount})`)
 
@@ -212,7 +212,7 @@ console.log(`${rowsBefore > 0 && rowsAfter < rowsBefore && emptyRow ? 'ok ' : 'E
 // open a screen that contains a form, then submit it with a required field empty
 w.location.hash = '#/prototype'
 await wait(100)
-const stored = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]
+const stored = JSON.parse(w.localStorage.getItem('prodops.projects.v1') ?? '[]')[0]
 const formScreen = stored.sections
   .flatMap((s: { screens: { id: string; route: string; blocks: { type: string }[] }[] }) => s.screens)
   .find((screen: { blocks: { type: string }[] }) => screen.blocks.some((b) => b.type === 'form'))
@@ -305,7 +305,7 @@ if (stackSelect) {
   stackSelect.dispatchEvent(new w.Event('change', { bubbles: true }))
   await wait(120)
 }
-const sysProject = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]
+const sysProject = JSON.parse(w.localStorage.getItem('prodops.projects.v1') ?? '[]')[0]
 console.log(`${sysProject.systemOverrides?.stack?.Data ? 'ok ' : 'ERR'} stack override persisted (${JSON.stringify(sysProject.systemOverrides?.stack ?? {})})`)
 
 const addCompBtn = Array.from(w.document.querySelectorAll('.lz-head button')).find((b) => b.textContent?.includes('Component'))
@@ -324,7 +324,7 @@ if (compModal) {
   const save = Array.from(compModal.querySelectorAll('button')).find((b) => b.textContent?.includes('Add component'))
   click(save ?? null)
   await wait(120)
-  const after = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]
+  const after = JSON.parse(w.localStorage.getItem('prodops.projects.v1') ?? '[]')[0]
   const added = after.system.components.some((c: { name: string }) => c.name === 'DisputeBanner')
   console.log(`${added ? 'ok ' : 'ERR'} custom component registered`)
 }

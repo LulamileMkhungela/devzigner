@@ -15,8 +15,6 @@ export function DataShapePage({ project }: { project: Project }) {
 
   return (
     <div className="lz-view">
-      <StepGuide phase="data-shape" />
-      <StageConfirm phase="data-shape" />
       <PhaseHeader
         project={project}
         current="data-shape"
@@ -33,6 +31,8 @@ export function DataShapePage({ project }: { project: Project }) {
           </>
         }
       />
+
+      <StepGuide phase="data-shape" />
 
       <div className="lz-stack">
         <div className="lz-rail">
@@ -89,6 +89,7 @@ export function DataShapePage({ project }: { project: Project }) {
           <pre className="lz-code">{data.sql}</pre>
         </Collapsible>
 
+        <StageConfirm phase="data-shape" />
         <NextPhase
           to="design"
           label="Continue to Design"

@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 320 96" role="img" aria-labelledby="prodops-wordmark-title">
+  <title id="prodops-wordmark-title">ProdOps</title>
+  <!--
+    ProdOps — mark and wordmark, for READMEs, slides and anywhere the app is not
+    already loading its own fonts. The mark is the same geometry as
+    `prodops-mark.svg`; the type falls back through DM Sans to the system stack.
+  -->
+  <defs>
+    <linearGradient id="prodops-wordmark-accent" x1="20" y1="14" x2="68" y2="82" gradientUnits="userSpaceOnUse">
+      <stop offset="0" stop-color="#ff7a3d" />
+      <stop offset="1" stop-color="#d83c0b" />
+    </linearGradient>
+  </defs>
+  <g transform="translate(16 16) scale(1)">
+    <rect width="64" height="64" rx="15" fill="url(#prodops-wordmark-accent)" />
+    <rect x="1" y="1" width="62" height="62" rx="14" fill="none" stroke="#ffffff" stroke-opacity=".18" stroke-width="1.5" />
+    <path d="M17 33.5 L27.5 44 L47.5 20.5" fill="none" stroke="#ffffff" stroke-width="7.5" stroke-linecap="round" stroke-linejoin="round" />
+  </g>
+  <text x="98" y="62" font-family="'DM Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', sans-serif"
+        font-size="38" font-weight="700" letter-spacing="-1.2" fill="#1c1917">Prod<tspan fill="#d83c0b">Ops</tspan></text>
+</svg>

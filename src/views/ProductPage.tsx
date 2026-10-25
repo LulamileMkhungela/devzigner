@@ -219,6 +219,7 @@ export function ProductPage({ project }: { project: Project }) {
           <Link to="flows" className="lz-btn small">Open flows <Icon name="ArrowRight" size={13} /></Link>
         </div>
 
+        <StageConfirm phase="product" />
         <NextPhase
           to="data-shape"
           label="Continue to Data Shape"
@@ -230,16 +231,20 @@ export function ProductPage({ project }: { project: Project }) {
           disabled={!confirmed.includes('product')}
         />
       </div>
-      <StageConfirm phase="product" />
     </div>
   )
 }
 
+/** A label over a number. The two are block elements: as inline siblings the
+ *  label and the value would sit on one line and the margin between them would
+ *  be ignored, which reads as a misplaced number. */
 function Stat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="lz-card" style={{ padding: 14 }}>
-      <span style={{ font: '600 11px/1 var(--font)', letterSpacing: '.07em', textTransform: 'uppercase', color: 'var(--faint)' }}>{label}</span>
-      <strong style={{ font: '700 20px/1.2 var(--font)', letterSpacing: '-.02em', marginTop: 6 }}>{value}</strong>
+    <div className="lz-card lz-stat" style={{ padding: 14 }}>
+      <span className="lz-stat-label">{label}</span>
+      <strong className="lz-stat-value" title={value}>
+        {value}
+      </strong>
     </div>
   )
 }

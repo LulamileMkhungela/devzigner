@@ -6,7 +6,7 @@
  * and does not need a client, a websocket or a backend to display.
  *
  *   /                 the cloned site, page for page
- *   /workspace        Lula DevZign — the workspace the tools actually run in
+ *   /workspace        ProdOps — the workspace the tools actually run in
  *
  * Two things are fixed at serve time rather than by editing 155 files:
  *

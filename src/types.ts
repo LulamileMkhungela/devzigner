@@ -1,5 +1,5 @@
 /**
- * Lula DevZign — core domain types.
+ * ProdOps — core domain types.
  *
  * A "Project" is fully derivable from {idea, archetypeId, seed, genome, pins}.
  * Nothing here depends on a network call or an LLM. The compiler is pure.

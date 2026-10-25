@@ -64,7 +64,7 @@ function step(label: string, ok: boolean, detail = '') {
   console.log(`${ok ? 'ok ' : 'ERR'} ${label}${detail ? ` — ${detail}` : ''}`)
 }
 
-const stored = () => JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]
+const stored = () => JSON.parse(w.localStorage.getItem('prodops.projects.v1') ?? '[]')[0]
 async function waitFor<T>(read: () => T | undefined, timeout = 8000): Promise<T | undefined> {
   const started = Date.now()
   while (Date.now() - started < timeout) {
@@ -180,7 +180,7 @@ if (captureBtn) {
   click(captureBtn)
   await wait(160)
 }
-const captured = JSON.parse(w.localStorage.getItem('lula.devzign.captures.v1') ?? '{}')
+const captured = JSON.parse(w.localStorage.getItem('prodops.captures.v1') ?? '{}')
 step('screen designs can be captured', Object.keys(captured).length > 0)
 
 const screenLink = $$('.lz-secrow, a[href*="screen-designs"]')[0]
@@ -199,7 +199,7 @@ step('Export route', w.location.hash === '#/export')
 step('four confirmed stages show four ticks', ticked() === 4, `${ticked()} ticked`)
 step('Export itself is not complete yet', !$('.lz-stage-done'))
 await completeStage('Export')
-const confirmedNow = JSON.parse(w.localStorage.getItem('lula.devzign.projects.v1') ?? '[]')[0]?.progress?.confirmed ?? []
+const confirmedNow = JSON.parse(w.localStorage.getItem('prodops.projects.v1') ?? '[]')[0]?.progress?.confirmed ?? []
 step(
   'every stage is ticked once all five are confirmed',
   confirmedNow.length === 5 && Boolean($('.lz-stage-done')),
@@ -208,7 +208,7 @@ step(
 step('readiness checklist has no failures', !$('.lz-checkrow-ic.fail'))
 step('audit renders', exportHtml.includes('Audit') || exportHtml.includes('audit'))
 
-const files = buildPackage(stored(), JSON.parse(w.localStorage.getItem('lula.devzign.versions.v1') ?? '{}')[stored().id]?.versions ?? [])
+const files = buildPackage(stored(), JSON.parse(w.localStorage.getItem('prodops.versions.v1') ?? '{}')[stored().id]?.versions ?? [])
 const paths = files.map((f) => f.path)
 step('package is complete', paths.length > 180, `${paths.length} files`)
 step(

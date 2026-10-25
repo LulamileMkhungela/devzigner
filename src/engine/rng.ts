@@ -56,7 +56,7 @@ export function makeRng(seed: number): Rng {
 }
 
 export function seedFrom(text: string): number {
-  return hashString(text.trim().toLowerCase() || 'lula')
+  return hashString(text.trim().toLowerCase() || 'prodops')
 }
 
 export function moduleSeed(base: number, module: string, version = 0): number {

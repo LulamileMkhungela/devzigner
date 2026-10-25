@@ -26,7 +26,7 @@ export class ErrorBoundary extends Component<Props, State> {
 
   componentDidCatch(error: Error, info: ErrorInfo) {
     // Keep it in the console too: the preview may be the only place it surfaces.
-    console.error('Lula DevZign crashed while rendering:', error, info.componentStack)
+    console.error('ProdOps crashed while rendering:', error, info.componentStack)
   }
 
   render() {
@@ -49,7 +49,7 @@ export class ErrorBoundary extends Component<Props, State> {
         }}
       >
         <p style={{ margin: 0, fontSize: 12, letterSpacing: '0.08em', textTransform: 'uppercase', color: '#a8a29e' }}>
-          Lula DevZign
+          ProdOps
         </p>
         <h1 style={{ margin: '6px 0 8px', fontSize: 20, fontWeight: 600 }}>The workspace hit an error</h1>
         <p style={{ margin: '0 0 12px', fontSize: 14, color: '#57534e' }}>

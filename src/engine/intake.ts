@@ -240,6 +240,18 @@ function nameFrom(actor: string, object: string, text: string, seed: number): st
   return `${stem} ${rng.pick(NAME_SUFFIXES)}`
 }
 
+/**
+ * The builder's sentence, ready to sit in prose: first letter capitalised and
+ * closed with a full stop. Descriptions are typed, not written to a spec, so
+ * "a booking tool for groomers" must not glue itself to the next sentence.
+ */
+export function asSentence(text: string): string {
+  const trimmed = text.trim().replace(/\s+/g, ' ')
+  if (!trimmed) return ''
+  const capitalised = trimmed.charAt(0).toUpperCase() + trimmed.slice(1)
+  return /[.!?]$/.test(capitalised) ? capitalised : `${capitalised}.`
+}
+
 export function profileIdea(idea: string): Intake {
   const text = idea.replace(/\s+/g, ' ').trim()
   const blank: Intake = { archetypeId: '', matched: [], sentence: '', actor: '', object: '', name: '', used: false }

@@ -16,11 +16,28 @@ import { useStore } from '../lib/store'
 import { describeIntake, profileIdea } from '../engine/intake'
 import { Icon } from './Icons'
 
-const EXAMPLES = [
-  'A booking tool for mobile dog groomers: owners pick a slot, groomers see the day route and take payment on arrival.',
-  'A clinic front desk that registers patients, books appointments and keeps each visit’s notes and invoice in one place.',
-  'A marketplace where township artisans list products, buyers pay into escrow, and disputes pause the payout until resolved.',
-  'A tool for scheduling volunteer shifts at a food bank: staff publish the roster, volunteers swap shifts, hours are logged.',
+/**
+ * Four starting points, each an example of a *complete* answer rather than a
+ * category. The label is short on purpose: a chip that repeats the whole
+ * sentence is unreadable in a row of four.
+ */
+const EXAMPLES: { label: string; text: string }[] = [
+  {
+    label: 'Mobile grooming',
+    text: 'A booking tool for mobile dog groomers: owners pick a slot, the groomer sees the day route, and payment is taken on arrival. It has to work on a phone, offline.',
+  },
+  {
+    label: 'Clinic front desk',
+    text: 'A clinic front desk that registers patients, books appointments, and keeps each visit’s notes and invoice in one place. Reception must not need a manual.',
+  },
+  {
+    label: 'Artisan marketplace',
+    text: 'A marketplace where township artisans list products, buyers pay into escrow, and disputes pause the payout until they are resolved.',
+  },
+  {
+    label: 'Volunteer roster',
+    text: 'A tool for scheduling volunteer shifts at a food bank: staff publish the roster, volunteers swap shifts, and hours are logged for funders.',
+  },
 ]
 
 const GUIDANCE = [
@@ -56,7 +73,7 @@ export function BriefComposer() {
     <section className="lz-card lz-compose" aria-labelledby="compose-title">
       <div className="lz-compose-head">
         <div>
-          <p className="lz-compose-kicker">Step 1 · your description</p>
+          <p className="lz-compose-kicker">Your brief</p>
           <h2 id="compose-title">What do you want built?</h2>
         </div>
         <span className="lz-compose-count mono">{words} words</span>
@@ -71,7 +88,13 @@ export function BriefComposer() {
       <p className="lz-compose-current">
         Currently building <b>{active.name}</b>
         <span> · {active.archetypeLabel}</span>
-        {active.idea && <span className="lz-compose-current-idea"> — “{active.idea}”</span>}
+        {active.idea && (
+          <span className="lz-compose-current-idea" title={active.idea}>
+            {' — “'}
+            {active.idea.length > 96 ? `${active.idea.slice(0, 93).trimEnd()}…` : active.idea}
+            {'”'}
+          </span>
+        )}
       </p>
 
       <label className="lz-compose-field">
@@ -123,13 +146,13 @@ export function BriefComposer() {
         <span>Or start from an example:</span>
         {EXAMPLES.map((example) => (
           <button
-            key={example}
+            key={example.label}
             type="button"
             className="lz-compose-example"
-            onClick={() => setValue(example)}
-            title={example}
+            onClick={() => setValue(example.text)}
+            title={example.text}
           >
-            {example.split(':')[0].replace(/^(A|An)\s+/i, '')}
+            {example.label}
           </button>
         ))}
       </div>

@@ -1,3 +1,11 @@
+// ProdOps — developed by Lulamile Mkhungela.
+//
+// The compiler entry point. One call, `compileProject`, turns a description (or
+// a seed) into a complete, internally consistent product: brief, data model,
+// design system, sections, screens, roadmap, flows, system record and audit.
+// Pure functions only — no React, no storage, no network — so the same inputs
+// always produce the same package.
+
 import type { CompileInput, DesignOverrides, Genome, ModuleKey, Project, SystemOverrides } from '../types'
 import { getPack } from './packs'
 import { hashString, makeRng, moduleSeed, seedFrom, slugify } from './rng'
@@ -67,7 +75,7 @@ export function compileProject(opts: CompileOptions = {}): Project {
   // and contributes a name. Explicit options still win — a recompile of an
   // existing project must not silently become a different product.
   const intake = profileIdea(idea)
-  const seed = opts.seed ?? seedFrom(idea || 'lula-devzign')
+  const seed = opts.seed ?? seedFrom(idea || 'prodops')
   const archetypeId = opts.archetypeId ?? (intake.archetypeId || 'marketplace')
   const pack = getPack(archetypeId)
   const genome = opts.genome ?? genomeFromSeed(seed)

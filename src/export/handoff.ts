@@ -257,7 +257,7 @@ function screenComponent(project: Project, section: Section, screen: Screen): st
 
   const body = screen.blocks.map((b) => blockJsx(b, rowsType)).join('\n\n')
 
-  return `// ${name} — exported by Lula DevZign.
+  return `// ${name} — exported by ProdOps.
 // Props only: no data imports, no routing, no fetch. Wire the callbacks.
 
 ${imports.join('\n')}
@@ -584,7 +584,7 @@ function shellFiles(project: Project): PackageFile[] {
 
   files.push({
     path: 'shell/components/AppShell.tsx',
-    content: `// AppShell — exported by Lula DevZign. Layout and navigation only.
+    content: `// AppShell — exported by ProdOps. Layout and navigation only.
 import type { ReactNode } from 'react'
 import { MainNav } from './MainNav'
 import { UserMenu } from './UserMenu'

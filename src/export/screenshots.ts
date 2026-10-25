@@ -431,7 +431,7 @@ function shellSvg(project: Project, screen: Screen, section: Section, surface: '
   text(ctx, contentX + PAD, H - 10, `${project.name} · ${screen.name}`, { size: 9.5, fill: t.inkFaint })
   text(ctx, W - PAD - 120, H - 10, `${screen.route}  ·  ${surface === 'shell' ? 'shell' : 'screenshot'}`, { size: 9.5, fill: t.inkFaint })
 
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(`${section.name}: ${screen.name} — designed in Lula DevZign`)}">
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" role="img" aria-label="${esc(`${section.name}: ${screen.name} — designed in ProdOps`)}">
 <rect width="${W}" height="${H}" fill="${t.bg}" />
 ${parts.join('\n')}
 </svg>

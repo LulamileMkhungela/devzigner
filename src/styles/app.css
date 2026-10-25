@@ -1,5 +1,5 @@
 /* ==========================================================================
-   Lula DevZign — application shell.
+   ProdOps — application shell.
 
    The skin is Design OS's own: warm stone neutrals, white cards on stone-50,
    a 1px stone-200 rule between surfaces, DM Sans for text, IBM Plex Mono for
@@ -233,13 +233,14 @@ pre {
   gap: 9px;
   padding: 0 8px 0 0;
 }
-.lz-brand-dot {
-  width: 20px;
-  height: 20px;
-  border-radius: 50%;
+.lz-brand-mark {
+  width: 22px;
+  height: 22px;
   flex: 0 0 auto;
-  background: #1c1917;
-  box-shadow: 0 0 0 3px rgba(28, 25, 23, 0.08);
+  border-radius: 6px;
+  display: block;
+  /* a hairline keeps the mark crisp against the light sidebar */
+  box-shadow: 0 0 0 1px rgba(28, 25, 23, 0.08);
 }
 .lz-brand-name {
   font: 600 15px/1 var(--font);
@@ -492,6 +493,18 @@ pre {
   min-width: 0;
   flex: 1;
   animation: lz-fade 0.22s ease both;
+}
+/* A view is a flex column with no gap, so every direct child states its own
+   spacing. The page header owns the space below it; panels own the space
+   between themselves and the next block. Without this, a guide or a composer
+   panel sits flush against the content underneath it. */
+.lz-view > .lz-guide,
+.lz-view > .lz-compose {
+  margin: 0 0 16px;
+}
+.lz-view > .lz-stack + .lz-stage,
+.lz-view > .lz-stack + .lz-stage-done {
+  margin-top: 18px;
 }
 @keyframes lz-fade {
   from {
@@ -2416,4 +2429,99 @@ input[type='range'] {
   margin: 12px 0 0;
   padding-top: 10px;
   border-top: 1px dashed var(--line);
+}
+
+/* --------------------------------------------------------------------------
+   the credit line — who built this
+   -------------------------------------------------------------------------- */
+
+.lz-credit {
+  /* A footer at the end of the document, aligned to the same column as the
+     views so it never looks pinned to the window. */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 1060px;
+  margin: 34px auto 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font: 400 11px/1.55 var(--font);
+  color: var(--faint);
+}
+.lz-credit b {
+  font-weight: 600;
+  color: var(--ink-2);
+}
+.lz-credit-mark {
+  display: inline-flex;
+  flex: 0 0 auto;
+  opacity: .9;
+}
+.lz-credit-mark img {
+  display: block;
+  border-radius: 4px;
+}
+.lz-credit b {
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+/* --------------------------------------------------------------------------
+   small screens: the phase header drops its vertical rule, and the composer
+   stops pretending it has room for a side-by-side footer
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  .lz-weekhead-div {
+    display: none;
+  }
+  .lz-compose {
+    padding: 18px 16px 16px;
+  }
+  .lz-compose-head {
+    gap: 10px;
+  }
+  .lz-compose-foot {
+    align-items: stretch;
+    gap: 12px;
+  }
+  .lz-compose-foot .lz-btn {
+    justify-content: center;
+    width: 100%;
+  }
+  .lz-compose-examples {
+    gap: 6px;
+  }
+  .lz-stage {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .lz-stage .lz-btn {
+    justify-content: center;
+  }
+  .lz-credit {
+    align-items: flex-start;
+  }
+}
+
+/* stat tiles: label above value, both as blocks, value allowed to ellipsis */
+.lz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.lz-stat-label {
+  font: 600 11px/1 var(--font);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.lz-stat-value {
+  font: 700 20px/1.2 var(--font);
+  letter-spacing: -.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

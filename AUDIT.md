@@ -1,16 +1,21 @@
 # The upstream audit
 
 What this answers: *is everything from buildermethods.com and the buildermethods
-repositories applied in Lula DevZign — including the API?*
+repositories applied in ProdOps — including the API?*
 
 Every row below was checked against a fresh clone, not against memory or a blog
 post. **`/coverage` in the app and `npm run check` in this repo re-derive these
 answers from the package on every run** — if a file disappears, a check fails.
 
+Reviewed again in full on **2026-10-25**, pinned by commit, and re-checked on demand:
+`npm run upstream-check` re-downloads all five repositories and diffs every vendored file
+(line endings normalised, nothing else). `docs/UPSTREAM-REVIEW.md` is the same review in
+prose, and it ships inside every exported package.
+
 | Repository | Language / size | Version reviewed | What it contributed |
 | --- | --- | --- | --- |
-| [`buildermethods/design-os`](https://github.com/buildermethods/design-os) | TypeScript, 70 KB | `main` | 10 commands, 8 docs (incl. `requirements.md`), the export contract, the UI skin |
-| [`buildermethods/agent-os`](https://github.com/buildermethods/agent-os) | Shell, 411 KB | `main` — **v3.0.0** | 5 commands, `agent-os/` profile + standards, `config.yml` |
+| [`buildermethods/design-os`](https://github.com/buildermethods/design-os) | TypeScript, 70 KB | `main` @ `2f14c4611f06` | 10 commands, 8 docs (incl. `requirements.md`), the export contract, the UI skin |
+| [`buildermethods/agent-os`](https://github.com/buildermethods/agent-os) | Shell, 411 KB | `main` @ `e892e61d3227` — **v3.0.0** | 5 commands, `agent-os/` profile + standards, `config.yml` |
 | [`buildermethods/agent-os`](https://github.com/buildermethods/agent-os/tree/v2) | Shell | branch `v2` | the 15 workflow files the workflows page documents |
 | [`buildermethods/bm-skills`](https://github.com/buildermethods/bm-skills) | TypeScript, 202 KB | `main` | PRD Creator (12 steps), Skill Builder (6 + 2 refs), Design System (50 refs), Favicon Creator |
 | [`buildermethods/agentcanon`](https://github.com/buildermethods/agentcanon) | HTML, 32 KB | `main` | `.agents/skills/` + `AGENTS.md` convention, `CLAUDE.md` symlink |

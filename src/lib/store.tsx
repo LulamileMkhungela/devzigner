@@ -1,13 +1,21 @@
+// ProdOps — developed by Lulamile Mkhungela.
+//
+// The one store: projects, screenshots, version books, the active project and
+// the theme, persisted to this browser and migrated on the way in. Everything a
+// view can change goes through here, and every compile keeps the stages the
+// builder has confirmed — unless the description itself changed.
+
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { DesignOverrides, Genome, ModuleKey, Project, RegistryComponent, Section, SystemOverrides, UserFlow, Version } from '../types'
 import { compileProject, defaultModuleSeeds, genomeFromSeed, remixSeed, type CompileOptions } from '../engine'
 import { migrateProjects } from './migrate'
+import { KEYS, readJson, writeJson } from './storage'
 
-const STORAGE_KEY = 'lula.devzign.projects.v1'
-const THEME_KEY = 'lula.devzign.theme.v1'
-const CAPTURE_KEY = 'lula.devzign.captures.v1'
-const ACTIVE_KEY = 'lula.devzign.active.v1'
-const VERSION_KEY = 'lula.devzign.versions.v1'
+const STORAGE_KEY = KEYS.projects
+const THEME_KEY = KEYS.theme
+const CAPTURE_KEY = KEYS.captures
+const ACTIVE_KEY = KEYS.active
+const VERSION_KEY = KEYS.versions
 
 /** The install ships with one finished product, so the flow is walkable on
  *  first paint with no prompt, key, seed or paste. */
@@ -70,24 +78,6 @@ interface StoreValue {
 }
 
 const StoreContext = createContext<StoreValue | null>(null)
-
-function readJson<T>(key: string, fallback: T): T {
-  try {
-    const raw = localStorage.getItem(key)
-    if (!raw) return fallback
-    return JSON.parse(raw) as T
-  } catch {
-    return fallback
-  }
-}
-
-function writeJson(key: string, value: unknown) {
-  try {
-    localStorage.setItem(key, JSON.stringify(value))
-  } catch {
-    /* storage full — the session still works in memory */
-  }
-}
 
 function initialVersion(project: Project): Version {
   return {

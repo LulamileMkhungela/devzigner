@@ -6,6 +6,7 @@ import { Link } from '../lib/router'
 import { ScreenThumb } from '../components/AppPreview'
 import { formatField } from '../lib/format'
 import { completedPhases, sectionProgress } from '../lib/progress'
+import { KEYS } from '../lib/storage'
 
 function screenSpec(screen: Screen, project: Project): string {
   const lines = [
@@ -216,7 +217,7 @@ export function SectionPage({ project, section }: { project: Project; section: S
               Screenshots are the one artefact this flow does not assume. Capture the {section.screens.length} rendered screens for <b>{section.name}</b>; they land in the export package.
             </>
           }
-          command={`lula capture --section ${section.id}`}
+          command={`prodops capture --section ${section.id}`}
           action={
             <button className="lz-btn primary" onClick={captureAll}>
               <Icon name="Image" size={13} /> Capture {section.screens.length} screens
@@ -251,7 +252,7 @@ export function SectionPage({ project, section }: { project: Project; section: S
       {(!done['data-shape'] || !done.design) && (
         <div style={{ marginBottom: 18 }}>
           <WarningBanner
-            storageKey={`lula.banner.${project.id}`}
+            storageKey={KEYS.banner(project.id)}
             text="Consider completing Data Shape and Design before designing sections."
           />
         </div>

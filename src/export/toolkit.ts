@@ -13,7 +13,7 @@ import { TOOLKIT } from './vendor/toolkit'
 
 const header = `# Agent instructions — PROJECT
 
-PROJECT is a PRODUCT built from a Lula DevZign handoff: a compiled design system, a
+PROJECT is a PRODUCT built from a ProdOps handoff: a compiled design system, a
 UI contract, a working API and a test suite. Read this before changing anything.
 
 ## Where things live

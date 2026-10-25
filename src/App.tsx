@@ -1,3 +1,9 @@
+// ProdOps — developed by Lulamile Mkhungela.
+//
+// The application shell: the sticky header that carries the brand, the phase
+// stepper and the account menu; the routed view in the main column; the credit
+// at the end of the document; and the toast that confirms every action.
+
 import { useEffect, useMemo, useState } from 'react'
 import { useStore } from './lib/store'
 import { Link, navigate, useRoute } from './lib/router'
@@ -103,10 +109,10 @@ export function App() {
 
   return (
     <div className="lz-app" data-theme={theme}>
-      <aside className="lz-side" aria-label="Lula DevZign">
+      <aside className="lz-side" aria-label="ProdOps">
         <div className="lz-brand">
-          <span className="lz-brand-dot" aria-hidden="true" />
-          <span className="lz-brand-name">Lula DevZign</span>
+          <img className="lz-brand-mark" src="/prodops-mark.svg" alt="" width={22} height={22} />
+          <span className="lz-brand-name">ProdOps</span>
           <span className="lz-mode-chip" title="Compiled in this browser. No keys, no model calls.">Local</span>
         </div>
 
@@ -215,6 +221,7 @@ export function App() {
             </div>
           )}
         </div>
+
       </aside>
 
       <main className="lz-main">
@@ -228,6 +235,16 @@ export function App() {
         </div>
 
         <div key={path.join('/') || 'product'}>{page()}</div>
+
+        <footer className="lz-credit">
+          <span className="lz-credit-mark">
+            <img src="/prodops-mark.svg" alt="" width={14} height={14} />
+          </span>
+          <span>
+            <b>ProdOps</b> — developed by <b>Lulamile Mkhungela</b>. Compiled in this browser: no keys, no model calls,
+            no data leaves the page.
+          </span>
+        </footer>
       </main>
 
       <Toast />

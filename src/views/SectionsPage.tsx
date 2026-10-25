@@ -6,6 +6,7 @@ import { NextPhase, PhaseHeader, ProgressDots, WarningBanner } from '../componen
 import { Icon } from '../components/Icons'
 import { Link } from '../lib/router'
 import { completedPhases, sectionProgress, sectionStats } from '../lib/progress'
+import { KEYS } from '../lib/storage'
 
 export function SectionsPage({ project }: { project: Project }) {
   const { captures, confirmed } = useStore()
@@ -14,8 +15,6 @@ export function SectionsPage({ project }: { project: Project }) {
 
   return (
     <div className="lz-view">
-      <StepGuide phase="sections" />
-      <StageConfirm phase="sections" />
       <PhaseHeader
         project={project}
         current="sections"
@@ -28,10 +27,12 @@ export function SectionsPage({ project }: { project: Project }) {
         }
       />
 
+      <StepGuide phase="sections" />
+
       <div className="lz-stack">
         {(!done['data-shape'] || !done.design) && (
           <WarningBanner
-            storageKey={`lula.banner.${project.id}`}
+            storageKey={KEYS.banner(project.id)}
             text="Consider completing Data Shape and Design before designing sections."
           />
         )}
@@ -76,6 +77,7 @@ export function SectionsPage({ project }: { project: Project }) {
         </div>
 
         <div>
+          <StageConfirm phase="sections" />
           <NextPhase
             to="export"
             label="Continue to Export"

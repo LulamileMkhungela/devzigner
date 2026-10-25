@@ -1,5 +1,6 @@
 import { StepGuide } from '../components/StepGuide'
 import { BriefComposer } from '../components/BriefComposer'
+import { ScopeReview } from '../components/ScopeReview'
 import { StageConfirm } from '../components/StageConfirm'
 import { useState } from 'react'
 import type { Project } from '../types'
@@ -9,6 +10,8 @@ import { Link } from '../lib/router'
 import { Icon } from '../components/Icons'
 import { buildPackage } from '../export/package'
 import { seedPhrase } from '../engine'
+import { started } from '../lib/state'
+import { PHASES } from '../lib/progress'
 
 export function ProductPage({ project }: { project: Project }) {
   const { regenerate, notify, confirmed } = useStore()
@@ -26,6 +29,43 @@ export function ProductPage({ project }: { project: Project }) {
   const downloadBrief = () => {
     const file = buildPackage(project).find((f) => f.path === 'product-brief.md')
     if (file) download('product-brief.md', file.content)
+  }
+
+  /* Before there is a description there is no brief to show. The page is the
+     composer and an honest list of what the five stages will hold — not a
+     sample brief, not somebody else's personas. */
+  if (!started(project)) {
+    return (
+      <div className="lz-view">
+        <PhaseHeader project={project} current="product" title="Product" subtitle="Describe the product. Everything else is derived from this." />
+        <BriefComposer />
+        <div className="lz-card lz-what-next">
+          <h2>What happens when you build</h2>
+          <p>
+            The compiler reads your description and writes five stages. Nothing is pre-filled, and nothing is
+            invented: if a stage needs something you have not said yet, it asks rather than guessing.
+          </p>
+          <ol className="lz-what-next-list">
+            {PHASES.map((phase, index) => (
+              <li key={phase.id}>
+                <span className="mono">{index + 1}</span>
+                <span>
+                  <b>{phase.label}</b>
+                  <span>
+                    {phase.id === 'product' && 'The brief: the problem, who it is for, what is different, and the roadmap.'}
+                    {phase.id === 'data-shape' && 'The things your product has to remember, and how they relate.'}
+                    {phase.id === 'design' && 'Colour, type and the shell, as tokens you can change.'}
+                    {phase.id === 'sections' && 'The build order, with a spec, sample data and screens per section.'}
+                    {phase.id === 'export' && 'The handoff package a coding agent builds from.'}
+                  </span>
+                </span>
+              </li>
+            ))}
+          </ol>
+        </div>
+        <StepGuide phase="product" />
+      </div>
+    )
   }
 
   return (
@@ -48,6 +88,8 @@ export function ProductPage({ project }: { project: Project }) {
       />
 
       <BriefComposer />
+
+      <ScopeReview project={project} />
 
       <StepGuide phase="product" />
 

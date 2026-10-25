@@ -196,6 +196,7 @@ export const marketplace: Pack = {
       name: 'Sellers',
       purpose: 'Onboard, audit and monitor every vendor in the network.',
       priority: 'MVP',
+      core: true,
       icon: 'Store',
       entityIds: ['vendors', 'products'],
       screens: [
@@ -209,6 +210,7 @@ export const marketplace: Pack = {
       name: 'Catalogue',
       purpose: 'Keep listings complete, priced correctly and publishable.',
       priority: 'MVP',
+      core: true,
       icon: 'Package',
       entityIds: ['products', 'vendors'],
       screens: [
@@ -222,6 +224,7 @@ export const marketplace: Pack = {
       name: 'Fulfilment',
       purpose: 'Move orders from paid to delivered, and catch the ones that stall.',
       priority: 'MVP',
+      core: true,
       icon: 'Truck',
       entityIds: ['orders', 'vendors'],
       screens: [
@@ -454,6 +457,7 @@ export const saas: Pack = {
       name: 'Accounts',
       purpose: 'Every client, its health and its renewal window.',
       priority: 'MVP',
+      core: true,
       icon: 'Building2',
       entityIds: ['accounts', 'projects', 'invoices'],
       screens: [
@@ -467,6 +471,7 @@ export const saas: Pack = {
       name: 'Delivery',
       purpose: 'Plan and track projects with a board that matches how the team works.',
       priority: 'MVP',
+      core: true,
       icon: 'FolderKanban',
       entityIds: ['projects', 'tasks'],
       screens: [
@@ -480,6 +485,7 @@ export const saas: Pack = {
       name: 'Billing',
       purpose: 'Issue milestone invoices and chase the ones that slip.',
       priority: 'Next',
+      core: true,
       icon: 'Receipt',
       entityIds: ['invoices', 'accounts'],
       screens: [
@@ -675,6 +681,7 @@ export const crm: Pack = {
       name: 'Pipeline',
       purpose: 'Drag deals through evidence-gated stages without losing the story.',
       priority: 'MVP',
+      core: true,
       icon: 'Columns3',
       entityIds: ['deals', 'companies'],
       screens: [
@@ -688,6 +695,7 @@ export const crm: Pack = {
       name: 'Companies',
       purpose: 'The account book: who buys, who could buy, and what is open.',
       priority: 'MVP',
+      core: true,
       icon: 'Building2',
       entityIds: ['companies', 'contacts', 'deals'],
       screens: [
@@ -700,6 +708,7 @@ export const crm: Pack = {
       name: 'Contacts',
       purpose: 'Every person in the buying network, with relationship history.',
       priority: 'Next',
+      core: true,
       icon: 'Users',
       entityIds: ['contacts', 'companies'],
       screens: [
@@ -895,6 +904,7 @@ export const learning: Pack = {
       name: 'Cohorts',
       purpose: 'Plan intakes, set dates and manage access.',
       priority: 'MVP',
+      core: true,
       icon: 'CalendarDays',
       entityIds: ['cohorts', 'learners'],
       screens: [
@@ -908,6 +918,7 @@ export const learning: Pack = {
       name: 'Curriculum',
       purpose: 'Sequence lessons and keep materials current.',
       priority: 'MVP',
+      core: true,
       icon: 'BookOpen',
       entityIds: ['lessons'],
       screens: [
@@ -920,6 +931,7 @@ export const learning: Pack = {
       name: 'Learners',
       purpose: 'See momentum, attendance and support history in one place.',
       priority: 'MVP',
+      core: true,
       icon: 'GraduationCap',
       entityIds: ['learners', 'cohorts', 'submissions'],
       screens: [
@@ -1130,6 +1142,7 @@ export const clinic: Pack = {
       name: 'Patients',
       purpose: 'A single patient record with contact, cover and visit history.',
       priority: 'MVP',
+      core: true,
       icon: 'HeartPulse',
       entityIds: ['patients', 'appointments', 'notes'],
       screens: [
@@ -1143,6 +1156,7 @@ export const clinic: Pack = {
       name: 'Appointments',
       purpose: 'Book, confirm and backfill the diary.',
       priority: 'MVP',
+      core: true,
       icon: 'CalendarClock',
       entityIds: ['appointments', 'clinicians', 'patients'],
       screens: [
@@ -1156,6 +1170,7 @@ export const clinic: Pack = {
       name: 'Clinical notes',
       purpose: 'Write and sign notes in the room, not after hours.',
       priority: 'MVP',
+      core: true,
       icon: 'ClipboardList',
       entityIds: ['notes', 'patients', 'appointments'],
       screens: [
@@ -1372,6 +1387,7 @@ export const fintech: Pack = {
       name: 'Transactions',
       purpose: 'Review, categorise and reconcile every movement.',
       priority: 'MVP',
+      core: true,
       icon: 'ArrowLeftRight',
       entityIds: ['transactions', 'accounts', 'budgets'],
       screens: [
@@ -1385,6 +1401,7 @@ export const fintech: Pack = {
       name: 'Budgets',
       purpose: 'Envelopes with owners, thresholds and early warnings.',
       priority: 'MVP',
+      core: true,
       icon: 'PiggyBank',
       entityIds: ['budgets', 'transactions'],
       screens: [

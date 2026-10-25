@@ -27,6 +27,110 @@ import { EditorPage } from './views/EditorPage'
 import { WikiPage } from './views/WikiPage'
 import { CoveragePage } from './views/CoveragePage'
 import { ToolsPage } from './views/ToolsPage'
+import { AwaitingDescription } from './components/AwaitingDescription'
+import { started } from './lib/state'
+
+/**
+ * What each stage holds once there is a product to hold it.
+ *
+ * This is the empty state's copy, and it is the same list the stage's own guide
+ * gives — so a page that has nothing in it is still teaching what will be here,
+ * instead of showing a sample that is not the builder's.
+ */
+const STAGE_INTRO: Record<string, { stage: string; title: string; subtitle: string; willHold: string[] }> = {
+  'data-shape': {
+    stage: 'Data Shape',
+    title: 'Data Shape',
+    subtitle: 'The things your product has to remember, and how they relate.',
+    willHold: [
+      'The entities your product actually needs, with their fields and types',
+      'The relationships between them, enforced by the database rather than the UI',
+      'Seeded rows, so every screen has something real to render',
+      'schema.sql, generated from the same definition',
+    ],
+  },
+  design: {
+    stage: 'Design',
+    title: 'Design system',
+    subtitle: 'Colour, type, spacing and the shell — tokens, not screenshots.',
+    willHold: [
+      'Colour roles derived from the product, checked for contrast',
+      'Type roles, spacing, radii and motion as W3C DTCG tokens',
+      'The application shell: navigation, header and page frame',
+      'A live preview of the shell in both themes',
+    ],
+  },
+  shell: {
+    stage: 'Design',
+    title: 'Shell design',
+    subtitle: 'The frame every screen sits inside.',
+    willHold: ['The navigation for your sections', 'The header and page frame', 'Both themes, previewable'],
+  },
+  sections: {
+    stage: 'Sections',
+    title: 'Sections',
+    subtitle: 'The build order: each slice of the product with its own spec, data and screens.',
+    willHold: [
+      'The sections you ask for — nothing is added that you did not describe',
+      'A spec and acceptance checks per section',
+      'Sample data and designed screens per section',
+      'Screenshots, captured from the screens you approve',
+    ],
+  },
+  export: {
+    stage: 'Export',
+    title: 'Export',
+    subtitle: 'The handoff package a coding agent builds from.',
+    willHold: [
+      'The brief, the data shape and the design tokens',
+      'Every section spec, component and screenshot',
+      'The backend contract, its rules and its tests',
+      'A README the agent reads first',
+    ],
+  },
+  personas: {
+    stage: 'Workspace',
+    title: 'Personas',
+    subtitle: 'The people the product is for.',
+    willHold: ['The person whose day the product changes', 'Their goal, their pain, and what is actually true'],
+  },
+  flows: {
+    stage: 'Workspace',
+    title: 'User flows',
+    subtitle: 'The routes through the product.',
+    willHold: ['A flow per persona', 'The screens each flow passes through', 'The flows you add yourself'],
+  },
+  system: {
+    stage: 'Workspace',
+    title: 'Tech stack',
+    subtitle: 'What the product is built on, and the components it is built from.',
+    willHold: ['The stack, layer by layer', 'The component registry every screen uses', 'Anything you override'],
+  },
+  prototype: {
+    stage: 'Workspace',
+    title: 'Prototype',
+    subtitle: 'The screens you designed, running as one app.',
+    willHold: ['Your sections as screens', 'Navigation between them', 'The data your product actually has'],
+  },
+  editor: {
+    stage: 'Workspace',
+    title: 'Token editor',
+    subtitle: 'Change the design system and see every screen follow.',
+    willHold: ['Your tokens, editable', 'A live preview of the effect', 'An override you can reset'],
+  },
+  wiki: {
+    stage: 'Workspace',
+    title: 'Wiki',
+    subtitle: 'The project, written down.',
+    willHold: ['The pages a new builder would read', 'A version for every snapshot you take', 'Branches, if you want them'],
+  },
+  coverage: {
+    stage: 'Workspace',
+    title: 'Coverage',
+    subtitle: 'Every command, checked against the package that exists.',
+    willHold: ['The ten stage commands and their artefacts', 'The standards commands', 'What is missing, named'],
+  },
+}
 
 const TRACK_NAV = [
   { path: 'tools', label: 'Tools', icon: 'Sparkles' },
@@ -68,6 +172,14 @@ export function App() {
   const screenId = path[0] === 'sections' && path[2] === 'screen-designs' ? path[3] : undefined
 
   function page() {
+    // A stage with no product in it says so, and says what it will hold. The
+    // toolkit is exempt: those eight tools are real files, not artefacts of a
+    // product, and the Product stage is where the product comes from.
+    const stage = path[0] ?? ''
+    if (!started(active) && stage !== '' && stage !== 'tools') {
+      const intro = STAGE_INTRO[stage] ?? STAGE_INTRO['data-shape']
+      return <AwaitingDescription {...intro} />
+    }
     if (path[0] === 'data-shape') return <DataShapePage project={active} />
     if (path[0] === 'design') return <DesignPage project={active} />
     if (path[0] === 'shell') return <ShellDesignPage project={active} fullscreen={fullscreen} />
@@ -195,6 +307,16 @@ export function App() {
 
         </nav>
 
+        {/* The workspace is one page of a site that is 100+ pages wide. The
+            builder got here from a page, and the way back has to be a link in
+            the panel they are already looking at — not the browser's back
+            button across nine documents. */}
+        <a className="lz-side-back" href="/">
+          <Icon name="ArrowLeft" size={13} />
+          <span>Back to the ProdOps site</span>
+          <Icon name="ArrowUpRight" size={12} className="lz-side-back-out" />
+        </a>
+
         <div className="lz-side-foot">
           <div className="lz-avatar" aria-hidden="true">{active.name.slice(0, 1).toUpperCase()}</div>
           <div className="lz-account">
@@ -243,8 +365,11 @@ export function App() {
                 Download .zip
               </button>
               <hr />
-              <button type="button" role="menuitem" onClick={() => { reset(); navigate(''); setMenuOpen(false); notify('Starter product restored') }}>
-                Reset to starter product
+              <a className="lz-menu-link" role="menuitem" href="/">
+                Back to the ProdOps site
+              </a>
+              <button type="button" role="menuitem" onClick={() => { reset(); navigate(''); setMenuOpen(false); notify('Cleared — describe a product') }}>
+                Clear this product
               </button>
             </div>
           )}

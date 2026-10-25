@@ -638,6 +638,51 @@ pre {
 .lz-app[data-theme='dark'] .lz-menu button:hover {
   background: #1b232f;
 }
+/* The way back to the site: a row of its own in the panel, above the account,
+   because a builder who is lost in nine documents will not open a ••• menu. */
+.lz-side-back {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card-soft);
+  color: var(--muted);
+  font: 500 12.5px/1.2 var(--font);
+  text-decoration: none;
+  flex: 0 0 auto;
+  transition: color 0.16s, border-color 0.16s, background 0.16s;
+}
+.lz-side-back:hover {
+  color: var(--ink);
+  border-color: var(--accent-line);
+  background: var(--card);
+}
+.lz-side-back span {
+  flex: 1 1 auto;
+}
+.lz-side-back-out {
+  opacity: 0.55;
+}
+.lz-menu-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: 7px;
+  padding: 8px 10px;
+  font: 500 13px/1.2 var(--font);
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.lz-menu-link:hover {
+  background: #f4f1ea;
+  color: var(--ink);
+}
+.lz-app[data-theme='dark'] .lz-menu-link:hover {
+  background: #1b232f;
+}
 .lz-menu hr {
   border: 0;
   border-top: 1px solid var(--line-soft);
@@ -668,9 +713,18 @@ pre {
    spacing. The page header owns the space below it; panels own the space
    between themselves and the next block. Without this, a guide or a composer
    panel sits flush against the content underneath it. */
+/* Every panel that opens a view — the how-to guide, the brief composer, the
+   scope review, the "what happens when you build" list — sits on the same
+   rhythm, so the page reads as a column of blocks rather than a stack that
+   varies with which panels happen to be present. */
 .lz-view > .lz-guide,
-.lz-view > .lz-compose {
-  margin: 0 0 16px;
+.lz-view > .lz-compose,
+.lz-view > .lz-scope,
+.lz-view > .lz-what-next {
+  margin: 0 0 18px;
+}
+.lz-view > .lz-stack {
+  margin-top: 4px;
 }
 .lz-view > .lz-stack + .lz-stage,
 .lz-view > .lz-stack + .lz-stage-done {
@@ -923,6 +977,264 @@ pre {
 }
 
 /* --------------------------------------------------------------------------
+   scope review — what the compiler read
+   -------------------------------------------------------------------------- */
+
+.lz-scope {
+  margin: 0 0 18px;
+}
+.lz-scope-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.lz-scope-head h2 {
+  margin: 3px 0 0;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+.lz-scope-read {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 16px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--line-soft);
+}
+.lz-scope-read dt {
+  font: 500 11px/1 var(--font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.lz-scope-read dd {
+  margin: 5px 0 0;
+  font: 500 13px/1.45 var(--font);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.lz-scope-evidence {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.lz-scope-word {
+  font: 500 11.5px/1 var(--mono);
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: var(--accent-soft, color-mix(in srgb, var(--accent) 12%, transparent));
+  color: var(--ink);
+}
+.lz-scope-ask {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--accent-line);
+  background: var(--card-soft);
+}
+.lz-scope-ask ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.lz-scope-ask-note {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.lz-scope-list {
+  margin-top: 18px;
+}
+.lz-scope-list ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.lz-scope-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card-soft);
+}
+.lz-scope-row b {
+  display: block;
+  font: 600 13.5px/1.35 var(--font);
+  color: var(--ink);
+}
+.lz-scope-row span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.lz-scope-row .lz-scope-meta {
+  font: 500 11.5px/1 var(--mono);
+  color: var(--faint);
+  white-space: nowrap;
+}
+.lz-scope-remove {
+  color: var(--muted);
+}
+.lz-scope-out .lz-scope-row {
+  border-style: dashed;
+  background: transparent;
+}
+.lz-scope-out .lz-scope-row b {
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .lz-scope-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .lz-scope-row .lz-scope-meta {
+    grid-column: 1 / -1;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   what happens when you build
+   -------------------------------------------------------------------------- */
+
+.lz-what-next {
+  margin: 0 0 18px;
+}
+.lz-what-next h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+.lz-what-next p {
+  margin: 0;
+  max-width: 68ch;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.lz-what-next-list {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  counter-reset: stage;
+}
+.lz-what-next-list li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+.lz-what-next-list .mono {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  font: 600 11px/1 var(--mono);
+  color: var(--muted);
+}
+.lz-what-next-list b {
+  display: block;
+  font: 600 13.5px/1.4 var(--font);
+  color: var(--ink);
+}
+.lz-what-next-list span span {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* --------------------------------------------------------------------------
+   a stage with no product in it
+   -------------------------------------------------------------------------- */
+
+.lz-awaiting {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  padding: 24px;
+}
+.lz-awaiting-ic {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--accent);
+  background: var(--accent-tint);
+  border: 1px solid var(--accent-line);
+}
+.lz-awaiting h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  letter-spacing: -0.015em;
+}
+.lz-awaiting p {
+  margin: 0 0 10px;
+  max-width: 68ch;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.lz-awaiting-label {
+  margin-top: 16px !important;
+  font-size: 12px;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint) !important;
+}
+.lz-awaiting-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.lz-awaiting-list li {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.lz-awaiting-list svg {
+  margin-top: 3px;
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+.lz-awaiting-note {
+  margin: 14px 0 0 !important;
+  font-size: 12px;
+  color: var(--faint) !important;
+}
+@media (max-width: 720px) {
+  .lz-awaiting {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --------------------------------------------------------------------------
    controls
    -------------------------------------------------------------------------- */
 
@@ -1156,7 +1468,7 @@ pre {
 .lz-stack {
   display: flex;
   flex-direction: column;
-  gap: 14px;
+  gap: 16px;
 }
 .lz-cols-2 {
   display: grid;

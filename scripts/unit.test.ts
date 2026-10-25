@@ -12,7 +12,7 @@ import assert from 'node:assert/strict'
 import { createHash } from 'node:crypto'
 import { readFileSync } from 'node:fs'
 import { ARCHETYPES, compileProject } from '../src/engine'
-import { describeIntake, profileIdea } from '../src/engine/intake'
+import { describeIntake, intakeGaps, profileIdea } from '../src/engine/intake'
 import { BLOCK_COMPONENT_NAMES } from '../src/engine/system'
 import { buildPackage } from '../src/export/package'
 import { TOOLS } from '../src/tools'
@@ -519,4 +519,81 @@ test('rebranding never renames a path — only the words on the page', () => {
   assert.doesNotMatch(out, /\.\.\/data:/)
   assert.match(out, /src="data:image\/svg\+xml;base64,/)
   assert.match(out, /alt="ProdOps"/)
+})
+
+/* ---- scope: nothing is compiled that the builder did not ask for --------- */
+
+test('a described product compiles only the sections the description asks for', () => {
+  const product = compileProject({ idea: 'a marketplace for township artisans' })
+  const ids = product.sections.map((section) => section.id)
+  assert.ok(ids.length >= 2, 'a marketplace still has a usable spine')
+  // The ops dashboard was the complaint that started this: it is not in a
+  // one-sentence artisan marketplace, and it is not in the nav either.
+  assert.equal(ids.includes('control-room'), false)
+  assert.equal(product.design.layout.nav.includes('Control room'), false)
+  assert.deepEqual(
+    product.design.layout.nav,
+    product.sections.map((section) => section.name),
+    'the shell navigates to the sections that exist, nothing else',
+  )
+})
+
+test('everything the pack offered is reported, kept or not, with a reason', () => {
+  const product = compileProject({ idea: 'a marketplace for township artisans' })
+  const scope = product.scope ?? []
+  assert.ok(scope.length > product.sections.length, 'the dropped sections are listed too')
+  for (const decision of scope) {
+    assert.ok(decision.why.length > 0, `${decision.name} says why`)
+    assert.equal(
+      product.sections.some((section) => section.id === decision.id),
+      decision.included,
+      `${decision.name}: the report matches what compiled`,
+    )
+  }
+})
+
+test('a description that asks for ops gets the control room', () => {
+  const product = compileProject({
+    idea: 'an ops dashboard for our marketplace: what is blocked, what is late, plus payouts and disputes',
+  })
+  assert.ok(product.sections.some((section) => section.id === 'control-room'))
+})
+
+test('the builder can add and remove a section by hand', () => {
+  const base = compileProject({ idea: 'a marketplace for township artisans' })
+  const dropped = (base.scope ?? []).find((decision) => !decision.included)
+  assert.ok(dropped, 'the plain idea leaves something out')
+  const added = compileProject({
+    idea: base.idea,
+    seed: base.seed,
+    archetypeId: base.archetypeId,
+    scopeChoice: { include: [dropped.id] },
+  })
+  assert.ok(added.sections.some((section) => section.id === dropped.id))
+  const removed = compileProject({
+    idea: base.idea,
+    seed: base.seed,
+    archetypeId: base.archetypeId,
+    scopeChoice: { exclude: [base.sections[0].id] },
+  })
+  assert.equal(removed.sections.some((section) => section.id === base.sections[0].id), false)
+})
+
+test('an undescribed product still compiles its archetype as chosen', () => {
+  // With no words to read there is nothing to filter by: the builder picked the
+  // pack, so the pack stands — and the UI shows none of it until they describe.
+  const product = compileProject({ archetypeId: 'clinic', seed: 99 })
+  assert.equal(product.sections.length, 6)
+})
+
+test('the brief asks what the description did not answer', () => {
+  const thin = profileIdea('a marketplace')
+  const gaps = intakeGaps(thin, 'a marketplace')
+  assert.ok(gaps.some((gap) => /who is this for/i.test(gap)))
+  assert.ok(gaps.some((gap) => /main thing/i.test(gap)))
+  const answered = profileIdea(
+    'A booking tool for mobile dog groomers: owners pick a slot and pay on arrival. It must work on a phone, offline, because the groomer is on the road all day. We charge R99 a month.',
+  )
+  const remaining = intakeGaps(answered, 'A booking tool for mobile dog groomers: owners pick a slot and pay on arrival. It must work on a phone, offline, because the groomer is on the road all day. We charge R99 a month.')
+  assert.equal(remaining.some((gap) => /who is this for|earn or save|where is it used|kind of product/i.test(gap)), false, remaining.join(' | '))
 })

@@ -121,6 +121,8 @@ export function compileDesign(
   genome: Genome,
   productName: string,
   overrides: DesignOverrides = {},
+  /** The sections that actually exist in this product, for the shell's nav. */
+  navLabels?: string[],
 ): DesignSystem {
   const px = genome
   const primaryHue = pack.hues[rng.int(0, pack.hues.length - 1)]
@@ -314,7 +316,10 @@ export function compileDesign(
     { name: 'slow', duration: '420ms', easing: 'cubic-bezier(0.16, 1, 0.3, 1)', usage: 'Charts on first paint, onboarding' },
   ]
 
-  const layoutNav = pack.sections.slice(0, 6).map((s) => s.name)
+  // The nav is the product's sections, not the pack's: a section the builder
+  // never asked for must not appear in the shell's navigation, or the design
+  // stage is showing a route to a page that does not exist.
+  const layoutNav = (navLabels?.length ? navLabels : pack.sections.map((s) => s.name)).slice(0, 6)
 
   const { light: semantic, dark: darkSemantic } = buildSemantic(primary, accent, neutral, success, warning, danger, info, px)
   const densityLabel = densityFor(px.density)

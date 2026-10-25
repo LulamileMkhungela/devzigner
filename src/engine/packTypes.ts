@@ -31,6 +31,12 @@ export interface SectionDef {
   name: string
   purpose: string
   priority: 'MVP' | 'Next' | 'Later'
+  /**
+   * Part of the archetype's spine: a product of this kind cannot work without
+   * it. Everything without `core` is only compiled when the builder's own
+   * description asks for it by name — see `src/engine/scope.ts`.
+   */
+  core?: boolean
   icon: string
   entityIds: string[]
   screens: ScreenDef[]

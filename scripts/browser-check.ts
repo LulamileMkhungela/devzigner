@@ -143,19 +143,16 @@ for (const scenario of scenarios) {
 
     check('first visit · nothing is marked complete yet', root.querySelectorAll('.lz-stage-done').length === 0)
 
-    const confirm = [...root.querySelectorAll('button')].find((b) => /mark stage complete/i.test(b.textContent ?? ''))
-    check('first visit · the Product stage can be completed', Boolean(confirm) && !confirm!.disabled)
-    ;(confirm as HTMLElement | undefined)?.click()
-    await new Promise((resolve) => setTimeout(resolve, 250))
-    const done = root.querySelector('.lz-stage-done')
-    check('confirming a stage marks it complete', Boolean(done), done?.textContent?.replace(/\s+/g, ' ').slice(0, 48))
-    check('the completed stage points at the next one', /Next:\s*Data Shape/.test(done?.textContent ?? ''))
-
-    const reopened = [...root.querySelectorAll('button')].find((b) => /reopen/i.test(b.textContent ?? ''))
-    check('a completed stage can be reopened', Boolean(reopened))
-    ;(reopened as HTMLElement | undefined)?.click()
-    await new Promise((resolve) => setTimeout(resolve, 250))
-    check('reopening clears the completion', root.querySelectorAll('.lz-stage-done').length === 0)
+    // Nothing has been described, so there is nothing to review and nothing to
+    // complete: the first visit is the description field and an honest list of
+    // what the five stages will hold.
+    const confirmEarly = [...root.querySelectorAll('button')].find((b) => /mark stage complete/i.test(b.textContent ?? ''))
+    check(
+      'first visit · nothing is confirmable before a description',
+      !confirmEarly || confirmEarly.disabled,
+      confirmEarly ? 'control disabled' : 'no control',
+    )
+    check('first visit · the stages are described, not filled in', /what happens when you build/i.test(text))
   }
 
   if (Object.keys(scenario.storage).length === 0) {
@@ -186,6 +183,21 @@ for (const scenario of scenarios) {
       rebuilt.includes(saved?.name ?? '\u0000') && rebuilt.includes(saved?.archetypeLabel ?? '\u0000'),
       `${saved?.name} / ${saved?.archetypeLabel}`,
     )
+
+    // Now that there is a product, the stage control exists — and behaves.
+    const confirm = [...root.querySelectorAll('button')].find((b) => /mark stage complete/i.test(b.textContent ?? ''))
+    check('a described product can be completed', Boolean(confirm) && !confirm!.disabled)
+    ;(confirm as HTMLElement | undefined)?.click()
+    await new Promise((resolve) => setTimeout(resolve, 250))
+    const done = root.querySelector('.lz-stage-done')
+    check('confirming a stage marks it complete', Boolean(done), done?.textContent?.replace(/\s+/g, ' ').slice(0, 48))
+    check('the completed stage points at the next one', /Next:\s*Data Shape/.test(done?.textContent ?? ''))
+
+    const reopened = [...root.querySelectorAll('button')].find((b) => /reopen/i.test(b.textContent ?? ''))
+    check('a completed stage can be reopened', Boolean(reopened))
+    ;(reopened as HTMLElement | undefined)?.click()
+    await new Promise((resolve) => setTimeout(resolve, 250))
+    check('reopening clears the completion', root.querySelectorAll('.lz-stage-done').length === 0)
   }
 
   w.close()

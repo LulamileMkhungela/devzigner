@@ -2,10 +2,11 @@
  * Runs the ProdOps process from start to finish, through the real UI.
  *
  * Product Planning → Data Shape → Design System → Section Design → Export.
- * The point is to prove the promise "zero input, every artefact on first load":
- * the walkthrough never types a product idea, never answers a question, and
- * still ends with a finished handoff package — while every tick in the phase nav
- * is one it clicked itself, never one the compiler handed out.
+ * It starts where a builder starts: an empty workspace with a description field
+ * and nothing else. Then it types one sentence, builds, checks that what came
+ * out is what was asked for, and walks the five stages to a handoff package —
+ * while every tick in the phase nav is one it clicked itself, never one the
+ * compiler handed out.
  */
 import { JSDOM } from 'jsdom'
 
@@ -74,18 +75,61 @@ async function waitFor<T>(read: () => T | undefined, timeout = 8000): Promise<T 
   }
   return undefined
 }
-const project = (await waitFor(stored)) ?? stored()
+let project = (await waitFor(stored)) ?? stored()
 
-/* ---- 0. first load: nothing typed, everything present ------------------- */
+/* ---- 0. first load: nothing typed, nothing invented --------------------- */
 
-step('first load compiles a product with no input', Boolean(project?.name) && project.sections.length >= 5, project?.name)
 step(
-  'every artefact is compiled on first paint',
-  Boolean(project?.brief?.elevator) &&
-    project.data.entities.length >= 4 &&
-    project.sections.every((s: { screens: unknown[] }) => s.screens.length >= 2) &&
-    project.flows.length >= 4,
-  `${project.sections.length} sections · ${project.data.entities.length} entities · ${project.flows.length} flows`,
+  'first load opens an undescribed product',
+  project?.id === 'untitled' && project.sections.length === 0 && project.idea === '',
+  `${project?.name} · ${project?.sections.length} sections`,
+)
+step(
+  'nothing is compiled before there is a description',
+  project.brief.problems.length === 0 && project.data.entities.length === 0 && project.roadmap.phases.length === 0,
+  `${project.brief.problems.length} problems · ${project.data.entities.length} entities`,
+)
+step('the workspace opens on the description field', Boolean($('textarea')))
+step('it says what the stages will hold', text().includes('What happens when you build'))
+
+/* ---- 0b. describe a product, and check what it read --------------------- */
+
+/** Type into a controlled React input the way a browser does. */
+function typeInto(el: HTMLTextAreaElement, value: string) {
+  const setter = Object.getOwnPropertyDescriptor(w.HTMLTextAreaElement.prototype, 'value')?.set
+  setter?.call(el, value)
+  el.dispatchEvent(new w.Event('input', { bubbles: true }))
+}
+
+const IDEA =
+  'A marketplace where township artisans list products, buyers pay into escrow, and disputes pause a payout until they are resolved. Sellers need it on a phone and it has to take payment without a card reader.'
+const field = $('textarea') as HTMLTextAreaElement | undefined
+if (field) typeInto(field, IDEA)
+await wait(120)
+const buildButton = byText('button', 'Build from this') as HTMLButtonElement | undefined
+step('the build button unlocks on a real description', Boolean(buildButton) && !buildButton?.disabled)
+click(buildButton)
+project = (await waitFor(() => {
+  const next = stored()
+  return next && next.sections.length > 0 ? next : undefined
+})) ?? stored()
+
+step(
+  'the description compiles a product',
+  project.idea === IDEA && project.sections.length >= 2,
+  `${project.sections.length} sections · ${project.name}`,
+)
+step(
+  'the compiler shows what it read',
+  text().includes('What the compiler read') && text().includes('township artisans'),
+  'scope panel',
+)
+step(
+  'sections it did not ask for are listed, not compiled',
+  text().includes('Not in your brief') &&
+    project.sections.length < (project.scope?.length ?? 0) &&
+    !project.sections.some((s: { id: string }) => s.id === 'control-room'),
+  `${project.sections.length} kept of ${project.scope?.length} offered`,
 )
 
 /* ---- 1. Product Planning ------------------------------------------------ */
@@ -165,7 +209,6 @@ await completeStage('Design')
 w.location.hash = '#/sections'
 await wait(120)
 step('Sections route lists the build order', entityNames.length > 0 && project.sections.every((s: { name: string }) => text().includes(s.name)))
-await completeStage('Sections')
 
 const first = project.sections[0]
 w.location.hash = `#/sections/${first.id}`
@@ -189,6 +232,30 @@ if (screenLink) {
   await wait(140)
 }
 step('a screen design opens', w.location.hash.includes('screen-designs'), w.location.hash)
+
+// Sections cannot be confirmed until every screen in the product has been
+// captured — the flow refuses to hand off an uncaptured screen. So walk each
+// section the description produced and capture it, the way a builder would.
+for (const section of project.sections) {
+  w.location.hash = `#/sections/${section.id}`
+  await wait(110)
+  const capture = byText('button', 'Capture') as HTMLButtonElement | undefined
+  if (capture) {
+    click(capture)
+    await wait(110)
+  }
+}
+const capturedNow = JSON.parse(w.localStorage.getItem('prodops.captures.v1') ?? '{}')[project.id] ?? []
+const everyScreen = project.sections.flatMap((s: { screens: { id: string }[] }) => s.screens.map((screen) => screen.id))
+step(
+  'every screen in every section is captured',
+  everyScreen.every((id: string) => capturedNow.includes(id)),
+  `${capturedNow.length} of ${everyScreen.length} captured`,
+)
+
+w.location.hash = '#/sections'
+await wait(140)
+await completeStage('Sections')
 
 /* ---- 5. Export ---------------------------------------------------------- */
 
@@ -264,7 +331,7 @@ step(
 )
 
 console.log(
-  `\n${failed === 0 ? 'walkthrough complete: idea → package with zero user input' : `${failed} step(s) failed`}`,
+  `\n${failed === 0 ? 'walkthrough complete: one sentence → package, nothing invented' : `${failed} step(s) failed`}`,
 )
 console.log(errors.length ? `console errors:\n${errors.join('\n')}` : 'no console errors')
 process.exit(failed || errors.length ? 1 : 0)

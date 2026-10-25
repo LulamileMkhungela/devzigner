@@ -166,6 +166,7 @@ export const logistics: Pack = {
       name: 'Dispatch',
       purpose: 'The whole day on one board: loads, vehicles and drivers.',
       priority: 'MVP',
+      core: true,
       icon: 'LayoutDashboard',
       entityIds: ['shipments', 'vehicles', 'drivers'],
       screens: [
@@ -179,6 +180,7 @@ export const logistics: Pack = {
       name: 'Shipments',
       purpose: 'Book, track and close every consignment.',
       priority: 'MVP',
+      core: true,
       icon: 'PackageCheck',
       entityIds: ['shipments', 'routes'],
       screens: [
@@ -417,6 +419,7 @@ export const creator: Pack = {
       name: 'Calendar',
       purpose: 'Plan slots by channel and stage.',
       priority: 'MVP',
+      core: true,
       icon: 'CalendarDays',
       entityIds: ['content', 'channels'],
       screens: [
@@ -430,6 +433,7 @@ export const creator: Pack = {
       name: 'Library',
       purpose: 'Find the final file without asking in chat.',
       priority: 'MVP',
+      core: true,
       icon: 'Image',
       entityIds: ['assets', 'content'],
       screens: [
@@ -646,6 +650,7 @@ export const property: Pack = {
       name: 'Portfolio',
       purpose: 'Occupancy, arrears and open repairs at portfolio level.',
       priority: 'MVP',
+      core: true,
       icon: 'LayoutDashboard',
       entityIds: ['properties', 'units', 'tenants'],
       screens: [
@@ -658,6 +663,7 @@ export const property: Pack = {
       name: 'Units',
       purpose: 'The unit register with rent and occupancy.',
       priority: 'MVP',
+      core: true,
       icon: 'DoorOpen',
       entityIds: ['units', 'properties', 'leases'],
       screens: [
@@ -671,6 +677,7 @@ export const property: Pack = {
       name: 'Tenants',
       purpose: 'Accounts, balances and standing.',
       priority: 'MVP',
+      core: true,
       icon: 'Users',
       entityIds: ['tenants', 'units', 'leases'],
       screens: [
@@ -899,6 +906,7 @@ export const fieldops: Pack = {
       name: 'Jobs',
       purpose: 'Log, schedule and close out service calls.',
       priority: 'MVP',
+      core: true,
       icon: 'Wrench',
       entityIds: ['jobs', 'sites', 'assets'],
       screens: [
@@ -912,6 +920,7 @@ export const fieldops: Pack = {
       name: 'Sites',
       purpose: 'Locations, access notes and installed equipment.',
       priority: 'MVP',
+      core: true,
       icon: 'MapPin',
       entityIds: ['sites', 'assets', 'jobs'],
       screens: [
@@ -1136,6 +1145,7 @@ export const peopleops: Pack = {
       name: 'Hiring',
       purpose: 'Run every open role as a visible pipeline.',
       priority: 'MVP',
+      core: true,
       icon: 'Briefcase',
       entityIds: ['roles', 'candidates', 'interviews'],
       screens: [
@@ -1149,6 +1159,7 @@ export const peopleops: Pack = {
       name: 'Team',
       purpose: 'Who is here, who they report to and when they last reviewed.',
       priority: 'MVP',
+      core: true,
       icon: 'Users',
       entityIds: ['people', 'reviews'],
       screens: [
@@ -1363,6 +1374,7 @@ export const events: Pack = {
       name: 'Agenda',
       purpose: 'Build the grid and catch clashes before they happen.',
       priority: 'MVP',
+      core: true,
       icon: 'Presentation',
       entityIds: ['sessions', 'speakers', 'eventseries'],
       screens: [
@@ -1376,6 +1388,7 @@ export const events: Pack = {
       name: 'Speakers',
       purpose: 'Invite, brief and confirm every presenter.',
       priority: 'MVP',
+      core: true,
       icon: 'Mic',
       entityIds: ['speakers', 'sessions'],
       screens: [

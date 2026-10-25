@@ -44,6 +44,18 @@ console.error = (...args: unknown[]) => {
 }
 w.addEventListener('error', (e) => errors.push(`window error: ${(e as ErrorEvent).message}`))
 
+const { compileProject } = await import('../src/engine')
+
+/* The workspace opens on an undescribed product, so a route smoke test has to
+   supply the description first — otherwise there are no section routes to
+   visit. This is the same path the composer takes, written straight to storage
+   because the DOM is not mounted yet. */
+const seeded = compileProject({
+  idea: 'A marketplace where township artisans list products, buyers pay into escrow, and disputes pause a payout until they are resolved.',
+})
+w.localStorage.setItem('prodops.projects.v1', JSON.stringify([seeded]))
+w.localStorage.setItem('prodops.active.v1', JSON.stringify(seeded.id))
+
 const { createRoot } = await import('react-dom/client')
 const { createElement } = await import('react')
 const { StoreProvider } = await import('../src/lib/store')
@@ -195,6 +207,20 @@ console.log(`${afterUrl !== beforeUrl ? 'ok ' : 'ERR'} prototype page switch (${
 // the prototype contains real controls: type to filter, then open a screen with a form
 w.location.hash = '#/prototype'
 await wait(120)
+/* The prototype's active page persists across a route change, so put it back on
+   a collection before testing the table: the product decides which sections
+   exist now, so the collection is looked up rather than assumed to be first. */
+const storedNow = JSON.parse(w.localStorage.getItem('prodops.projects.v1') ?? '[]')[0]
+const collection = (storedNow?.sections ?? [])
+  .flatMap((section: { screens: { name: string; kind: string }[] }) => section.screens)
+  .find((screen: { kind: string }) => screen.kind === 'collection')
+if (collection) {
+  const collectionButton = Array.from(w.document.querySelectorAll('.lz-card button')).find(
+    (b) => b.textContent?.trim() === collection.name,
+  )
+  click(collectionButton ?? null)
+  await wait(120)
+}
 const protoSearch = w.document.querySelector('.pv-search input') as HTMLInputElement | null
 const rowsBefore = w.document.querySelectorAll('.pv-table tbody tr.pv-row').length
 const inputSetter = Object.getOwnPropertyDescriptor(w.HTMLInputElement.prototype, 'value')?.set

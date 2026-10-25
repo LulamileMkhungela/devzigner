@@ -33,10 +33,11 @@ export function ToolPanel({ tool }: { tool: Tool }) {
           right. Same three columns, same rules, so the workspace and the
           listing page read as one product. */}
       <div className="lz-listing-head">
-        <span className="lz-listing-label">
-          {tool.kind}
-          {count ? ` · ${count} files` : ''}
-        </span>
+        {/* No "Agent skill" chip: the tab above already names this tool, and
+            repeating its kind on every tab said the same thing eight times.
+            What belongs here is the one fact the tab cannot show — how much of
+            it is actually in the package. */}
+        <span className="lz-listing-label">{count ? `${count} files` : 'In the package'}</span>
         <div>
           <h2>{tool.name}</h2>
           <p className="lz-listing-blurb">{tool.blurb}</p>

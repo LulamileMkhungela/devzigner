@@ -46,7 +46,7 @@ export function PrototypePage({ project }: { project: Project }) {
         steps={TRACK}
         current="prototype"
         title="Prototype"
-        subtitle="A working prototype: real routes, real seeded records, real inputs, assembled only from the registry. Type in it, filter it, create a record, walk a flow. Nothing is a picture of a control."
+        subtitle={`A working prototype of the ${project.sections.length} section${project.sections.length === 1 ? '' : 's'} in your brief — every screen below came from the Sections stage, and nothing else is in here. Real routes, seeded records, real inputs: type in it, filter it, create a record, walk a flow.`}
         actions={
           <>
             <div className="lz-seg" role="group" aria-label="Breakpoint">
@@ -83,6 +83,7 @@ export function PrototypePage({ project }: { project: Project }) {
           <div className="lz-row">
             <span className="lz-pill green"><Icon name="ShieldCheck" size={11} /> registry only</span>
             <span className="lz-pill"><Icon name="Database" size={11} /> mock data layer</span>
+            <span className="lz-pill"><Icon name="LayoutList" size={11} /> {project.sections.length} of your sections</span>
             <span className="lz-pill"><Icon name="Layers" size={11} /> {project.system.components.length} components</span>
             {Object.keys(overrides).length > 0 && <span className="lz-pill peach"><Icon name="Sliders" size={11} /> tokens edited</span>}
           </div>

@@ -1,4 +1,4 @@
-import type { Entity, Requirement, Screen, Section } from '../types'
+import type { Entity, Requirement, ScopeDecision, Screen, Section } from '../types'
 import type { Pack } from './packTypes'
 import type { Rng } from './rng'
 import { buildScreen } from './screens'
@@ -147,8 +147,24 @@ const JOB_TEMPLATES = [
   'Onboard a new teammate without a walkthrough',
 ]
 
-export function compileSections(pack: Pack, entities: Entity[], rng: Rng, currency: string): Section[] {
-  return pack.sections.map((def) => {
+/**
+ * Compile the pack's sections — but only the ones in scope.
+ *
+ * `scope` is the read-out from `readScope`: a pack section the builder never
+ * asked for is not compiled, so it cannot appear in the roadmap, the prototype,
+ * the flows or the audit. When no scope is passed the whole pack compiles, which
+ * is the "you picked this archetype yourself, nothing to read" case.
+ */
+export function compileSections(
+  pack: Pack,
+  entities: Entity[],
+  rng: Rng,
+  currency: string,
+  scope?: ScopeDecision[],
+): Section[] {
+  const why = new Map((scope ?? []).map((d) => [d.id, d.why]))
+  const defs = scope ? pack.sections.filter((s) => scope.some((d) => d.id === s.id && d.included)) : pack.sections
+  return defs.map((def) => {
     const sectionEntities = def.entityIds.map((id) => entities.find((e) => e.id === id)).filter(Boolean) as Entity[]
     const primary = sectionEntities[0] ?? entities[0]
 
@@ -208,6 +224,7 @@ export function compileSections(pack: Pack, entities: Entity[], rng: Rng, curren
       name: def.name,
       purpose: def.purpose,
       priority: def.priority,
+      why: why.get(def.id),
       icon: def.icon,
       jobs: [
         ...(def.extraJobs ?? []),

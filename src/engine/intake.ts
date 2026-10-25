@@ -337,3 +337,37 @@ export function describeIntake(intake: Intake): string {
   if (intake.name) parts.push(`named ${intake.name}`)
   return parts.length ? parts.join(', ') : 'Length is enough to compile, but no category words were recognised.'
 }
+
+/**
+ * What the description does not say yet.
+ *
+ * The brief used to be presented as complete whatever the builder typed: a
+ * one-line idea produced personas, a problem statement and a roadmap with no
+ * acknowledgement that nobody knows who the product is for. These questions are
+ * the honest gap list — asked on the Product stage, next to the sentence they
+ * came from, instead of invented into the brief. Asked in the order that
+ * unblocks the most: who, then what, then how it earns.
+ */
+export function intakeGaps(intake: Intake, idea = ''): string[] {
+  const text = idea.toLowerCase()
+  const gaps: string[] = []
+  if (!intake.used) {
+    gaps.push('Say what the product is, and who it is for — one sentence is enough to start.')
+    return gaps
+  }
+  if (!intake.archetypeId) {
+    gaps.push('Nothing in the description says what kind of product this is. Name the work it does (bookings, invoices, listings, tickets).')
+  }
+  if (!intake.actor) gaps.push('Who is this for? Name the person or team that will use it every day.')
+  if (!intake.object) gaps.push('What is the main thing it looks after — the bookings, orders, invoices or patient records?')
+  if (!/\b(must|has to|needs? to|so that|because|instead of)\b/.test(text)) {
+    gaps.push('What has to be true on day one? The one job it must do better than the spreadsheet.')
+  }
+  if (!/\b(price|pricing|pay|payment|paid|fee|charge|invoice|rand|subscri|cost|revenue)\b/.test(text)) {
+    gaps.push('How does it earn or save money? A price, a fee or the hours it replaces.')
+  }
+  if (!/\b(phone|mobile|offline|tablet|desktop|on site|onsite|field|whatsapp)\b/.test(text)) {
+    gaps.push('Where is it used — a desk, a phone, on site, offline?')
+  }
+  return gaps
+}

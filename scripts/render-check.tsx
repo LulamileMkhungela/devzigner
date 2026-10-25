@@ -5,7 +5,7 @@ import { fileURLToPath } from 'node:url'
 import { renderToString } from 'react-dom/server'
 import { App } from '../src/App'
 import { StoreProvider } from '../src/lib/store'
-import { compileProject } from '../src/engine'
+import { compileProject, emptyProject } from '../src/engine'
 import { buildPackage } from '../src/export/package'
 import { BLOCK_COMPONENT_NAMES } from '../src/engine/system'
 import { ProductPage } from '../src/views/ProductPage'
@@ -57,6 +57,24 @@ const project = compileProject({ archetypeId: 'marketplace', seed: 112233, idea:
 const section = project.sections[0]
 const screen = section.screens[0]
 const wrap = (node: ReactNode) => renderToString(<StoreProvider>{node}</StoreProvider>)
+
+/* The workspace now starts with an undescribed product, so a component that
+   reads the active project from the store needs the store seeded first. One
+   helper, and the two keys are put back the way they were after the render. */
+const withActive = (node: ReactNode): string => {
+  const keys = ['prodops.projects.v1', 'prodops.active.v1']
+  const saved = keys.map((key) => store[key])
+  store[keys[0]] = JSON.stringify([project])
+  store[keys[1]] = JSON.stringify(project.id)
+  try {
+    return wrap(node)
+  } finally {
+    keys.forEach((key, index) => {
+      if (saved[index] === undefined) delete store[key]
+      else store[key] = saved[index]
+    })
+  }
+}
 
 const views: [string, () => string][] = [
   ['app (product)', () => renderToString(<StoreProvider><App /></StoreProvider>)],
@@ -385,7 +403,32 @@ const checks = [
     const out = wrap(<ProductPage project={project} />)
     return (out.match(/lz-stat-label/g) ?? []).length === 4 && out.includes('lz-stat-value')
   })()],
-  ['the composer keeps its idea line to one ellipsis', wrap(<ProductPage project={project} />).includes('lz-compose-current-idea')],
+  ['the composer keeps its idea line to one ellipsis', withActive(<ProductPage project={project} />).includes('lz-compose-current-idea')],
+
+  /* ---- scope: what the compiler read, and what it left out -------------- */
+  ['the brief shows what the compiler read', (() => {
+    const out = wrap(<ProductPage project={project} />)
+    return out.includes('What the compiler read') && out.includes('lz-scope') && out.includes('Currently building')
+  })()],
+  ['sections the description did not ask for are listed, not compiled', (() => {
+    // SSR escapes `&`, so compare against a decoded copy of the markup.
+    const out = wrap(<ProductPage project={project} />).replace(/&amp;/g, '&')
+    const dropped = (project.scope ?? []).filter((decision) => !decision.included)
+    return dropped.length > 0 && out.includes('Not in your brief') && dropped.every((d) => out.includes(d.name))
+  })()],
+  ['a section can be added from the brief', wrap(<ProductPage project={project} />).includes('Remove') && wrap(<ProductPage project={project} />).includes('Add')],
+
+  /* ---- the way back out of the workspace -------------------------------- */
+  ['the workspace links back to the site', (() => {
+    const out = renderToString(<StoreProvider><App /></StoreProvider>)
+    return out.includes('lz-side-back') && out.includes('Back to the ProdOps site') && /href="\/"/.test(out)
+  })()],
+
+  /* ---- nothing is pre-filled before the builder has described anything -- */
+  ['an undescribed product shows what the stages will hold', (() => {
+    const out = wrap(<ProductPage project={emptyProject()} />)
+    return out.includes('What happens when you build') && out.includes('lz-what-next-list') && !out.includes('lz-compose-current-idea')
+  })()],
 ]
 
 // inline token edits must re-derive tokens, screens and audit together

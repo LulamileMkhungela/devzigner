@@ -7,7 +7,7 @@
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
 import type { DesignOverrides, Genome, ModuleKey, Project, RegistryComponent, Section, SystemOverrides, UserFlow, Version } from '../types'
-import { compileProject, defaultModuleSeeds, genomeFromSeed, remixSeed, type CompileOptions } from '../engine'
+import { compileProject, defaultModuleSeeds, emptyProject, genomeFromSeed, remixSeed, type CompileOptions } from '../engine'
 import { migrateProjects } from './migrate'
 import { KEYS, readJson, writeJson } from './storage'
 
@@ -17,8 +17,16 @@ const CAPTURE_KEY = KEYS.captures
 const ACTIVE_KEY = KEYS.active
 const VERSION_KEY = KEYS.versions
 
-/** The install ships with one finished product, so the flow is walkable on
- *  first paint with no prompt, key, seed or paste. */
+/**
+ * The sample product, and when it is allowed to exist.
+ *
+ * It used to be what the workspace opened on: a finished marketplace with six
+ * sections, a design system and a prototype — presented as if it were the
+ * builder's own. It is now reachable only by *asking* for it ("Show me a
+ * finished example"), because a sample you browse is a sample you know the
+ * provenance of, and a sample that is already loaded is a product somebody else
+ * described.
+ */
 export const STARTER: CompileOptions = {
   idea: 'A marketplace where township artisans sell directly to buyers across South Africa',
   archetypeId: 'marketplace',
@@ -53,6 +61,8 @@ interface StoreValue {
   confirmStage: (id: string) => void
   unconfirmStage: (id: string) => void
   setBrief: (idea: string) => Project
+  /* ---- scope: which of the pack's sections this product is ---- */
+  setSectionScope: (id: string, included: boolean) => void
   toast: string
   /**
    * A message, and — when there is an obvious next thing to do — the button
@@ -145,6 +155,7 @@ function compileLikeProject(project: Project, patch: Partial<CompileOptions> = {
         nameOverride: project.name,
         overrides: { ...(project.overrides ?? {}) },
         systemOverrides: { ...(project.systemOverrides ?? {}) },
+        scopeChoice: { ...(project.scopeChoice ?? {}) },
         createdAt: project.createdAt,
       }
   const options: CompileOptions = { ...kept, ...patch }
@@ -172,21 +183,25 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     } catch {
       /* unreadable storage — fall through to a fresh compile */
     }
-    return [compileProject(STARTER)]
+    // Nothing has been described yet, so the workspace opens on an empty
+    // product: no sections, no screens, no tokens on show, no sample rows.
+    return [emptyProject()]
   })
   const [theme, setThemeState] = useState<Theme>(() => (readJson<string>(THEME_KEY, 'dark') === 'light' ? 'light' : 'dark'))
   const [activeId, setActiveId] = useState<string>(() => readJson<string>(ACTIVE_KEY, ''))
   const [captures, setCaptures] = useState<CaptureMap>(() => {
     const stored = readJson<CaptureMap>(CAPTURE_KEY, {})
     if (stored && Object.keys(stored).length) return stored
-    const first = projects[0]
-    return first ? { [first.id]: allScreenIds(first) } : {}
+    // A screenshot is something the builder takes, not something that arrives
+    // with the page: an empty project starts with an empty capture set.
+    return {}
   })
   const [books, setBooks] = useState<VersionMap>(() => {
     const stored = readJson<VersionMap>(VERSION_KEY, {})
     if (Object.keys(stored).length) return stored
-    const first = projects[0]
-    return first ? { [first.id]: { branch: 'main', versions: [initialVersion(first)] } } : {}
+    // The first version is written when the builder first builds, not by the
+    // install: a history that starts with a commit nobody made is fiction.
+    return {}
   })
   const [toast, setToast] = useState('')
   const [toastAction, setToastAction] = useState<{ label: string; to: string } | null>(null)
@@ -263,6 +278,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
           nameOverride: project.name,
           overrides: { ...(project.overrides ?? {}) },
           systemOverrides: { ...(project.systemOverrides ?? {}) },
+          scopeChoice: { ...(project.scopeChoice ?? {}) },
           createdAt: project.createdAt,
         }
     const options: CompileOptions = { ...base, ...patch }
@@ -282,6 +298,32 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       if (value === undefined) delete overrides[key]
       else (overrides as Record<string, unknown>)[key] = value
       replace(compileLikeProject(active, { overrides }))
+    },
+    [active, replace],
+  )
+
+  /**
+   * Add or remove one section, from the Product stage's scope list.
+   *
+   * The choice is stored as compile input and the product is recompiled, so the
+   * roadmap, flows, screens and audit all follow. A section that has been added
+   * or removed changes what Sections and Export are made of, so those two
+   * confirmations are dropped and have to be earned again — the earlier three
+   * stages are untouched.
+   */
+  const setSectionScope = useCallback(
+    (id: string, included: boolean) => {
+      if (!active) return
+      const include = new Set((active.scopeChoice?.include ?? []).filter((x) => x !== id))
+      const exclude = new Set((active.scopeChoice?.exclude ?? []).filter((x) => x !== id))
+      ;(included ? include : exclude).add(id)
+      const next = compileLikeProject(active, {
+        scopeChoice: { include: [...include], exclude: [...exclude] },
+      })
+      next.progress = {
+        confirmed: (active.progress?.confirmed ?? []).filter((stage) => stage !== 'sections' && stage !== 'export'),
+      }
+      replace(next)
     },
     [active, replace],
   )
@@ -353,7 +395,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const remove = useCallback((id: string) => {
     setProjects((prev) => {
       const next = prev.filter((p) => p.id !== id)
-      return next.length ? next : [compileProject(STARTER)]
+      return next.length ? next : [emptyProject()]
     })
     setBooks((prev) => {
       const next = { ...prev }
@@ -489,10 +531,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   const branches = useMemo(() => Array.from(new Set(['main', ...book.versions.map((v) => v.branch), book.branch])), [book])
 
   const reset = useCallback(() => {
-    const starter = compileProject(STARTER)
-    setProjects([starter])
-    setActiveId(starter.id)
-    setCaptures({ [starter.id]: allScreenIds(starter) })
+    const empty = emptyProject()
+    setProjects([empty])
+    setActiveId(empty.id)
+    setCaptures({})
     setBooks({})
     setThemeState('light')
   }, [])
@@ -523,6 +565,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       overrides: active?.overrides ?? {},
       setOverride,
       clearOverrides,
+      setSectionScope,
       addFlow,
       removeFlow,
       systemOverrides: active?.systemOverrides ?? {},

@@ -18,6 +18,7 @@ import { compileAudit } from './audit'
 import { compileFlows } from './flows'
 import { applySystemOverrides, compileSystem } from './system'
 import { profileIdea } from './intake'
+import { readScope } from './scope'
 
 export const DEFAULT_CURRENCY = 'ZAR'
 
@@ -64,9 +65,62 @@ export interface CompileOptions {
   nameOverride?: string
   overrides?: DesignOverrides
   systemOverrides?: SystemOverrides
+  /** Sections the builder added or removed by hand — see `readScope`. */
+  scopeChoice?: { include?: string[]; exclude?: string[] }
   createdAt?: number
   /** Pin the clock so a package can be rebuilt byte for byte. */
   now?: number
+}
+
+/**
+ * A product that has not been described yet.
+ *
+ * The workspace used to open on a finished sample — a marketplace with six
+ * sections, screens, sample data and a design system — so the first thing a
+ * new builder saw was somebody else's product presented as theirs. This is the
+ * opposite: the same project shape, with nothing in it. The description is
+ * empty, the brief has no problems or personas, and there are no sections,
+ * screens, flows, entities or phases, because none of those can be derived from
+ * a sentence that has not been written.
+ *
+ * The design tokens and the system are still compiled, because every view
+ * renders through them the moment there *is* a product; they are simply not
+ * shown while the product is empty. See `started()` in src/lib/state.ts.
+ */
+export function emptyProject(now = Date.now()): Project {
+  const project = compileProject({ idea: '', archetypeId: 'saas', seed: 1111, now })
+  return {
+    ...project,
+    id: 'untitled',
+    name: 'Untitled product',
+    idea: '',
+    archetypeLabel: 'Not started',
+    brief: {
+      ...project.brief,
+      summary: '',
+      tagline: '',
+      elevator: '',
+      category: '',
+      problems: [],
+      personas: [],
+      differentiators: [],
+      metrics: [],
+      principles: [],
+      nonGoals: [],
+      voice: { tone: '', say: [], avoid: [] },
+    },
+    roadmap: { ...project.roadmap, phases: [] },
+    data: { ...project.data, entities: [], relationships: [] },
+    sections: [],
+    // Nothing was read, so there is no scope to report and no hand-made
+    // choice to remember.
+    scope: [],
+    scopeChoice: {},
+    flows: [],
+    audit: { ...project.audit, checks: [], score: 0 },
+    progress: { confirmed: [] },
+    engineNotes: [],
+  }
 }
 
 export function compileProject(opts: CompileOptions = {}): Project {
@@ -84,10 +138,24 @@ export function compileProject(opts: CompileOptions = {}): Project {
   const nameRng = makeRng(hashString(`name:${seed}:${archetypeId}`))
   const name = opts.nameOverride?.trim() || (intake.name || nameRng.pick(pack.names))
 
+  // What the description asks for decides which of the pack's sections exist.
+  // The whole pack is still reported in `scope`, so the Product stage can show
+  // the builder what was left out and let them add it back.
+  const scope = readScope(pack, idea, opts.scopeChoice ?? {})
+  const inScope = pack.sections.filter((s) => scope.some((d) => d.id === s.id && d.included))
   const brief = compileBrief(pack, makeRng(moduleSeeds.brief), name, idea, intake)
   const data = compileDataModel(pack, makeRng(moduleSeeds.data))
-  const design = compileDesign(pack, makeRng(moduleSeeds.design), genome, name, opts.overrides ?? {})
-  const sections = uniqueScreenAddresses(compileSections(pack, data.entities, makeRng(moduleSeeds.sections), opts.currency ?? DEFAULT_CURRENCY))
+  const design = compileDesign(
+    pack,
+    makeRng(moduleSeeds.design),
+    genome,
+    name,
+    opts.overrides ?? {},
+    inScope.map((s) => s.name),
+  )
+  const sections = uniqueScreenAddresses(
+    compileSections(pack, data.entities, makeRng(moduleSeeds.sections), opts.currency ?? DEFAULT_CURRENCY, scope),
+  )
   const roadmap = compileRoadmap(sections, '')
   const flows = compileFlows(sections, brief, moduleSeeds.sections)
   const system = applySystemOverrides(
@@ -113,6 +181,7 @@ export function compileProject(opts: CompileOptions = {}): Project {
     nameOverride: opts.nameOverride,
     overrides: opts.overrides ?? {},
     systemOverrides: opts.systemOverrides ?? {},
+    scopeChoice: opts.scopeChoice ?? {},
   }
 
   return {
@@ -130,6 +199,7 @@ export function compileProject(opts: CompileOptions = {}): Project {
     flows,
     system,
     audit,
+    scope,
     engineNotes: engineNotesFor(pack.label, name, pack.names, genome, audit.score),
   }
 }

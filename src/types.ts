@@ -210,6 +210,8 @@ export interface Section {
   name: string
   purpose: string
   priority: 'MVP' | 'Next' | 'Later'
+  /** Why this section is in the product: the builder's own words, or the spine. */
+  why?: string
   icon: string
   jobs: string[]
   requirements: Requirement[]
@@ -423,6 +425,12 @@ export interface CompileInput {
   nameOverride?: string
   overrides?: DesignOverrides
   systemOverrides?: SystemOverrides
+  /**
+   * Sections the builder added or removed by hand, on the Product stage. They
+   * are compile *input* rather than a post-process, so the data model, flows,
+   * roadmap and audit are all derived from the same scope.
+   */
+  scopeChoice?: { include?: string[]; exclude?: string[] }
 }
 
 export interface Project extends CompileInput {
@@ -439,6 +447,8 @@ export interface Project extends CompileInput {
   flows: UserFlow[]
   system: PrototypeSystem
   audit: Audit
+  /** Every section the pack offered, and whether the description kept it. */
+  scope?: ScopeDecision[]
   engineNotes: string[]
   /**
    * Stages the builder has confirmed. Artefacts compiling is not the same as the
@@ -446,6 +456,17 @@ export interface Project extends CompileInput {
    * artefacts are actually complete — see `phaseReady` in lib/progress.
    */
   progress?: { confirmed: string[] }
+}
+
+/**
+ * One line of the scope read-out: a section from the pack, whether the
+ * builder's description kept it, and why. Shown on the Product stage.
+ */
+export interface ScopeDecision {
+  id: string
+  name: string
+  included: boolean
+  why: string
 }
 
 export interface ArchetypeSummary {

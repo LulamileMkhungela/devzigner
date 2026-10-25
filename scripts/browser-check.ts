@@ -181,6 +181,16 @@ for (const scenario of scenarios) {
       confirmEarly ? 'control disabled' : 'no control',
     )
     check('first visit · the stages are described, not filled in', /what happens when you build/i.test(text))
+
+    // Personas, flows, prototype, wiki and coverage are all derived from a
+    // product. Offering them before one exists is offering empty pages.
+    const navLabels = [...root.querySelectorAll('.lz-nav-item')].map((item) => (item.textContent ?? '').trim())
+    check(
+      'first visit · the pages that need a product are not offered',
+      !navLabels.some((label) => /Personas|Prototype|Wiki|Coverage|Tech Stack|Token editor/i.test(label)),
+      navLabels.join(', '),
+    )
+    check('first visit · the tools stay open', navLabels.some((label) => /Tools/i.test(label)), navLabels.join(', '))
   }
 
   if (Object.keys(scenario.storage).length === 0) {

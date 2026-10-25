@@ -54,7 +54,7 @@
 
 
       <script defer data-domain="prodops.dev" src="https://plausible.io/js/script.tagged-events.js"></script>
-  <style>/* ProdOps: the tool listings no longer repeat "Agent skill" — the tools page is a set of tabs in the workspace, and labelling every card with the same kind said nothing. An empty label cell keeps the grid honest. */
+  <style>/* ProdOps: the listings keep their three-column grid; a card with no kind label spans the two it needs. */
 .ds-listings .ds-listing>.ds-listing-label:empty{display:none}
 .ds-listings .ds-listing:has(>.ds-listing-label:empty){grid-template-columns:1fr auto}
 @media(max-width:639px){.ds-listings .ds-listing:has(>.ds-listing-label:empty){grid-template-columns:1fr;gap:12px}}

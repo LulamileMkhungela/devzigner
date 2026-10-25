@@ -1,0 +1,3471 @@
+/* ==========================================================================
+   ProdOps — application shell.
+
+   The skin is Design OS's own: warm stone neutrals, white cards on stone-50,
+   a 1px stone-200 rule between surfaces, DM Sans for text, IBM Plex Mono for
+   code, 8px radii, and near-black primary buttons. The chrome is a sticky
+   header with the phase nav in it, and content sits in a single centred
+   column — the layout Design OS uses, not a dashboard rail.
+   ========================================================================== */
+
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/dm-sans-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/dm-sans-latin-500-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url('/fonts/dm-sans-latin-600-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'DM Sans';
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url('/fonts/dm-sans-latin-700-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-mono-latin-400-normal.woff2') format('woff2');
+}
+@font-face {
+  font-family: 'IBM Plex Mono';
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url('/fonts/ibm-plex-mono-latin-500-normal.woff2') format('woff2');
+}
+* {
+  box-sizing: border-box;
+}
+
+html,
+body,
+#root {
+  min-height: 100%;
+}
+
+body {
+  margin: 0;
+  background: #0a0a0a;
+  color: #fafafa;
+  font: 400 14px/1.5 'DM Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* The page behind the app follows the theme too. Both used to be near-black,
+   which showed as a dark band under the light theme wherever the app did not
+   reach — on overscroll, and in the moment before the first paint. */
+html[data-app-theme='dark'] body {
+  background: #0a0a0a;
+}
+html[data-app-theme='light'] body {
+  background: #fafaf9;
+  color: #1c1917;
+}
+
+::selection {
+  background: color-mix(in srgb, var(--accent, #f0621a) 35%, transparent);
+  color: inherit;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+button {
+  font: inherit;
+  color: inherit;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+}
+input,
+select,
+textarea {
+  font: inherit;
+  color: inherit;
+}
+h1,
+h2,
+h3,
+h4,
+p {
+  margin: 0;
+}
+img {
+  display: block;
+  max-width: 100%;
+}
+code,
+kbd,
+pre {
+  font-family: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+}
+:focus-visible {
+  outline: 2px solid #78716c;
+  outline-offset: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   app canvas
+   -------------------------------------------------------------------------- */
+
+.lz-app {
+  /* Near-black ground, an ember accent that moves, mono kickers. The three
+     accent stops are also the palette of the shell's colour animation: the
+     brand rail, the active step and a completed stage all read from them, so
+     the motion is the product's own colour rather than a decoration. */
+  --accent-2: #ffb020;
+  --accent-3: #ff2d6f;
+  --bg: #0a0a0a;
+  --side: #0f0f0f;
+  --card: #141414;
+  --card-soft: #101010;
+  --line: #262626;
+  --line-soft: #1c1c1c;
+  --hover: #1c1c1c;
+  --line-strong: #3a3a3a;
+  --ink: #fafafa;
+  --ink-2: #d4d4d4;
+  --muted: #a3a3a3;
+  --faint: #737373;
+  /* The site's own brand token for dark surfaces (#f0621a), so the workspace
+     and the marketing site are the same orange rather than two of them. */
+  --accent: #f0621a;
+  --accent-hover: #ff7431;
+  --accent-tint: rgba(240, 98, 26, 0.14);
+  --accent-line: rgba(240, 98, 26, 0.34);
+  --blue-bg: #12253d;
+  --blue-ink: #9dc4f0;
+  --green-bg: #122a17;
+  --green-ink: #9ed49a;
+  --purple-bg: #221b38;
+  --purple-ink: #c3b0f0;
+  --peach-bg: #2c1a10;
+  --peach-ink: #ffb184;
+  --amber-bg: #2a2113;
+  --amber-ink: #f0c878;
+  --amber-line: #4a3a1c;
+  --dis: #3f3f46;
+  --shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  --shadow-lg: 0 18px 48px -26px rgba(0, 0, 0, 0.85);
+  --font: 'DM Sans', ui-sans-serif, system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+  --mono: 'IBM Plex Mono', ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  /* Two panes: the process rail on the left, the work on the right. The rail
+     is sticky and full height, so the five steps are always visible while the
+     content scrolls — that is the shape of a tool that walks you through a
+     process, not a marketing page with a nav bar. */
+  display: grid;
+  grid-template-columns: 288px minmax(0, 1fr);
+  align-items: start;
+  min-height: 100vh;
+  background: var(--bg);
+  color: var(--ink);
+  font: 400 14px/1.5 var(--font);
+}
+
+/* The light stone palette is still here, one click away in the menu. */
+.lz-app[data-theme='light'] {
+  --accent-2: #d97706;
+  --accent-3: #db2777;
+  --bg: #fafaf9;
+  --side: #ffffff;
+  --card: #ffffff;
+  --card-soft: #fafaf9;
+  --line: #e7e5e4;
+  --line-soft: #f5f5f4;
+  --hover: #f5f5f4;
+  --line-strong: #d6d3d1;
+  --ink: #1c1917;
+  --ink-2: #44403c;
+  --muted: #57534e;
+  --faint: #a8a29e;
+  /* And the site's light-surface brand token (#ea580c). */
+  --accent: #ea580c;
+  --accent-hover: #d14e0a;
+  --accent-tint: rgba(234, 88, 12, 0.1);
+  --accent-line: rgba(234, 88, 12, 0.3);
+  --blue-bg: #dfe8f7;
+  --blue-ink: #3e5e93;
+  --green-bg: #e9f1e4;
+  --green-ink: #4c6b41;
+  --purple-bg: #ece7f7;
+  --purple-ink: #5b4a85;
+  --peach-bg: #fbe9df;
+  --peach-ink: #9a4a22;
+  --amber-bg: #fdf1d8;
+  --amber-ink: #8a5a12;
+  --amber-line: #ecd9a8;
+  --dis: #b9c6e8;
+  --shadow: 0 1px 2px rgba(28, 25, 23, 0.05);
+  --shadow-lg: 0 12px 40px -24px rgba(28, 25, 23, 0.35);
+}
+
+.lz-app * {
+  min-width: 0;
+}
+.lz-app h1,
+.lz-app h2,
+.lz-app h3,
+.lz-app p {
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   sidebar
+   -------------------------------------------------------------------------- */
+
+.lz-side {
+  /* The left panel: the five process steps, the section list under them, the
+     secondary tools, and the account at the foot. It owns the viewport height
+     and scrolls independently of the work area. */
+  position: sticky;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 2px;
+  height: 100vh;
+  max-height: 100vh;
+  overflow-y: auto;
+  overflow-x: hidden;
+  background: var(--side);
+  border-right: 1px solid var(--line);
+  padding: 14px 12px 12px;
+  z-index: 30;
+  scrollbar-width: thin;
+}
+/* A slow ember wash behind the top of the rail. It is the only large moving
+   surface in the app: everything else animates at the moment of an action. */
+.lz-side::before {
+  content: '';
+  position: absolute;
+  inset: 0 0 auto 0;
+  height: 220px;
+  pointer-events: none;
+  background:
+    radial-gradient(150px 120px at 18% 0%, color-mix(in srgb, var(--accent) 40%, transparent), transparent 70%),
+    radial-gradient(170px 140px at 88% 12%, color-mix(in srgb, var(--accent-3) 26%, transparent), transparent 72%);
+  animation: lz-aurora 9s ease-in-out infinite alternate;
+  opacity: 1;
+}
+@keyframes lz-aurora {
+  0% {
+    transform: translate3d(0, 0, 0) scale(1);
+    filter: hue-rotate(0deg) saturate(1);
+  }
+  50% {
+    transform: translate3d(10%, 5%, 0) scale(1.16);
+    filter: hue-rotate(-26deg) saturate(1.3);
+  }
+  100% {
+    transform: translate3d(-8%, 2%, 0) scale(1.04);
+    filter: hue-rotate(22deg) saturate(1.1);
+  }
+}
+
+.lz-brand {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 2px 2px 14px;
+  margin-bottom: 6px;
+  border-bottom: 1px solid var(--line);
+}
+.lz-brand-mark {
+  transition: transform 0.4s cubic-bezier(0.2, 0.9, 0.3, 1.4), filter 0.4s ease;
+}
+.lz-brand:hover .lz-brand-mark {
+  transform: rotate(-6deg) scale(1.08);
+  filter: drop-shadow(0 2px 8px color-mix(in srgb, var(--accent) 55%, transparent));
+}
+.lz-brand-mark {
+  width: 22px;
+  height: 22px;
+  flex: 0 0 auto;
+  border-radius: 6px;
+  display: block;
+  /* a hairline keeps the mark crisp against the light sidebar */
+  box-shadow: 0 0 0 1px rgba(28, 25, 23, 0.08);
+}
+.lz-brand-name {
+  font: 600 15px/1 var(--font);
+  letter-spacing: -0.01em;
+}
+.lz-mode-chip {
+  margin-left: auto;
+  font: 600 10px/1 var(--font);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--peach-ink);
+  background: var(--peach-bg);
+  border-radius: 999px;
+  padding: 4px 7px;
+  cursor: help;
+  white-space: nowrap;
+}
+
+.lz-nav {
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 1px;
+  overflow: visible;
+  position: relative;
+}
+/* Section captions inside the rail ("Process", "Workspace", "Sections"). */
+.lz-nav-label {
+  display: block;
+  margin: 14px 0 5px;
+  padding: 0 9px;
+  font: 600 10px/1 var(--font);
+  letter-spacing: 0.09em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.lz-nav-item {
+  position: relative;
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  padding: 8px 9px;
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  color: var(--ink-2);
+  text-decoration: none;
+  font: 500 14px/1.2 var(--font);
+  cursor: pointer;
+  text-align: left;
+}
+.lz-nav-item:hover {
+  background: var(--hover);
+}
+.lz-app[data-theme='dark'] .lz-nav-item:hover {
+  background: #1a1a1a;
+}
+.lz-nav-item.is-active {
+  background: var(--card);
+  border-color: var(--line);
+  box-shadow: var(--shadow);
+  color: var(--ink);
+}
+/* The active step carries a moving ember rail. It is the one piece of colour
+   animation that is always on, because it answers "where am I in the process"
+   without a label. */
+.lz-nav-item.is-active::before {
+  content: '';
+  position: absolute;
+  left: -1px;
+  top: 6px;
+  bottom: 6px;
+  width: 3px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--accent) 0%, var(--accent-2) 50%, var(--accent-3) 100%);
+  background-size: 100% 200%;
+  animation: lz-rail-flow 4.5s ease-in-out infinite alternate;
+}
+@keyframes lz-rail-flow {
+  from {
+    background-position: 50% 0%;
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 0%, transparent);
+  }
+  to {
+    background-position: 50% 100%;
+    box-shadow: 0 0 10px 0 color-mix(in srgb, var(--accent) 45%, transparent);
+  }
+}
+.lz-nav-item.is-active svg {
+  color: var(--accent);
+  opacity: 1;
+  filter: drop-shadow(0 0 6px color-mix(in srgb, var(--accent) 45%, transparent));
+}
+.lz-nav-item svg {
+  flex: 0 0 auto;
+  opacity: 0.7;
+  width: 17px;
+  height: 17px;
+  transition: opacity 0.18s, color 0.18s, filter 0.18s;
+}
+.lz-nav-dot {
+  margin-left: auto;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--line-strong);
+  flex: 0 0 auto;
+  transition: background 0.2s;
+}
+.lz-nav-item.is-active .lz-nav-dot {
+  background: var(--accent);
+}
+.lz-rail-progress {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 10px 9px 2px;
+}
+.lz-rail-progress-label {
+  font: 500 10.5px/1 var(--mono);
+  letter-spacing: 0.04em;
+  color: var(--faint);
+}
+.lz-nav-item span.lz-nav-label-text {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lz-caret {
+  margin-left: auto;
+  opacity: 0.45;
+  transition: transform 0.18s;
+}
+.lz-nav-group-toggle[aria-expanded='true'] .lz-caret {
+  transform: rotate(90deg);
+}
+.lz-badge {
+  margin-left: auto;
+  background: var(--accent);
+  color: #fff;
+  border-radius: 999px;
+  font: 600 11px/1 var(--font);
+  padding: 3px 6px;
+  min-width: 20px;
+  text-align: center;
+}
+.lz-badge.quiet {
+  background: var(--line-soft);
+  color: var(--muted);
+}
+.lz-checkdot {
+  margin-left: auto;
+  width: 17px;
+  height: 17px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(140deg, var(--accent) 0%, var(--accent-2) 100%);
+  color: #14100c;
+  flex: 0 0 auto;
+  animation: lz-pop 0.45s cubic-bezier(0.2, 1.2, 0.35, 1) both;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 14%, transparent);
+}
+/* The tick has to arrive, not appear: a stage becomes complete while you are
+   looking at it. */
+@keyframes lz-pop {
+  0% {
+    transform: scale(0.4) rotate(-18deg);
+    opacity: 0;
+  }
+  65% {
+    transform: scale(1.14) rotate(3deg);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1) rotate(0deg);
+    opacity: 1;
+  }
+}
+.lz-app[data-theme='light'] .lz-checkdot {
+  color: #fff;
+}
+.lz-nav-sub {
+  display: flex;
+  flex-direction: column;
+  gap: 1px;
+  padding: 4px 0 6px 38px;
+}
+.lz-nav-sub a,
+.lz-nav-sub button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: var(--muted);
+  text-decoration: none;
+  font: 500 13px/1.3 var(--font);
+  padding: 6px 8px;
+  border-radius: 7px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lz-nav-sub a:hover,
+.lz-nav-sub button:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.lz-app[data-theme='dark'] .lz-nav-sub a:hover,
+.lz-app[data-theme='dark'] .lz-nav-sub button:hover {
+  background: #1a1a1a;
+}
+.lz-nav-sub .is-active {
+  color: var(--ink);
+  background: var(--hover);
+}
+.lz-app[data-theme='dark'] .lz-nav-sub .is-active {
+  background: #1a1a1a;
+}
+
+.lz-side-foot {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 11px 4px 0;
+  position: relative;
+  border-top: 1px solid var(--line);
+  margin-top: 12px;
+  flex: 0 0 auto;
+}
+.lz-avatar {
+  background: linear-gradient(140deg, var(--accent) 0%, var(--accent-3) 130%);
+  color: #14100c;
+}
+.lz-app[data-theme='light'] .lz-avatar {
+  color: #fff;
+}
+.lz-avatar {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 600 13px/1 var(--font);
+  flex: 0 0 auto;
+}
+.lz-account {
+  flex: 1;
+  min-width: 0;
+}
+.lz-account-name {
+  font: 500 13.5px/1.25 var(--font);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lz-account-email {
+  font-size: 11.5px;
+  color: var(--faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lz-dots {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  border-radius: 7px;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  letter-spacing: 1px;
+}
+.lz-dots:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+/* The theme switch is the same control as the dots beside it — same size, same
+   hover — with an icon instead of a glyph, and it is not the menu button. */
+.lz-theme-toggle {
+  width: 28px;
+  height: 28px;
+  border: 0;
+  background: transparent;
+  border-radius: 7px;
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.lz-theme-toggle:hover,
+.lz-theme-toggle:focus-visible {
+  background: var(--hover);
+  color: var(--accent);
+}
+.lz-menu {
+  position: absolute;
+  left: 4px;
+  right: 4px;
+  bottom: 60px;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  box-shadow: var(--shadow-lg);
+  padding: 6px;
+  z-index: 40;
+}
+.lz-menu button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border: 0;
+  background: transparent;
+  border-radius: 7px;
+  padding: 8px 10px;
+  font: 500 13px/1.2 var(--font);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.lz-menu button:hover {
+  background: #f4f1ea;
+  color: var(--ink);
+}
+.lz-app[data-theme='dark'] .lz-menu button:hover {
+  background: #1b232f;
+}
+/* The way back to the site: a row of its own in the panel, above the account,
+   because a builder who is lost in nine documents will not open a ••• menu. */
+.lz-brand-site {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  margin-left: auto;
+  padding: 4px 7px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  color: var(--muted);
+  font: 500 11.5px/1 var(--font);
+  text-decoration: none;
+  transition: color 0.16s, border-color 0.16s;
+}
+.lz-brand-site:hover {
+  color: var(--ink);
+  border-color: var(--accent-line);
+}
+.lz-brand-site svg {
+  opacity: 0.6;
+}
+.lz-side-back {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  margin-top: 12px;
+  padding: 9px 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card-soft);
+  color: var(--muted);
+  font: 500 12.5px/1.2 var(--font);
+  text-decoration: none;
+  flex: 0 0 auto;
+  transition: color 0.16s, border-color 0.16s, background 0.16s;
+}
+.lz-side-back:hover {
+  color: var(--ink);
+  border-color: var(--accent-line);
+  background: var(--card);
+}
+.lz-side-back span {
+  flex: 1 1 auto;
+}
+.lz-side-back-out {
+  opacity: 0.55;
+}
+.lz-menu-link {
+  display: block;
+  width: 100%;
+  text-align: left;
+  border-radius: 7px;
+  padding: 8px 10px;
+  font: 500 13px/1.2 var(--font);
+  color: var(--ink-2);
+  text-decoration: none;
+}
+.lz-menu-link:hover {
+  background: #f4f1ea;
+  color: var(--ink);
+}
+.lz-app[data-theme='dark'] .lz-menu-link:hover {
+  background: #1b232f;
+}
+.lz-menu hr {
+  border: 0;
+  border-top: 1px solid var(--line-soft);
+  margin: 5px 4px;
+}
+
+/* --------------------------------------------------------------------------
+   main column
+   -------------------------------------------------------------------------- */
+
+.lz-main {
+  padding: 34px 28px 76px;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+.lz-view {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  max-width: 1060px;
+  margin-inline: auto;
+  min-width: 0;
+  flex: 1;
+  animation: lz-fade 0.22s ease both;
+}
+/* A view is a flex column with no gap, so every direct child states its own
+   spacing. The page header owns the space below it; panels own the space
+   between themselves and the next block. Without this, a guide or a composer
+   panel sits flush against the content underneath it. */
+/* Every panel that opens a view — the how-to guide, the brief composer, the
+   scope review, the "what happens when you build" list — sits on the same
+   rhythm, so the page reads as a column of blocks rather than a stack that
+   varies with which panels happen to be present. */
+.lz-view > .lz-guide,
+.lz-view > .lz-compose,
+.lz-view > .lz-scope,
+.lz-view > .lz-what-next {
+  margin: 0 0 20px;
+}
+/* Panels inside a view are separated by the same 20px, so a page reads as one
+   column instead of a few blocks that happen to touch. */
+.lz-view > .lz-split + .lz-card,
+.lz-view > .lz-card + .lz-card,
+.lz-view > .lz-stack + .lz-card {
+  margin-top: 20px;
+}
+.lz-view > .lz-stack {
+  margin-top: 4px;
+}
+.lz-view > .lz-stack + .lz-stage,
+.lz-view > .lz-stack + .lz-stage-done {
+  margin-top: 18px;
+}
+@keyframes lz-fade {
+  from {
+    opacity: 0;
+    transform: translateY(3px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.lz-mobile-bar {
+  display: none;
+}
+
+.lz-weekhead {
+  display: flex;
+  align-items: flex-start;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding-bottom: 18px;
+  border-bottom: 1px solid var(--line-soft);
+  margin-bottom: 26px;
+}
+.lz-weeknow {
+  flex: 0 0 auto;
+  padding-top: 2px;
+}
+.lz-weeknow strong {
+  display: block;
+  font: 600 13px/1.2 var(--font);
+}
+.lz-weeknow span {
+  display: block;
+  font-size: 12.5px;
+  color: var(--faint);
+  margin-top: 1px;
+}
+.lz-weekhead-div {
+  width: 1px;
+  height: 34px;
+  background: var(--line);
+  flex: 0 0 auto;
+}
+.lz-steps {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  flex-wrap: wrap;
+}
+.lz-step {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  border: 1px solid transparent;
+  background: transparent;
+  padding: 5px 9px 5px 5px;
+  border-radius: 999px;
+  font: 500 13.5px/1 var(--font);
+  color: var(--muted);
+  cursor: pointer;
+}
+.lz-step:hover:not(.is-active) {
+  background: var(--hover);
+  color: var(--ink-2);
+}
+.lz-app[data-theme='dark'] .lz-step:hover:not(.is-active) {
+  background: #1a1a1a;
+}
+.lz-step-n {
+  width: 23px;
+  height: 23px;
+  border-radius: 50%;
+  background: var(--hover);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  display: grid;
+  place-items: center;
+  font: 600 11.5px/1 var(--font);
+  flex: 0 0 auto;
+  transition: background 0.2s, color 0.2s, border-color 0.2s;
+}
+.lz-app[data-theme='dark'] .lz-step-n {
+  background: #1c1c1c;
+  color: var(--muted);
+  border-color: var(--line);
+}
+.lz-step.is-active {
+  background: var(--card);
+  color: var(--ink);
+  border-color: var(--line);
+}
+.lz-app[data-theme='dark'] .lz-step.is-active {
+  background: var(--card);
+  border-color: var(--line);
+}
+.lz-step.is-active .lz-step-n {
+  background: linear-gradient(140deg, var(--accent) 0%, var(--accent-2) 100%);
+  border-color: transparent;
+  color: #14100c;
+}
+.lz-step.is-done .lz-step-n {
+  background: linear-gradient(140deg, var(--accent) 0%, var(--accent-2) 100%);
+  border-color: transparent;
+  color: #14100c;
+}
+.lz-app[data-theme='light'] .lz-step.is-active .lz-step-n,
+.lz-app[data-theme='light'] .lz-step.is-done .lz-step-n {
+  color: #fff;
+}
+.lz-step-line {
+  width: 22px;
+  height: 1px;
+  background: var(--line);
+  flex: 0 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   stage strip — where you are in the process, in the page header
+   -------------------------------------------------------------------------- */
+
+/* The five stages are navigable from the rail on the left, so the header does
+   not repeat them as links. It states position: which stage, and how much of
+   the process is behind you, as one slim meter. */
+.lz-stagestrip {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  flex: 0 0 auto;
+  min-width: 190px;
+}
+.lz-stagestrip-label {
+  font: 600 10px/1 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  white-space: nowrap;
+}
+.lz-stagestrip-dots {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.lz-stagestrip .lz-step {
+  padding: 0;
+  border: 0;
+  background: none;
+  gap: 0;
+  cursor: default;
+}
+.lz-stagestrip .lz-step:hover {
+  background: none;
+}
+.lz-stagestrip .lz-step-n {
+  width: 20px;
+  height: 20px;
+  font-size: 10.5px;
+}
+.lz-stagestrip .lz-step:not(.is-active):not(.is-done) .lz-step-n {
+  background: transparent;
+  color: var(--faint);
+}
+/* The stage name is spoken, not printed, in the strip: the number is enough
+   once the rail carries the labels. */
+/* A `mono` class is used on figures, counts and stage numbers throughout the
+   app; it had no rule, so those numbers were rendering in DM Sans. */
+.mono {
+  font-family: var(--mono);
+  font-variant-numeric: tabular-nums;
+}
+.lz-sr {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+/* The meter fills with the same ember as the rail, so progress is colour as
+   well as length. */
+.lz-meter {
+  position: relative;
+  height: 4px;
+  border-radius: 999px;
+  background: var(--line);
+  overflow: hidden;
+  width: 100%;
+  min-width: 120px;
+}
+.lz-meter-fill {
+  display: block;
+  height: 100%;
+  border-radius: 999px;
+  background: linear-gradient(90deg, var(--accent) 0%, var(--accent-2) 55%, var(--accent-3) 100%);
+  background-size: 200% 100%;
+  animation: lz-meter-flow 6s linear infinite;
+  transition: width 0.5s cubic-bezier(0.2, 0.8, 0.3, 1);
+}
+@keyframes lz-meter-flow {
+  from {
+    background-position: 0% 50%;
+  }
+  to {
+    background-position: 200% 50%;
+  }
+}
+
+.lz-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  flex-wrap: wrap;
+  margin-bottom: 6px;
+}
+.lz-head h1 {
+  font: 700 30px/1.12 var(--font);
+  letter-spacing: -0.025em;
+}
+.lz-head p {
+  color: var(--muted);
+  font-size: 14px;
+  margin-top: 8px;
+  max-width: 70ch;
+}
+.lz-head-actions {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  align-items: center;
+  padding-top: 6px;
+}
+.lz-pagehead {
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--line-soft);
+  margin-bottom: 26px;
+}
+.lz-pagehead .lz-weekhead {
+  margin-bottom: 0;
+  border-bottom: 0;
+  padding-bottom: 0;
+  margin-top: 20px;
+}
+
+/* --------------------------------------------------------------------------
+   scope review — what the compiler read
+   -------------------------------------------------------------------------- */
+
+.lz-scope {
+  margin: 0 0 18px;
+}
+.lz-scope-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+.lz-scope-head h2 {
+  margin: 3px 0 0;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+.lz-scope-read {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
+  gap: 12px;
+  margin: 16px 0 0;
+  padding: 14px 0 0;
+  border-top: 1px solid var(--line-soft);
+}
+.lz-scope-read dt {
+  font: 500 11px/1 var(--font);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.lz-scope-read dd {
+  margin: 5px 0 0;
+  font: 500 13px/1.45 var(--font);
+  color: var(--ink);
+  overflow-wrap: anywhere;
+}
+.lz-scope-evidence {
+  margin: 12px 0 0;
+  font-size: 12.5px;
+  color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+.lz-scope-word {
+  font: 500 11.5px/1 var(--mono);
+  padding: 4px 7px;
+  border-radius: 999px;
+  background: var(--accent-soft, color-mix(in srgb, var(--accent) 12%, transparent));
+  color: var(--ink);
+}
+.lz-scope-ask {
+  margin-top: 16px;
+  padding: 14px 16px;
+  border-radius: 10px;
+  border: 1px solid var(--accent-line);
+  background: var(--card-soft);
+}
+.lz-scope-ask ul {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  display: grid;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--ink);
+}
+.lz-scope-ask-note {
+  margin: 10px 0 0;
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+.lz-scope-list {
+  margin-top: 18px;
+}
+.lz-scope-list ul {
+  list-style: none;
+  margin: 8px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.lz-scope-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  align-items: center;
+  gap: 12px;
+  padding: 11px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  background: var(--card-soft);
+}
+.lz-scope-row b {
+  display: block;
+  font: 600 13.5px/1.35 var(--font);
+  color: var(--ink);
+}
+.lz-scope-row span {
+  display: block;
+  margin-top: 2px;
+  font-size: 12.5px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+.lz-scope-row .lz-scope-meta {
+  font: 500 11.5px/1 var(--mono);
+  color: var(--faint);
+  white-space: nowrap;
+}
+.lz-scope-remove {
+  color: var(--muted);
+}
+.lz-scope-out .lz-scope-row {
+  border-style: dashed;
+  background: transparent;
+}
+.lz-scope-out .lz-scope-row b {
+  color: var(--muted);
+}
+
+@media (max-width: 720px) {
+  .lz-scope-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+  }
+  .lz-scope-row .lz-scope-meta {
+    grid-column: 1 / -1;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   what happens when you build
+   -------------------------------------------------------------------------- */
+
+.lz-what-next {
+  margin: 0 0 18px;
+}
+.lz-what-next h2 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  letter-spacing: -0.01em;
+}
+.lz-what-next p {
+  margin: 0;
+  max-width: 68ch;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.lz-what-next-list {
+  list-style: none;
+  margin: 18px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 12px;
+  counter-reset: stage;
+}
+.lz-what-next-list li {
+  display: grid;
+  grid-template-columns: 26px minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+}
+.lz-what-next-list .mono {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  border: 1px solid var(--line);
+  font: 600 11px/1 var(--mono);
+  color: var(--muted);
+}
+.lz-what-next-list b {
+  display: block;
+  font: 600 13.5px/1.4 var(--font);
+  color: var(--ink);
+}
+.lz-what-next-list span span {
+  display: block;
+  margin-top: 2px;
+  font-size: 13px;
+  line-height: 1.55;
+  color: var(--muted);
+}
+
+/* --------------------------------------------------------------------------
+   a stage with no product in it
+   -------------------------------------------------------------------------- */
+
+.lz-awaiting {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+  padding: 24px;
+}
+.lz-awaiting-ic {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 12px;
+  color: var(--accent);
+  background: var(--accent-tint);
+  border: 1px solid var(--accent-line);
+}
+.lz-awaiting h2 {
+  margin: 0 0 8px;
+  font-size: 17px;
+  letter-spacing: -0.015em;
+}
+.lz-awaiting p {
+  margin: 0 0 10px;
+  max-width: 68ch;
+  color: var(--muted);
+  line-height: 1.65;
+}
+.lz-awaiting-list {
+  list-style: none;
+  margin: 10px 0 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+.lz-awaiting-list li {
+  display: flex;
+  gap: 9px;
+  align-items: flex-start;
+  font-size: 13.5px;
+  line-height: 1.5;
+  color: var(--ink-2);
+}
+.lz-awaiting-list svg {
+  margin-top: 3px;
+  color: var(--accent);
+  flex: 0 0 auto;
+}
+.lz-awaiting-note {
+  margin: 14px 0 0 !important;
+  font-size: 12px;
+  color: var(--faint) !important;
+}
+@media (max-width: 720px) {
+  .lz-awaiting {
+    grid-template-columns: 1fr;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   controls
+   -------------------------------------------------------------------------- */
+
+.lz-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  padding: 8px 13px;
+  color: var(--ink);
+  font: 500 13.5px/1.15 var(--font);
+  cursor: pointer;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: background 0.13s, border-color 0.13s, color 0.13s;
+}
+.lz-btn:hover {
+  background: var(--hover);
+  border-color: #cfc9bd;
+}
+.lz-app[data-theme='dark'] .lz-btn:hover {
+  background: #1a1a1a;
+  border-color: #3a3a3a;
+}
+.lz-app[data-theme='light'] .lz-btn:hover {
+  background: var(--hover);
+  border-color: #cfc9bd;
+}
+.lz-btn.primary {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+}
+.lz-btn.primary:hover {
+  background: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+/* Ink on the accent, in both themes: 5.9:1 on #f0621a and 5.4:1 on #ea580c,
+   where white would be 3.3 and 3.6 — below AA at this size. */
+.lz-app[data-theme='dark'] .lz-btn.primary {
+  color: #0a0a0a;
+}
+.lz-app[data-theme='light'] .lz-btn.primary {
+  color: #12100e;
+}
+.lz-btn.quiet {
+  background: var(--hover);
+  border-color: transparent;
+  color: var(--ink-2);
+}
+.lz-app[data-theme='dark'] .lz-btn.quiet {
+  background: #1c1c1c;
+  color: var(--ink-2);
+}
+.lz-btn.small {
+  padding: 6px 10px;
+  font-size: 12.5px;
+  border-radius: 8px;
+}
+.lz-btn.block {
+  width: 100%;
+}
+.lz-btn[disabled] {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.lz-btn.primary[disabled] {
+  background: var(--dis);
+  border-color: var(--dis);
+  color: #fff;
+  opacity: 1;
+}
+.lz-icon-btn {
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  color: var(--muted);
+  cursor: pointer;
+}
+.lz-icon-btn:hover {
+  color: var(--ink);
+  background: var(--hover);
+}
+.lz-app[data-theme='dark'] .lz-icon-btn:hover {
+  background: #1b232f;
+}
+
+.lz-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: 500 11.5px/1 var(--font);
+  padding: 4px 9px;
+  border-radius: 999px;
+  background: #f1eee7;
+  color: var(--muted);
+  white-space: nowrap;
+}
+.lz-app[data-theme='dark'] .lz-pill {
+  background: #1b232f;
+}
+.lz-pill.blue {
+  background: var(--blue-bg);
+  color: var(--blue-ink);
+}
+.lz-pill.green {
+  background: var(--green-bg);
+  color: var(--green-ink);
+}
+.lz-pill.peach {
+  background: var(--peach-bg);
+  color: var(--peach-ink);
+}
+.lz-pill.purple {
+  background: var(--purple-bg);
+  color: var(--purple-ink);
+}
+.lz-pill.amber {
+  background: var(--amber-bg);
+  color: var(--amber-ink);
+}
+.lz-pill.red {
+  background: #fbe4e1;
+  color: #9b2c1f;
+}
+.lz-pill.outline {
+  background: transparent;
+  border: 1px solid var(--line-strong);
+  color: var(--muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  font-size: 10px;
+  padding: 4px 7px;
+}
+.lz-pill.mono {
+  font-family: var(--mono);
+  font-size: 10.5px;
+}
+
+.lz-field {
+  display: flex;
+  flex-direction: column;
+  gap: 7px;
+  margin-bottom: 14px;
+}
+.lz-field > span {
+  font: 600 12.5px/1.2 var(--font);
+  color: var(--ink-2);
+}
+.lz-input {
+  width: 100%;
+  background: var(--card);
+  border: 1px solid var(--line-strong);
+  border-radius: 9px;
+  padding: 10px 11px;
+  font: 400 13.5px/1.55 var(--font);
+  color: var(--ink);
+  resize: vertical;
+}
+.lz-input:focus {
+  outline: none;
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(196, 71, 27, 0.12);
+}
+.lz-input::placeholder {
+  color: var(--faint);
+}
+
+/* --------------------------------------------------------------------------
+   cards, collapsibles, lists
+   -------------------------------------------------------------------------- */
+
+.lz-card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: var(--shadow);
+}
+.lz-card.flush {
+  padding: 0;
+  overflow: hidden;
+}
+.lz-card-h {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+.lz-card-hL {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  min-width: 0;
+}
+.lz-num {
+  width: 21px;
+  height: 21px;
+  border-radius: 50%;
+  background: #211f1c;
+  color: #fff;
+  display: grid;
+  place-items: center;
+  font: 600 11px/1 var(--font);
+  flex: 0 0 auto;
+}
+.lz-num.done {
+  background: var(--green-bg);
+  color: var(--green-ink);
+}
+.lz-card-h h2 {
+  font: 600 15.5px/1.3 var(--font);
+  letter-spacing: -0.01em;
+}
+.lz-card-lead {
+  font-size: 13px;
+  color: var(--muted);
+  margin: 2px 0 14px;
+}
+.lz-card-lead b {
+  color: var(--ink-2);
+  font-weight: 600;
+}
+.lz-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+.lz-cols-2 {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+.lz-cols-3 {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 12px;
+}
+.lz-cols-4 {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+.lz-split {
+  display: grid;
+  grid-template-columns: minmax(0, 1.62fr) minmax(0, 1fr);
+  gap: 18px;
+  align-items: start;
+}
+.lz-col {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  min-width: 0;
+}
+
+.lz-fold {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: var(--shadow);
+  overflow: hidden;
+}
+.lz-fold-h {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  width: 100%;
+  border: 0;
+  background: transparent;
+  padding: 13px 16px;
+  cursor: pointer;
+  text-align: left;
+  color: var(--ink);
+}
+.lz-fold-h svg.lz-chev {
+  flex: 0 0 auto;
+  color: var(--faint);
+  transition: transform 0.16s;
+}
+.lz-fold[data-open='true'] .lz-fold-h svg.lz-chev {
+  transform: rotate(90deg);
+}
+.lz-fold-h b {
+  font: 600 13px/1.2 var(--font);
+  white-space: nowrap;
+}
+.lz-fold-h .lz-fold-meta {
+  font-size: 12.5px;
+  color: var(--faint);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lz-fold-h .lz-fold-count {
+  margin-left: auto;
+  font: 500 11px/1 var(--font);
+  color: var(--muted);
+  background: var(--line-soft);
+  border-radius: 999px;
+  padding: 4px 7px;
+}
+.lz-fold-b {
+  padding: 0 16px 16px;
+  font-size: 13px;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lz-fold-b ul {
+  margin: 0;
+  padding-left: 18px;
+}
+.lz-fold-b li {
+  margin-bottom: 5px;
+}
+
+.lz-kv {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.lz-kv-row {
+  display: grid;
+  grid-template-columns: minmax(88px, 0.42fr) minmax(0, 1fr);
+  gap: 12px;
+  font-size: 13px;
+  padding-bottom: 8px;
+  border-bottom: 1px dashed var(--line-soft);
+}
+.lz-kv-row:last-child {
+  border-bottom: 0;
+  padding-bottom: 0;
+}
+.lz-kv-row dt {
+  color: var(--faint);
+  font-size: 12px;
+}
+.lz-kv-row dd {
+  margin: 0;
+  color: var(--ink-2);
+}
+
+.lz-bullets {
+  margin: 0;
+  padding-left: 17px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--ink-2);
+  line-height: 1.55;
+}
+/* A hairline between two blocks inside a card, without a heading. */
+.lz-rule {
+  height: 1px;
+  background: var(--line-soft);
+  margin: 14px 0 12px;
+}
+.lz-quote {
+  margin: 8px 0 0;
+  padding: 9px 12px;
+  border-left: 2px solid var(--accent-line);
+  color: var(--muted);
+  font-size: 12.5px;
+  font-style: italic;
+  line-height: 1.5;
+}
+.lz-body {
+  font-size: 13.5px;
+  line-height: 1.62;
+  color: var(--ink-2);
+}
+.lz-muted {
+  color: var(--muted);
+  font-size: 13.5px;
+}
+.lz-hint {
+  color: var(--faint);
+  font-size: 12.5px;
+  margin-top: 8px;
+}
+.lz-sep {
+  height: 1px;
+  background: var(--line-soft);
+  margin: 14px 0;
+}
+.lz-row {
+  display: flex;
+  gap: 9px;
+  flex-wrap: wrap;
+  align-items: center;
+}
+.lz-between {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* --------------------------------------------------------------------------
+   numbered step rail (Design OS StepIndicator, Design OS dressing)
+   -------------------------------------------------------------------------- */
+
+.lz-rail {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+}
+.lz-rail-step {
+  position: relative;
+  padding-left: 42px;
+}
+.lz-rail-n {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  font: 600 11.5px/1 var(--font);
+  background: var(--line-soft);
+  color: var(--muted);
+  border: 1px solid var(--line);
+  z-index: 1;
+}
+.lz-rail-step[data-state='current'] .lz-rail-n {
+  background: #211f1c;
+  border-color: #211f1c;
+  color: #fff;
+}
+.lz-app[data-theme='dark'] .lz-rail-step[data-state='current'] .lz-rail-n {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #1a1206;
+}
+.lz-rail-step[data-state='complete'] .lz-rail-n {
+  background: var(--green-bg);
+  border-color: transparent;
+  color: var(--green-ink);
+}
+.lz-rail-step[data-state='skipped'] .lz-rail-n {
+  background: var(--amber-bg);
+  border-color: var(--amber-line);
+  color: var(--amber-ink);
+}
+.lz-rail-line {
+  position: absolute;
+  left: 12px;
+  top: 30px;
+  width: 2px;
+  height: calc(100% - 12px);
+  background: var(--line);
+  border-radius: 2px;
+}
+.lz-rail-step:last-child .lz-rail-line {
+  display: none;
+}
+.lz-rail-label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 600 13px/1.3 var(--font);
+  color: var(--ink);
+  padding-top: 5px;
+  margin-bottom: 10px;
+}
+.lz-rail-step[data-state='upcoming'] .lz-rail-label {
+  color: var(--muted);
+}
+.lz-rail-body {
+  padding-bottom: 2px;
+}
+
+/* --------------------------------------------------------------------------
+   empty state + command box
+   -------------------------------------------------------------------------- */
+
+.lz-empty {
+  background: var(--card);
+  border: 1px dashed var(--line-strong);
+  border-radius: 14px;
+  padding: 34px 24px;
+  text-align: center;
+  color: var(--muted);
+}
+.lz-empty-ic {
+  width: 42px;
+  height: 42px;
+  border-radius: 50%;
+  background: var(--line-soft);
+  color: var(--faint);
+  display: grid;
+  place-items: center;
+  margin: 0 auto 14px;
+}
+.lz-empty h3 {
+  font: 600 16px/1.3 var(--font);
+  color: var(--ink);
+  margin-bottom: 6px;
+}
+.lz-empty p {
+  font-size: 13.5px;
+  max-width: 56ch;
+  margin: 0 auto;
+  line-height: 1.6;
+}
+.lz-cmd {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin: 16px auto 0;
+  max-width: 460px;
+  text-align: left;
+  background: var(--hover);
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+.lz-app[data-theme='dark'] .lz-cmd {
+  background: #171f2a;
+}
+.lz-cmd-label {
+  display: block;
+  font: 600 10px/1 var(--font);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 5px;
+}
+.lz-cmd code {
+  font: 500 12px/1.5 var(--mono);
+  color: var(--ink-2);
+  word-break: break-all;
+}
+.lz-cmd .lz-icon-btn {
+  flex: 0 0 auto;
+}
+
+/* --------------------------------------------------------------------------
+   section list
+   -------------------------------------------------------------------------- */
+
+.lz-seclist {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+}
+.lz-secrow {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr) auto;
+  gap: 13px;
+  align-items: start;
+  width: 100%;
+  text-align: left;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 14px 16px;
+  cursor: pointer;
+  transition: border-color 0.14s, box-shadow 0.14s;
+}
+.lz-secrow:hover {
+  border-color: var(--line-strong);
+  box-shadow: var(--shadow);
+}
+.lz-secrow-n {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: var(--line-soft);
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  font: 600 11.5px/1 var(--font);
+  margin-top: 1px;
+}
+.lz-secrow.is-done .lz-secrow-n {
+  background: var(--green-bg);
+  color: var(--green-ink);
+}
+.lz-secrow-t {
+  font: 600 14.5px/1.3 var(--font);
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+.lz-secrow-d {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 3px;
+}
+.lz-secrow-foot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  margin-top: 8px;
+}
+.lz-secrow-dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--line-strong);
+  display: inline-block;
+}
+.lz-secrow-dot.on {
+  background: var(--accent);
+}
+.lz-secrow-progress {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font: 500 11.5px/1 var(--font);
+  color: var(--faint);
+  margin-right: 4px;
+}
+.lz-secrow .lz-chev {
+  color: var(--faint);
+  margin-top: 4px;
+}
+
+/* --------------------------------------------------------------------------
+   preview stage (device presets, drag grips, fullscreen)
+   -------------------------------------------------------------------------- */
+
+.lz-stage {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow);
+  display: flex;
+  flex-direction: column;
+}
+.lz-stage-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--line-soft);
+  background: var(--card-soft);
+}
+.lz-stage-bar .lz-crumb {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  font: 500 12.5px/1.2 var(--font);
+  color: var(--muted);
+  min-width: 0;
+}
+.lz-stage-bar .lz-crumb b {
+  color: var(--ink);
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+.lz-seg {
+  display: inline-flex;
+  border: 1px solid var(--line-strong);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--card);
+}
+.lz-seg button {
+  border: 0;
+  border-right: 1px solid var(--line-strong);
+  background: var(--card);
+  padding: 6px 10px;
+  font: 500 12px/1 var(--font);
+  color: var(--muted);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.lz-seg button:last-child {
+  border-right: 0;
+}
+.lz-seg button:hover {
+  background: var(--hover);
+  color: var(--ink);
+}
+.lz-seg button.is-on {
+  background: #211f1c;
+  color: #fff;
+}
+.lz-app[data-theme='dark'] .lz-seg button.is-on {
+  background: var(--accent);
+  color: #1a1206;
+}
+.lz-pct {
+  font: 500 12px/1 var(--mono);
+  color: var(--muted);
+  min-width: 38px;
+  text-align: right;
+}
+.lz-spacer {
+  flex: 1;
+}
+
+.lz-stage-canvas {
+  position: relative;
+  display: flex;
+  justify-content: center;
+  background: var(--hover);
+  padding: 22px 26px;
+  min-height: 320px;
+}
+.lz-app[data-theme='dark'] .lz-stage-canvas {
+  background: #0f141d;
+}
+.lz-stage-frame {
+  position: relative;
+  width: var(--pct, 100%);
+  max-width: 100%;
+  background: var(--card);
+  border-radius: 10px;
+  box-shadow: 0 18px 40px -22px rgba(28, 26, 22, 0.45);
+  overflow: hidden;
+  transition: width 0.18s ease;
+}
+.lz-stage-frame.dragging {
+  transition: none;
+}
+.lz-stage-frame .pv {
+  min-height: 540px;
+}
+.lz-stage-scroll {
+  max-height: calc(100vh - 300px);
+  overflow: auto;
+}
+.lz-grip {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 12px;
+  cursor: ew-resize;
+  z-index: 5;
+  display: grid;
+  place-items: center;
+}
+.lz-grip::after {
+  content: '';
+  width: 3px;
+  height: 34px;
+  border-radius: 3px;
+  background: var(--line-strong);
+  opacity: 0;
+  transition: opacity 0.15s;
+}
+.lz-grip:hover::after,
+.lz-grip.dragging::after {
+  opacity: 1;
+}
+.lz-grip.left {
+  left: -6px;
+}
+.lz-grip.right {
+  right: -6px;
+}
+.lz-stage-hint {
+  font: 500 11px/1.4 var(--font);
+  color: var(--faint);
+  text-align: center;
+  padding: 8px 12px 12px;
+}
+.lz-stage-full {
+  position: fixed;
+  inset: 0;
+  z-index: 200;
+  background: #0d1017;
+  display: flex;
+  flex-direction: column;
+  color: #f2eee5;
+}
+.lz-stage-full .lz-stage-bar {
+  background: #141a24;
+  border-color: #232c3a;
+  color: #f2eee5;
+}
+.lz-stage-full .lz-stage-canvas {
+  flex: 1;
+  overflow: auto;
+  background: #0a0d13;
+  align-items: flex-start;
+  padding: 28px;
+}
+.lz-stage-full .lz-crumb b,
+.lz-stage-full .lz-pct {
+  color: #f2eee5;
+}
+.lz-stage-full .lz-stage-scroll {
+  max-height: none;
+}
+.lz-stage-full .lz-stage-frame {
+  min-height: calc(100vh - 132px);
+}
+.lz-stage-full .lz-seg {
+  background: #141a24;
+  border-color: #334052;
+}
+.lz-stage-full .lz-seg button {
+  background: #141a24;
+  color: #a0a7b8;
+  border-color: #334052;
+}
+
+/* --------------------------------------------------------------------------
+   export
+   -------------------------------------------------------------------------- */
+
+.lz-checkrow {
+  display: flex;
+  align-items: flex-start;
+  gap: 11px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line-soft);
+}
+.lz-checkrow:last-child {
+  border-bottom: 0;
+}
+.lz-checkrow-ic {
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  flex: 0 0 auto;
+  margin-top: 1px;
+}
+.lz-checkrow-ic.pass {
+  background: var(--green-bg);
+  color: var(--green-ink);
+}
+.lz-checkrow-ic.warn {
+  background: var(--amber-bg);
+  color: var(--amber-ink);
+}
+.lz-checkrow-ic.fail {
+  background: #fbe4e1;
+  color: #9b2c1f;
+}
+.lz-checkrow b {
+  display: block;
+  font: 600 13px/1.35 var(--font);
+  color: var(--ink);
+}
+.lz-checkrow span {
+  display: block;
+  font-size: 12.5px;
+  color: var(--muted);
+  line-height: 1.5;
+  margin-top: 2px;
+}
+
+.lz-ready {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  flex-wrap: wrap;
+  border-radius: 14px;
+  padding: 20px;
+  background: linear-gradient(135deg, #fdf0e7, #fbe3d4);
+  border: 1px solid var(--accent-line);
+  color: #6b2c12;
+}
+.lz-app[data-theme='dark'] .lz-ready {
+  background: linear-gradient(135deg, #241811, #2e1c12);
+  border-color: #5c3a24;
+  color: #f6c5a6;
+}
+.lz-ready-ic {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  background: var(--card);
+  display: grid;
+  place-items: center;
+  color: var(--accent);
+  flex: 0 0 auto;
+  box-shadow: var(--shadow);
+}
+.lz-ready h2 {
+  font: 700 17px/1.25 var(--font);
+  letter-spacing: -0.015em;
+}
+.lz-ready p {
+  font-size: 12.5px;
+  opacity: 0.85;
+  margin-top: 3px;
+}
+.lz-ready .lz-row {
+  margin-left: auto;
+}
+
+.lz-tiles {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.lz-tile {
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  padding: 13px;
+  background: var(--card-soft);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lz-tile-ic {
+  width: 30px;
+  height: 30px;
+  border-radius: 8px;
+  background: var(--hover);
+  color: var(--ink-2);
+  display: grid;
+  place-items: center;
+}
+.lz-app[data-theme='dark'] .lz-tile-ic {
+  background: #1b232f;
+  color: var(--ink-2);
+}
+.lz-tile b {
+  font: 600 12.5px/1.3 var(--font);
+}
+.lz-tile span {
+  font-size: 11.5px;
+  color: var(--faint);
+  line-height: 1.45;
+}
+
+.lz-banner {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  border: 1px solid var(--amber-line);
+  background: var(--amber-bg);
+  color: var(--amber-ink);
+  border-radius: 11px;
+  padding: 11px 13px;
+  font-size: 13px;
+  line-height: 1.5;
+  margin-bottom: 16px;
+}
+.lz-banner svg {
+  flex: 0 0 auto;
+  margin-top: 2px;
+}
+.lz-banner .lz-banner-x {
+  margin-left: auto;
+  color: inherit;
+  opacity: 0.6;
+  display: grid;
+  place-items: center;
+  padding: 2px;
+}
+.lz-banner .lz-banner-x:hover {
+  opacity: 1;
+}
+
+/* --------------------------------------------------------------------------
+   tables + data shape
+   -------------------------------------------------------------------------- */
+
+.lz-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+}
+.lz-table th {
+  text-align: left;
+  font: 600 10.5px/1.2 var(--font);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  color: var(--faint);
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--line);
+  white-space: nowrap;
+}
+.lz-table td {
+  padding: 7px 9px;
+  border-bottom: 1px solid var(--line-soft);
+  color: var(--ink-2);
+  white-space: nowrap;
+  max-width: 220px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.lz-table tr:last-child td {
+  border-bottom: 0;
+}
+.lz-table-scroll {
+  overflow-x: auto;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+}
+.lz-fieldlist {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+.lz-fieldlist span {
+  font: 500 11px/1 var(--mono);
+  background: var(--line-soft);
+  color: var(--ink-2);
+  border-radius: 5px;
+  padding: 4px 6px;
+}
+.lz-fieldlist span i {
+  font-style: normal;
+  color: var(--faint);
+}
+
+.lz-code {
+  background: var(--hover);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 11px 12px;
+  font: 500 11.5px/1.6 var(--mono);
+  color: var(--ink-2);
+  overflow: auto;
+  max-height: 320px;
+  margin: 0;
+  white-space: pre;
+}
+.lz-app[data-theme='dark'] .lz-code {
+  background: #0f141d;
+  color: #cfcbc2;
+}
+
+/* swatches + type specimens */
+.lz-swatches {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+}
+.lz-swatch {
+  border: 1px solid var(--line);
+  border-radius: 11px;
+  overflow: hidden;
+  background: var(--card-soft);
+}
+.lz-swatch-chip {
+  height: 62px;
+}
+.lz-swatch-meta {
+  padding: 9px 10px;
+}
+.lz-swatch-meta b {
+  display: block;
+  font: 600 12px/1.3 var(--font);
+  text-transform: capitalize;
+}
+.lz-swatch-meta code {
+  font: 500 11px/1 var(--mono);
+  color: var(--faint);
+}
+.lz-spec {
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  padding: 12px;
+  background: var(--card-soft);
+}
+.lz-spec small {
+  display: block;
+  font: 600 10px/1 var(--font);
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--faint);
+  margin-bottom: 7px;
+}
+.lz-spec b {
+  font-size: 14px;
+  font-weight: 600;
+}
+.lz-spec span {
+  display: block;
+  font-size: 11.5px;
+  color: var(--faint);
+  margin-top: 3px;
+}
+
+/* --------------------------------------------------------------------------
+   modal + toast
+   -------------------------------------------------------------------------- */
+
+.lz-modal {
+  position: fixed;
+  inset: 0;
+  z-index: 110;
+  background: rgba(28, 26, 22, 0.32);
+  display: grid;
+  place-items: center;
+  padding: 22px;
+}
+.lz-modal-card {
+  width: min(560px, 100%);
+  max-height: 88vh;
+  overflow-y: auto;
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  padding: 20px;
+  box-shadow: var(--shadow-lg);
+}
+.lz-modal-h {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 14px;
+}
+.lz-modal-h h2 {
+  font: 600 17px/1.2 var(--font);
+  letter-spacing: -0.01em;
+}
+.lz-modal-x {
+  width: 30px;
+  height: 30px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--card);
+  color: var(--muted);
+  display: grid;
+  place-items: center;
+  cursor: pointer;
+}
+.lz-modal-foot {
+  display: flex;
+  justify-content: flex-end;
+  gap: 9px;
+  margin-top: 16px;
+}
+/* A toast that can carry its own answer: the message, then the one button that
+   takes the builder where the message is talking about. Tokens only — the same
+   --line/--ink/--accent the rest of the shell uses, in both themes. */
+.lz-toast {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  position: fixed;
+  left: 50%;
+  bottom: 22px;
+  transform: translate(-50%, 12px);
+  z-index: 120;
+  background: #211f1c;
+  color: #fff;
+  border-radius: 10px;
+  padding: 11px 15px;
+  font: 500 13px/1.4 var(--font);
+  box-shadow: 0 18px 40px -18px rgba(0, 0, 0, 0.45);
+  opacity: 0;
+  transition: opacity 0.2s, transform 0.2s;
+  max-width: min(92vw, 520px);
+}
+.lz-toast > span {
+  min-width: 0;
+}
+.lz-toast-action {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  border: 1px solid rgba(255, 255, 255, 0.22);
+  border-radius: 7px;
+  padding: 6px 10px;
+  font: 600 12px/1 var(--font);
+  color: #fff;
+  background: rgba(255, 255, 255, 0.08);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.lz-toast-action:hover {
+  background: rgba(255, 255, 255, 0.16);
+}
+
+/* --------------------------------------------------------------------------
+   the post-build guide
+   A rebuild resets five confirmations. Instead of a sentence that disappears,
+   the composer leaves a receipt: how far along the product is, the five stages
+   in order with the current one lit, and the single next action. It sits in the
+   composer and borrows the composer's own surface, so it reads as part of the
+   form rather than a new kind of panel.
+   -------------------------------------------------------------------------- */
+.lz-guide {
+  margin-top: 18px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  padding: 16px 16px 14px;
+  background: var(--card-soft);
+}
+.lz-guide-head {
+  display: flex;
+  gap: 12px;
+  align-items: flex-start;
+}
+.lz-guide-head p {
+  margin: 0;
+  font: 400 13.5px/1.55 var(--font);
+  color: var(--muted);
+}
+.lz-guide-head b {
+  color: var(--ink);
+}
+.lz-guide-step {
+  flex: none;
+  border-radius: 999px;
+  padding: 4px 9px;
+  font-size: 10.5px;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #fff;
+  background: var(--accent);
+}
+.lz-guide-road {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  list-style: none;
+  margin: 13px 0 0;
+  padding: 0;
+}
+.lz-guide-road li {
+  display: inline-flex;
+  align-items: baseline;
+  gap: 5px;
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  padding: 4px 10px;
+  font: 500 11.5px/1.5 var(--font);
+  color: var(--faint);
+}
+.lz-guide-road li.done {
+  color: var(--ink-2);
+  border-color: var(--line-strong);
+}
+.lz-guide-road li.now {
+  color: #fff;
+  border-color: transparent;
+  background: var(--accent);
+}
+.lz-guide-road .mono {
+  font-size: 10px;
+  opacity: 0.7;
+}
+.lz-guide-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 14px;
+}
+.lz-guide-actions .lz-btn {
+  margin: 0;
+}
+
+/* --------------------------------------------------------------------------
+   responsive
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 1180px) {
+  .lz-app {
+    grid-template-columns: 252px minmax(0, 1fr);
+  }
+}
+@media (max-width: 1100px) {
+  .lz-split {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .lz-cols-3,
+  .lz-tiles {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+@media (max-width: 900px) {
+  .lz-app {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  /* Below the breakpoint the same rail becomes a drawer: off-canvas, opened
+     from the bar at the top of the work area. Nothing about the panel itself
+     changes, so there is one set of rules for it. */
+  .lz-side {
+    position: fixed;
+    inset: 0 auto 0 0;
+    width: 288px;
+    transform: translateX(-102%);
+    transition: transform 0.2s ease;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.5);
+  }
+  body.lz-nav-open .lz-side {
+    transform: translateX(0);
+  }
+  body.lz-nav-open::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: rgba(28, 26, 22, 0.28);
+    z-index: 25;
+  }
+  .lz-mobile-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 16px;
+  }
+  .lz-mobile-bar strong {
+    font: 600 13px/1 var(--font);
+  }
+  .lz-main {
+    padding: 16px 16px 32px;
+  }
+  .lz-head h1 {
+    font-size: 24px;
+  }
+  .lz-cols-2,
+  .lz-cols-3,
+  .lz-cols-4,
+  .lz-tiles,
+  .lz-swatches {
+    grid-template-columns: minmax(0, 1fr);
+  }
+}
+@media (max-width: 560px) {
+  .lz-head h1 {
+    font-size: 22px;
+  }
+  .lz-step-line {
+    width: 10px;
+  }
+  .lz-stage-canvas {
+    padding: 12px;
+  }
+  .lz-secrow {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+  .lz-secrow > .lz-chev {
+    display: none;
+  }
+  .lz-toast {
+    left: 14px;
+    right: 14px;
+    transform: translateY(12px);
+    max-width: none;
+  }
+  .lz-toast.show {
+    transform: translateY(0);
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  .lz-app *,
+  .lz-toast {
+    transition: none !important;
+    animation: none !important;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   live prototype frame + wiki markdown
+   -------------------------------------------------------------------------- */
+
+.lz-proto {
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  overflow: hidden;
+  background: var(--card);
+  box-shadow: var(--shadow);
+}
+.lz-proto-bar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 9px 12px;
+  background: var(--card-soft);
+  border-bottom: 1px solid var(--line);
+}
+.lz-proto-dots {
+  display: inline-flex;
+  gap: 5px;
+  flex: 0 0 auto;
+}
+.lz-proto-dots i {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--line-strong);
+}
+.lz-proto-dots i:first-child {
+  background: #e6a08a;
+}
+.lz-proto-url {
+  font: 500 11.5px/1 var(--mono);
+  color: var(--muted);
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 4px 10px;
+}
+.lz-proto-canvas {
+  background: var(--hover);
+  padding: 18px;
+  max-height: calc(100vh - 340px);
+  min-height: 420px;
+  overflow: auto;
+}
+.lz-app[data-theme='dark'] .lz-proto-canvas {
+  background: #0f141d;
+}
+.lz-proto-device {
+  width: 392px;
+  max-width: 100%;
+  margin: 0 auto;
+  border-radius: 24px;
+  overflow: hidden;
+  border: 6px solid #211f1c;
+  box-shadow: 0 24px 60px -30px rgba(28, 26, 22, 0.5);
+}
+.lz-proto-device .pv {
+  min-height: 620px;
+}
+
+.lz-md {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.lz-md a {
+  color: var(--accent);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.lz-md code {
+  font: 500 11.5px/1.4 var(--mono);
+  background: var(--line-soft);
+  border-radius: 4px;
+  padding: 1px 4px;
+}
+.lz-md strong {
+  color: var(--ink);
+  font-weight: 600;
+}
+.lz-md .lz-bullets {
+  margin: 4px 0 10px;
+}
+.lz-md .lz-code {
+  margin: 8px 0 12px;
+}
+.lz-md .lz-table-scroll {
+  margin: 8px 0 12px;
+}
+
+input[type='range'] {
+  height: 22px;
+}
+
+/* editor diff swatch reuse */
+.lz-kv-row dd code {
+  font-family: var(--mono);
+}
+
+@media (max-width: 860px) {
+  .lz-proto-canvas {
+    padding: 10px;
+    max-height: none;
+  }
+  .lz-proto-device {
+    width: 100%;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   header-context corrections: what used to be a sidebar list is now a bar
+   -------------------------------------------------------------------------- */
+
+.lz-side .lz-nav-sub {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  width: auto;
+  padding: 0;
+}
+.lz-side .lz-nav-sub a,
+.lz-side .lz-nav-sub button {
+  width: auto;
+  padding: 5px 8px;
+}
+.lz-side .lz-nav-sub a:hover,
+.lz-side .lz-nav-sub button:hover {
+  background: var(--hover);
+}
+.lz-side .lz-avatar {
+  background: #1c1917;
+}
+
+@media (max-width: 900px) {
+  .lz-side {
+    padding: 8px 12px;
+  }
+  .lz-nav {
+    flex-basis: 100%;
+    order: 3;
+  }
+  .lz-main {
+    padding: 22px 14px 56px;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   toolkit page
+   -------------------------------------------------------------------------- */
+
+.lz-icon-tile {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--hover);
+  border: 1px solid var(--line);
+  color: var(--ink);
+  flex: 0 0 auto;
+}
+.lz-app[data-theme='dark'] .lz-icon-tile {
+  background: #332f2c;
+}
+.lz-code-line {
+  display: block;
+  font-family: var(--mono);
+  font-size: 12px;
+  background: var(--hover);
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  padding: 8px 10px;
+  overflow-x: auto;
+}
+.lz-app[data-theme='dark'] .lz-code-line {
+  background: #231f1d;
+}
+.lz-toolsteps {
+  list-style: none;
+  margin: 14px 0 4px;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.lz-toolsteps li {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  font-size: 13px;
+  color: var(--ink-2);
+}
+.lz-toolsteps-n {
+  flex: 0 0 auto;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: grid;
+  place-items: center;
+  background: var(--hover);
+  border: 1px solid var(--line);
+  font: 500 10.5px/1 var(--font);
+  color: var(--muted);
+}
+.lz-app[data-theme='dark'] .lz-toolsteps-n {
+  background: #332f2c;
+}
+/* The step's file, under its title — a full path in its own line, so the
+   ellipsis of a long skill name never hides which file runs. */
+.lz-toolsteps li > span:last-child {
+  flex: 1;
+  min-width: 0;
+}
+.lz-toolsteps-file {
+  display: block;
+  margin-top: 2px;
+  font: 11px/1.35 var(--mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+  color: var(--muted);
+  overflow-wrap: anywhere;
+}
+
+/* --------------------------------------------------------------------------
+   how to do this step
+   -------------------------------------------------------------------------- */
+
+.lz-guide {
+  padding: 0;
+  overflow: hidden;
+  border-color: var(--line-strong);
+  background: linear-gradient(180deg, var(--card) 0%, var(--card-soft) 100%);
+}
+
+.lz-guide-h {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  width: 100%;
+  padding: 13px 16px;
+  background: none;
+  border: 0;
+  cursor: pointer;
+  text-align: left;
+  font: inherit;
+}
+
+.lz-guide:hover {
+  border-color: var(--accent-line);
+}
+
+.lz-guide-kicker {
+  flex: none;
+  padding: 5px 9px;
+  border: 1px solid var(--accent-line);
+  border-radius: 999px;
+  background: var(--accent-tint);
+  color: var(--accent);
+  font: 600 10px/1 var(--mono);
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+.lz-guide-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--ink);
+}
+
+.lz-guide-cmd {
+  margin-left: auto;
+  font-size: 11.5px;
+  color: var(--faint);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.lz-guide .lz-caret {
+  flex: none;
+  color: var(--faint);
+  transition: transform 0.15s;
+}
+
+.lz-guide .lz-caret.is-open {
+  transform: rotate(90deg);
+}
+
+.lz-guide-body {
+  padding: 0 16px 16px;
+  border-top: 1px solid var(--line);
+}
+
+.lz-guide-intro {
+  max-width: 78ch;
+  margin: 12px 0 14px;
+  font-size: 13px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+
+.lz-guide-steps {
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.lz-guide-steps li {
+  display: grid;
+  grid-template-columns: 22px 1fr auto;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.lz-guide-n {
+  display: grid;
+  place-items: center;
+  width: 20px;
+  height: 20px;
+  border-radius: 6px;
+  background: var(--accent-tint);
+  color: var(--accent);
+  font: 600 11px/1 var(--mono);
+}
+
+.lz-guide-do {
+  font-size: 13px;
+  color: var(--ink-2);
+}
+
+.lz-guide-where {
+  font: 500 10px/1.4 var(--mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--faint);
+  text-align: right;
+  white-space: nowrap;
+}
+
+.lz-guide-done {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 14px 0 0;
+  padding-top: 12px;
+  border-top: 1px dashed var(--line);
+  font-size: 12.5px;
+  color: var(--muted);
+}
+
+.lz-guide-done svg {
+  flex: none;
+  color: var(--accent);
+}
+
+@media (max-width: 720px) {
+  .lz-guide-cmd,
+  .lz-guide-where {
+    display: none;
+  }
+}
+
+/* --------------------------------------------------------------------------
+   the brief composer — where the builder says what to build
+   -------------------------------------------------------------------------- */
+
+.lz-compose {
+  padding: 22px 22px 18px;
+  border-color: var(--line-strong);
+}
+.lz-compose-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+  margin-bottom: 8px;
+}
+.lz-compose-kicker {
+  font: 600 10.5px/1 var(--font);
+  letter-spacing: .1em;
+  text-transform: uppercase;
+  color: var(--accent);
+  margin: 0 0 7px;
+}
+.lz-compose-head h2 {
+  font: 600 21px/1.2 var(--font);
+  letter-spacing: -.02em;
+  margin: 0;
+}
+.lz-compose-count {
+  font-size: 11px;
+  color: var(--faint);
+  white-space: nowrap;
+  padding-top: 4px;
+}
+.lz-compose-lede {
+  font-size: 13.5px;
+  line-height: 1.6;
+  color: var(--ink-2);
+  margin: 0 0 14px;
+  max-width: 62ch;
+}
+.lz-compose-field { display: block; }
+.lz-compose .lz-input {
+  min-height: 104px;
+  font-size: 14px;
+  line-height: 1.6;
+}
+.lz-compose-foot {
+  display: flex;
+  align-items: flex-end;
+  justify-content: space-between;
+  gap: 18px;
+  margin-top: 14px;
+  flex-wrap: wrap;
+}
+.lz-compose-guide {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 4px;
+  font-size: 12.5px;
+  color: var(--ink-2);
+}
+.lz-compose-guide b { font-weight: 600; color: var(--ink); }
+.lz-compose-hint {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--accent);
+  margin: 10px 0 0;
+}
+.lz-compose-examples {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  flex-wrap: wrap;
+  margin-top: 16px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font-size: 12px;
+  color: var(--faint);
+}
+.lz-compose-example {
+  background: transparent;
+  border: 1px dashed var(--line-strong);
+  border-radius: 999px;
+  padding: 5px 11px;
+  font: 500 12px/1.2 var(--font);
+  color: var(--ink-2);
+  cursor: pointer;
+}
+.lz-compose-example:hover {
+  border-style: solid;
+  border-color: var(--accent);
+  color: var(--ink);
+}
+
+/* --------------------------------------------------------------------------
+   stage confirmation — a tick is earned
+   -------------------------------------------------------------------------- */
+
+.lz-stage {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+  padding: 16px 18px;
+  border: 1px dashed var(--line-strong);
+  border-radius: 12px;
+  background: var(--card);
+}
+.lz-stage.is-ready {
+  border-style: solid;
+  border-color: rgba(196, 71, 27, .45);
+  background: color-mix(in srgb, var(--accent) 6%, var(--card));
+}
+.lz-stage-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+.lz-stage-main b { font: 600 13.5px/1.35 var(--font); }
+.lz-stage-main span { font-size: 12.5px; line-height: 1.5; color: var(--ink-2); }
+.lz-stage-done {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  margin-top: 22px;
+  padding: 14px 18px;
+  border: 1px solid var(--line-strong);
+  border-radius: 12px;
+  background: var(--card);
+}
+.lz-stage-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font: 600 14px/1.2 var(--font);
+  letter-spacing: -.01em;
+  color: var(--accent);
+}
+.lz-stage-next { font-size: 12.5px; color: var(--ink-2); flex: 1; min-width: 160px; }
+.lz-stage-next b { color: var(--ink); }
+.lz-compose-read {
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--ink-2);
+  margin: 10px 0 0;
+}
+.lz-compose-read b { font-weight: 600; color: var(--ink); }
+.lz-compose-current {
+  font-size: 12.5px;
+  line-height: 1.55;
+  color: var(--ink-2);
+  margin: 0 0 12px;
+}
+.lz-compose-current b { color: var(--ink); }
+.lz-compose-current-idea { color: var(--faint); }
+.lz-compose-note {
+  font-size: 11.5px;
+  line-height: 1.55;
+  color: var(--faint);
+  margin: 12px 0 0;
+  padding-top: 10px;
+  border-top: 1px dashed var(--line);
+}
+
+/* --------------------------------------------------------------------------
+   the credit line — who built this
+   -------------------------------------------------------------------------- */
+
+.lz-credit {
+  /* A footer at the end of the document, aligned to the same column as the
+     views so it never looks pinned to the window. */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+  max-width: 1060px;
+  margin: 34px auto 8px;
+  padding-top: 14px;
+  border-top: 1px solid var(--line);
+  font: 400 11px/1.55 var(--font);
+  color: var(--faint);
+}
+.lz-credit b {
+  font-weight: 600;
+  color: var(--ink-2);
+}
+/* The founder's photograph in the footer: a disc, cropped to the face the same
+   way the site's sign-off crops it. */
+.lz-credit-founder {
+  display: inline-flex;
+  flex: 0 0 auto;
+}
+.lz-credit-founder img {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: 41% 24%;
+  transform: scale(1.9);
+  border: 1px solid var(--line);
+}
+.lz-credit b {
+  font-weight: 600;
+  color: var(--ink-2);
+}
+
+/* --------------------------------------------------------------------------
+   small screens: the phase header drops its vertical rule, and the composer
+   stops pretending it has room for a side-by-side footer
+   -------------------------------------------------------------------------- */
+
+@media (max-width: 720px) {
+  .lz-weekhead-div {
+    display: none;
+  }
+  .lz-compose {
+    padding: 18px 16px 16px;
+  }
+  .lz-compose-head {
+    gap: 10px;
+  }
+  .lz-compose-foot {
+    align-items: stretch;
+    gap: 12px;
+  }
+  .lz-compose-foot .lz-btn {
+    justify-content: center;
+    width: 100%;
+  }
+  .lz-compose-examples {
+    gap: 6px;
+  }
+  .lz-stage {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  .lz-stage .lz-btn {
+    justify-content: center;
+  }
+  .lz-credit {
+    align-items: flex-start;
+  }
+}
+
+/* stat tiles: label above value, both as blocks, value allowed to ellipsis */
+.lz-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 0;
+}
+.lz-stat-label {
+  font: 600 11px/1 var(--font);
+  letter-spacing: .07em;
+  text-transform: uppercase;
+  color: var(--faint);
+}
+.lz-stat-value {
+  font: 700 20px/1.2 var(--font);
+  letter-spacing: -.02em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ---- the tools browser ---------------------------------------------------
+   One tab per tool, one panel. The strip wraps rather than scrolls, because
+   eight names are short and a hidden overflow would hide a tool instead of
+   showing it on a second line. The selected tab carries the accent gradient —
+   the same moving accent the rail uses — so which tool is open is never a
+   guess. */
+.lz-tooltabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin: 2px 0 14px;
+}
+.lz-tooltab {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  border: 1px solid var(--line-strong);
+  background: var(--card);
+  color: var(--muted);
+  border-radius: 999px;
+  padding: 7px 13px;
+  font: 500 12.5px/1 var(--font);
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: color 0.16s ease, border-color 0.16s ease, background 0.16s ease;
+}
+.lz-tooltab:hover {
+  color: var(--ink);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line-strong));
+}
+.lz-tooltab:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+}
+.lz-tooltab.is-on {
+  color: #1a1206;
+  border-color: transparent;
+  background-image: linear-gradient(100deg, var(--accent) 0%, var(--accent-3) 45%, var(--accent-2) 60%, var(--accent) 100%);
+  background-size: 240% 100%;
+  animation: lz-sweep 7s ease-in-out infinite;
+  font-weight: 600;
+}
+.lz-app[data-theme='dark'] .lz-tooltab.is-on {
+  color: #1a1206;
+}
+@keyframes lz-sweep {
+  0%,
+  100% {
+    background-position: 0% 0;
+  }
+  50% {
+    background-position: 100% 0;
+  }
+}
+.lz-toolpanel {
+  animation: lz-fade 0.22s ease both;
+}
+.lz-toolpanel h2 {
+  font-size: 19px;
+  letter-spacing: -0.02em;
+}
+/* The listing's three columns, borrowed whole: kind, what it is, one arrow.
+   The listing page is the reference; this is the same row inside the panel. */
+.lz-listing-head {
+  display: grid;
+  grid-template-columns: 100px minmax(0, 1fr) auto;
+  align-items: start;
+  gap: 24px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--line);
+}
+.lz-listing-head h2 {
+  margin: 0;
+}
+.lz-listing-label {
+  display: inline-flex;
+  align-items: center;
+  min-height: 1.3em;
+  font-size: 14px;
+  color: var(--muted);
+}
+.lz-listing-blurb {
+  margin: 10px 0 0;
+  font-size: 15px;
+  line-height: 1.6;
+  color: var(--muted);
+}
+.lz-listing-arrow {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 7px 12px;
+  border: 1px solid var(--line);
+  border-radius: 10px;
+  font-size: 13.5px;
+  font-weight: 500;
+  color: var(--ink);
+  background: transparent;
+  text-decoration: none;
+  white-space: nowrap;
+  transition: color 0.18s ease, border-color 0.18s ease, background 0.18s ease;
+}
+.lz-listing-arrow:hover {
+  color: var(--accent);
+  border-color: color-mix(in srgb, var(--accent) 45%, var(--line));
+  background: color-mix(in srgb, var(--accent) 7%, transparent);
+}
+.lz-listing-arrow svg {
+  transition: transform 0.18s ease;
+}
+.lz-listing-arrow:hover svg {
+  transform: translateX(2px);
+}
+@media (max-width: 720px) {
+  .lz-listing-head {
+    grid-template-columns: 1fr auto;
+    gap: 12px;
+  }
+  .lz-listing-label {
+    grid-column: 1 / -1;
+  }
+}
+.lz-toolaccess {
+  margin-top: 16px;
+  border: 1px dashed color-mix(in srgb, var(--accent) 45%, transparent);
+  border-radius: 12px;
+  padding: 14px 16px;
+  background: color-mix(in srgb, var(--accent) 6%, transparent);
+  animation: lz-fade 0.22s ease both;
+}
+.lz-toolaccess ol {
+  margin: 0;
+  padding-left: 20px;
+}
+.lz-toolaccess li {
+  margin: 5px 0;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.lz-toolaccess code {
+  font: 500 11.5px/1.5 var(--mono);
+  background: color-mix(in srgb, var(--ink) 8%, transparent);
+  border-radius: 5px;
+  padding: 1px 5px;
+}
+
+
+/* ---- the shell's colour never sits still --------------------------------
+   The user asked twice why the colour animation was not visible, and the
+   honest answer was that it was: 16 seconds, 26% opacity, behind the logo. It
+   is now three things you can see without knowing to look — the product name
+   carries a sweeping accent, a hairline travels down the rail's edge, and the
+   wash behind the rail is brighter and twice as quick. Nothing moves that the
+   layout depends on: only colour, filter and background position. */
+.lz-brand-name {
+  background-image: linear-gradient(
+    100deg,
+    var(--ink) 0%,
+    var(--ink) 32%,
+    var(--accent) 46%,
+    var(--accent-3) 56%,
+    var(--ink) 70%,
+    var(--ink) 100%
+  );
+  background-size: 260% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: lz-sweep 9s ease-in-out infinite;
+}
+.lz-side::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  right: 0;
+  width: 2px;
+  pointer-events: none;
+  background: linear-gradient(
+    180deg,
+    transparent 0%,
+    var(--accent) 20%,
+    var(--accent-3) 45%,
+    var(--accent-2) 70%,
+    transparent 100%
+  );
+  background-size: 100% 320%;
+  animation: lz-rail-drop 7s linear infinite;
+  opacity: 0.9;
+}
+@keyframes lz-rail-drop {
+  from {
+    background-position: 0 -320%;
+  }
+  to {
+    background-position: 0 320%;
+  }
+}

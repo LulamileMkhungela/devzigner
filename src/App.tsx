@@ -27,6 +27,8 @@ import { EditorPage } from './views/EditorPage'
 import { WikiPage } from './views/WikiPage'
 import { CoveragePage } from './views/CoveragePage'
 import { ToolsPage } from './views/ToolsPage'
+import { LibraryPage } from './views/LibraryPage'
+import { KitsPage } from './views/KitsPage'
 import { AwaitingDescription } from './components/AwaitingDescription'
 import type { GuidePhase } from './components/StepGuide'
 import { started } from './lib/state'
@@ -138,6 +140,8 @@ const STAGE_INTRO: Record<
 
 const TRACK_NAV = [
   { path: 'tools', label: 'Tools', icon: 'Sparkles' },
+  { path: 'library', label: 'Library', icon: 'GraduationCap' },
+  { path: 'kits', label: 'Build kits', icon: 'PackageCheck' },
   { path: 'personas', label: 'Who it is for', icon: 'Users' },
   { path: 'flows', label: 'User Flows', icon: 'Route' },
   { path: 'system', label: 'Tech Stack', icon: 'Layers' },
@@ -179,8 +183,12 @@ export function App() {
     // A stage with no product in it says so, and says what it will hold. The
     // toolkit is exempt: those eight tools are real files, not artefacts of a
     // product, and the Product stage is where the product comes from.
+    // The canon — the toolkit, the library and the kits — are real files and
+    // real catalogues, not artefacts of a product, so they open before there is
+    // a product to open. Everything else waits for the description.
+    const CANON = ['tools', 'library', 'kits']
     const stage = path[0] ?? ''
-    if (!started(active) && stage !== '' && stage !== 'tools') {
+    if (!started(active) && stage !== '' && !CANON.includes(stage)) {
       const intro = STAGE_INTRO[stage] ?? STAGE_INTRO['data-shape']
       return <AwaitingDescription {...intro} guide={stage as GuidePhase} />
     }
@@ -196,6 +204,8 @@ export function App() {
     if (path[0] === 'wiki') return <WikiPage project={active} />
     if (path[0] === 'coverage') return <CoveragePage project={active} />
     if (path[0] === 'tools') return <ToolsPage project={active} />
+    if (path[0] === 'library') return <LibraryPage project={active} />
+    if (path[0] === 'kits') return <KitsPage project={active} />
     if (path[0] === 'sections') {
       if (!path[1]) return <SectionsPage project={active} />
       if (!section) {
@@ -283,7 +293,7 @@ export function App() {
               personas, flows, tech stack, prototype, token editor, wiki,
               coverage — is derived from a product, so it is not offered until
               a product has been described. An empty page is not a feature. */}
-          {TRACK_NAV.filter((item) => item.path === 'tools' || started(active)).map((item) => (
+          {TRACK_NAV.filter((item) => ['tools', 'library', 'kits'].includes(item.path) || started(active)).map((item) => (
             <Link
               key={item.path}
               to={item.path}

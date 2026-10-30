@@ -4,7 +4,7 @@
  * Every `cp -r prodops/…` line in the Installation section of the eight tool
  * pages names a path in this repository. This script is what makes those paths
  * real: it materialises the vendored instructions (the four skills, the agents
- * canon skills, the starter template, the fifteen ProdOps commands) as ordinary
+ * canon skills, the starter template, the twenty ProdOps commands) as ordinary
  * files, so that
  *
  *     git clone https://github.com/LulamileMkhungela/devzigner.git prodops
@@ -21,6 +21,7 @@ import { fileURLToPath } from 'node:url'
 import { PHASE_COMMANDS, PHASE_SKILL } from '../src/export/vendor/phaseCommands'
 import { LICENSES } from '../src/export/licenses'
 import { STANDARDS_COMMANDS } from '../src/export/vendor/standardsCommands'
+import { WORKFLOW_COMMANDS } from '../src/export/vendor/workflowCommands'
 import { TOOLKIT } from '../src/export/vendor/toolkit'
 
 const root = resolve(dirname(fileURLToPath(import.meta.url)), '..')
@@ -51,6 +52,12 @@ for (const command of PHASE_COMMANDS) {
 
 /* 3. The five Agent OS commands: discover, index, inject, plan, shape. */
 for (const command of STANDARDS_COMMANDS) {
+  write(`.agents/commands/prodops/${command.name}.md`, command.content)
+}
+
+/* 3b. The five Agent OS v2 workflow commands: write-spec, create-tasks,
+       implement-tasks, orchestrate-tasks, improve-skills. */
+for (const command of WORKFLOW_COMMANDS) {
   write(`.agents/commands/prodops/${command.name}.md`, command.content)
 }
 

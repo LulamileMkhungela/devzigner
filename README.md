@@ -56,6 +56,8 @@ Coverage**, with the token editor next to them.
 | **Token editor** (`/editor`) | Primary and accent hue, radius, spacing, shell and card style. Every change re-runs the compiler, so nothing downstream can drift. |
 | **Wiki** (`/wiki`) | The product wiki: product, flows, data layer, design system, components, shell, screens, stack, audit and handoff, plus branches and snapshots. |
 | **Coverage** (`/coverage`) | The parity audit. Every row rebuilds the package and checks the artefact is really in it. Nothing here is asserted in prose. |
+| **Library** (`/library`) | The school's own library, read in the workspace: 6 series (133 videos), 4 courses, the workshop calendar, 21 articles — searchable, tagged, and dated by the scrape. |
+| **Build kits** (`/kits`) | The six pre-shaped products. Start one and it compiles through the five stages instead of being cloned. |
 
 ---
 
@@ -71,7 +73,7 @@ Coverage**, with the token editor next to them.
 | `src/data/` | the data layer behind an interface: `types.ts`, `repository.ts`, `mock-adapter.ts`, `http-adapter.ts` |
 | `src/shell/` | `AppShell`, `MainNav`, `UserMenu` — built from tokens, not literals |
 | `server/` | a dependency-free reference API on Node's own test runner, with the status machine from the data shape |
-| `.agents/` | the fifteen commands, the four skills, and the agents canon |
+| `.agents/` | the twenty commands, the four skills, and the agents canon |
 | `standards/` | mission, roadmap, tech stack, the standards index and spec folders |
 | `TOOLKIT.md`, `docs/` | the tools, their real steps, the guides and the licences |
 | `product-plan/` | the handoff: instructions, prompts, milestones and the one-shot prompt |
@@ -79,18 +81,19 @@ Coverage**, with the token editor next to them.
 The export is not locked to React. `npm run export-check` compiles the same product to React,
 Vue 3, Svelte 5, Preact, Solid, Angular, Lit and web components, each with its own compiler.
 
-### The fifteen commands
+### The twenty commands
 
 One folder, one markdown file per command — ten for the five stages, five for the standards
-layer. Any agent that reads markdown commands can run them; there is nothing to install.
+layer, five for the workflow that turns a shaped idea into shipped code. Any agent that reads
+markdown commands can run them; there is nothing to install.
 
-| Stage commands | Standards commands |
-| --- | --- |
-| `/prodops:product-vision`, `/prodops:product-roadmap` | `/prodops:plan-product` |
-| `/prodops:data-shape` | `/prodops:discover-standards`, `/prodops:index-standards` |
-| `/prodops:design-tokens`, `/prodops:design-shell` | `/prodops:inject-standards` |
-| `/prodops:shape-section`, `/prodops:sample-data`, `/prodops:design-screen`, `/prodops:screenshot-design` | `/prodops:shape-spec` |
-| `/prodops:export-product` | |
+| Stage commands | Standards commands | Workflow commands |
+| --- | --- | --- |
+| `/prodops:product-vision`, `/prodops:product-roadmap` | `/prodops:plan-product` | `/prodops:write-spec` |
+| `/prodops:data-shape` | `/prodops:discover-standards`, `/prodops:index-standards` | `/prodops:create-tasks` |
+| `/prodops:design-tokens`, `/prodops:design-shell` | `/prodops:inject-standards` | `/prodops:implement-tasks`, `/prodops:orchestrate-tasks` |
+| `/prodops:shape-section`, `/prodops:sample-data`, `/prodops:design-screen`, `/prodops:screenshot-design` | `/prodops:shape-spec` | `/prodops:improve-skills` |
+| `/prodops:export-product` | | |
 
 ### The eight builder tools, installed
 
@@ -107,6 +110,26 @@ layer. Any agent that reads markdown commands can run them; there is nothing to 
 
 Skills live once, in `.agents/skills/`; instructions live once, in `AGENTS.md`; `CLAUDE.md` and
 `.claude/skills` are symlinks created by `scripts/link-agents.sh`.
+
+### The canon, in the workspace
+
+Builder Methods is four surfaces — the eight free tools, the two reference workflows, the Pro
+library and the six build kits. ProdOps ships all four inside one app, so none of it has to be a
+tab you leave the workspace to read:
+
+| Surface | Where it is here | Count |
+| --- | --- | --- |
+| Free tools | **Tools** (`/tools`) + `.agents/skills/` | 8 |
+| Workflows | `.agents/commands/prodops/` — the ten stage commands, five standards, five workflow | 20 |
+| Video library | **Library** (`/library`) — every series with its lesson count, plus the current catalogue | 6 series · 133 videos |
+| Courses | **Library → Courses** — the four Pro courses, each pointed at its series | 4 |
+| Workshops | **Library → Workshops** — live sessions, replays and the two free on-demand workshops | 16 |
+| Articles | **Library → Articles** — the archive, with dates | 21 |
+| Build kits | **Build kits** (`/kits`) — each one compiles into the five stages, not cloned | 6 |
+
+The catalogue is data in `src/data/builderMethods.ts`, scraped on 2026-10-30 and carrying its
+source URL. The kit rows hand their description to the Product stage and their archetype to the
+compiler, which is the difference between reading about a kit and building from one.
 
 ---
 

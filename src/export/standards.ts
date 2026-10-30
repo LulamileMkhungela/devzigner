@@ -2,6 +2,7 @@ import type { Project } from '../types'
 import type { PackageFile } from './package'
 import { screenScreenshot } from './screenshots'
 import { STANDARDS_COMMANDS } from './vendor/standardsCommands'
+import { WORKFLOW_COMMANDS } from './vendor/workflowCommands'
 import { PHASE_SKILL } from './vendor/phaseCommands'
 
 /**
@@ -590,6 +591,13 @@ export function buildAgentOs(project: Project): PackageFile[] {
   files.push(...skills(project))
 
   for (const command of STANDARDS_COMMANDS) {
+    files.push({ path: `.agents/commands/prodops/${command.name}.md`, content: command.content })
+  }
+
+  // The five Agent OS v2 workflow commands: write the spec, break it into
+  // tasks, implement or orchestrate them, sharpen the compiled Skills. They sit
+  // in the same folder as the other fifteen, so one path holds the whole loop.
+  for (const command of WORKFLOW_COMMANDS) {
     files.push({ path: `.agents/commands/prodops/${command.name}.md`, content: command.content })
   }
 

@@ -3,6 +3,20 @@
 Get notified of major releases by subscribing here:
 https://prodops.dev/design-os
 
+## [2026.3.0]
+
+- **The canon comes inside.** Builder Methods' whole surface now lives in the workspace, not
+  only in the site mirror: **Library** (`/library`) carries the six series (133 videos), the four
+  Pro courses, sixteen workshops and twenty-one articles with search and tags; **Build kits**
+  (`/kits`) carries the six pre-shaped products and compiles one into the five stages when you
+  press Start. Data: `src/data/builderMethods.ts`, scraped 2026-10-30 with its source URL.
+- **Five workflow commands** join the fifteen: `/write-spec`, `/create-tasks`,
+  `/implement-tasks`, `/orchestrate-tasks` and `/improve-skills` — the part of the v2 loop that
+  turns a shaped idea into a spec, a task list, code and a verification report. Twenty commands
+  in one folder, and the export writes them all.
+- `/coverage` gained a **canon** group that recomputes every count the library prints, and
+  `npm run smoke` now clicks Start on a kit and asserts a CRM compiles out of it.
+
 ## [2026.2.9]
 
 - Streamlined `/product-vision`: now generates the product overview, product roadmap, and data shape all in one conversational flow. After clarifying questions, all three files are written automatically without draft approval.

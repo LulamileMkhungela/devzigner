@@ -6,6 +6,8 @@ import { buildPackage } from '../export/package'
 import { TRACK } from './FlowsPage'
 import { BLOCK_COMPONENT_NAMES } from '../engine/system'
 import { FRAMEWORKS } from '../export/frameworks'
+import { ARCHETYPES } from '../engine'
+import { ARTICLES, COURSES, KITS, SERIES, SESSIONS, VIDEOS } from '../data/builderMethods'
 
 type State = 'pass' | 'warn'
 
@@ -122,8 +124,8 @@ export function CoveragePage({ project }: { project: Project }) {
           row('Planning outputs', 'product/ mirror written by the planning commands', has('product/product-overview.md') && has('product/data-shape/data-shape.md') && has('product/shell/spec.md'), ['product/product-overview.md', 'product/data-shape/data-shape.md', 'product/shell/spec.md']),
           row(
             'Slash commands',
-            'fifteen command files in one folder: ten for the stages, five for standards',
-            countPrefix('.agents/commands/prodops/') === 15,
+            'twenty command files in one folder: ten for the stages, five for standards, five for the workflow',
+            countPrefix('.agents/commands/prodops/') === 20,
             [`.agents/commands/prodops/ (${countPrefix('.agents/commands/prodops/')} files)`],
           ),
           row('Git workflow', 'branch, worktree and milestone commits', has('git-workflow.md'), ['git-workflow.md']),
@@ -151,7 +153,7 @@ export function CoveragePage({ project }: { project: Project }) {
         title: 'The eight builder tools, installed',
         note: 'Every tool in the toolkit is in the package, with its real instruction text.',
         rows: [
-          row('The commands', 'fifteen: ten for the five stages, five for the standards layer', countPrefix('.agents/commands/prodops/') === 15 && has('product-overview.md') && hasPrefix('sections/'), ['.agents/commands/prodops/ (15)', 'product-overview.md']),
+          row('The commands', 'twenty: ten for the five stages, five for standards, five for the workflow', countPrefix('.agents/commands/prodops/') === 20 && has('product-overview.md') && hasPrefix('sections/'), ['.agents/commands/prodops/ (20)', 'product-overview.md']),
           row('Standards layer', 'product docs, standards index and spec folders', has('standards/config.yml') && has('standards/standards/index.yml'), ['standards/config.yml', 'standards/standards/index.yml']),
           row('PRD Creator', 'the skill, plus the PRD and milestone prompts it produces', countPrefix('.agents/skills/prd-creator/') >= 10 && has('_build_plan/prd.md') && countPrefix('_build_plan/milestones/') === 3, [`.agents/skills/prd-creator/ (${countPrefix('.agents/skills/prd-creator/')} files)`, '_build_plan/prd.md', '_build_plan/milestones/<n>/prompt.md']),
           row('Skill Builder', 'the skill that designs, writes and verifies new skills', countPrefix('.agents/skills/skill-builder/') >= 8, [`.agents/skills/skill-builder/ (${countPrefix('.agents/skills/skill-builder/')} files)`]),
@@ -168,6 +170,35 @@ export function CoveragePage({ project }: { project: Project }) {
             frameworkReport.map((report) => `${report.label}: ${report.count}/${screens} screens`),
           ),
           row('Requirements', 'what the package needs to run, and what is optional', has('requirements.md'), ['requirements.md']),
+        ],
+      },
+      {
+        /* The canon is not part of the export — a coding agent does not need the
+           school's video catalogue — so these rows are checked against the data
+           in this build rather than against the package. They exist because the
+           library page prints counts, and a count in prose is a claim. */
+        id: 'canon',
+        title: 'The canon — library and kits',
+        note: 'Every series, kit, course, workshop and article the workspace reads, counted where it is stored.',
+        rows: [
+          row(
+            'Series',
+            `${SERIES.length} series, ${SERIES.reduce((n, s) => n + s.lessons, 0)} lessons in the catalogue`,
+            SERIES.length === 6 && SERIES.every((s) => s.lessons > 0),
+            SERIES.map((s) => `${s.title} (${s.lessons})`),
+          ),
+          row(
+            'Build kits',
+            'every kit names an archetype the compiler actually has, and a description it can read',
+            KITS.length === 6 &&
+              KITS.every((kit) => ARCHETYPES.some((entry) => entry.id === kit.archetypeId) && kit.idea.trim().length >= 40),
+            KITS.map((kit) => `${kit.name} → ${kit.archetypeId}`),
+          ),
+          row('Videos', `${VIDEOS.length} catalogued of 133 in the library, each dated by the scrape`, VIDEOS.length >= 20, ['src/data/builderMethods.ts']),
+          row('Courses', `${COURSES.length} Pro courses, each pointing at its series`, COURSES.length === 4 && COURSES.every((c) => SERIES.some((s) => s.id === c.series)), COURSES.map((c) => c.title)),
+          row('Workshops', `${SESSIONS.length} sessions: ${SESSIONS.filter((s) => s.kind === 'Live').length} live, the rest replay or on demand`, SESSIONS.length >= 14 && SESSIONS.some((s) => s.kind === 'Live'), ['src/data/builderMethods.ts']),
+          row('Articles', `${ARTICLES.length} posts with their dates`, ARTICLES.length === 21, ['src/data/builderMethods.ts']),
+          row('Workflow commands', 'the five that turn a spec into tasks, tasks into code, and descriptions into useful Skills', countPrefix('.agents/commands/prodops/') === 20 && ['write-spec', 'create-tasks', 'implement-tasks', 'orchestrate-tasks', 'improve-skills'].every((name) => has(`.agents/commands/prodops/${name}.md`)), ['.agents/commands/prodops/{write-spec,create-tasks,implement-tasks,orchestrate-tasks,improve-skills}.md']),
         ],
       },
       {

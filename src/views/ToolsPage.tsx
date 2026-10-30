@@ -213,6 +213,12 @@ export function ToolsPage({ project }: { project: Project }) {
           <Link to="system" className="lz-btn small">
             <Icon name="Layers" size={13} /> Stack and registry
           </Link>
+          <Link to="library" className="lz-btn small">
+            <Icon name="GraduationCap" size={13} /> The library
+          </Link>
+          <Link to="kits" className="lz-btn small">
+            <Icon name="PackageCheck" size={13} /> Build kits
+          </Link>
         </div>
       </div>
     </div>

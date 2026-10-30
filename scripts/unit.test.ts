@@ -16,6 +16,7 @@ import { describeIntake, intakeGaps, profileIdea } from '../src/engine/intake'
 import { BLOCK_COMPONENT_NAMES } from '../src/engine/system'
 import { buildPackage } from '../src/export/package'
 import { TOOLS } from '../src/tools'
+import { ARTICLES, COUNTS, COURSES, KITS, SERIES, SESSIONS, VIDEOS } from '../src/data/builderMethods'
 import { FRAMEWORKS } from '../src/export/frameworks'
 import { migrateProject } from '../src/lib/migrate'
 import { migrateProject, migrateProjects } from '../src/lib/migrate'
@@ -110,13 +111,39 @@ test('all eight free tools are in the package', () => {
     assert.ok([...paths].some((p) => p.startsWith(`.agents/skills/${skill}/`)), `${skill} missing`)
   }
   assert.ok(paths.has('template/starter/AGENTS.md'))
-  // Ten phase commands and five standards commands, in one folder so an agent
-  // that reads markdown commands needs a single path.
-  assert.equal([...paths].filter((p) => p.startsWith('.agents/commands/prodops/')).length, 15)
+  // Ten phase commands, five standards commands and five workflow commands,
+  // in one folder so an agent that reads markdown commands needs a single path.
+  assert.equal([...paths].filter((p) => p.startsWith('.agents/commands/prodops/')).length, 20)
   assert.ok(paths.has('AGENTS.md') && paths.has('TOOLKIT.md') && paths.has('scripts/link-agents.sh'))
   assert.ok(paths.has('_build_plan/prd.md'), 'PRD Creator should leave a PRD behind')
   assert.ok([...paths].filter((p) => p.startsWith('_build_plan/milestones/')).length >= 3, 'one prompt per milestone')
   assert.equal([...paths].filter((p) => p.startsWith('.claude/skills/')).length, 0, 'skills must live in the canon')
+})
+
+test('the builder canon is complete and honest about its counts', () => {
+  assert.equal(SERIES.length, 6, 'six series')
+  assert.equal(KITS.length, 6, 'six build kits')
+  assert.equal(COURSES.length, 4, 'four Pro courses')
+  assert.equal(ARTICLES.length, 21, 'twenty-one articles')
+  assert.ok(SESSIONS.length >= 14, 'the workshop calendar')
+  assert.ok(VIDEOS.length >= 20, 'the catalogue snapshot')
+
+  // The totals the library page prints are the arrays, not prose beside them.
+  assert.equal(COUNTS.kits, KITS.length)
+  assert.equal(COUNTS.series, SERIES.length)
+  assert.equal(COUNTS.courses, COURSES.length)
+  assert.equal(COUNTS.sessions, SESSIONS.length)
+  assert.equal(COUNTS.articles, ARTICLES.length)
+  assert.equal(new Set(KITS.map((kit) => kit.id)).size, KITS.length, 'no kit appears twice')
+
+  // Every kit compiles: the archetype it names has to exist in the engine.
+  for (const kit of KITS) {
+    assert.ok(
+      ARCHETYPES.some((entry) => entry.id === kit.archetypeId),
+      `${kit.id} names a missing archetype`,
+    )
+    assert.ok(kit.idea.trim().split(/\s+/).length >= 8, `${kit.id} has no usable description`)
+  }
 })
 
 test('the backend carries a rule for every status field', () => {

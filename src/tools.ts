@@ -3,7 +3,7 @@
  * presents them, with the steps each one actually runs.
  *
  * The skill steps are parsed from the vendored SKILL.md headings, so the app
- * cannot drift from the text being shipped. The fifteen commands are
+ * cannot drift from the text being shipped. The twenty commands are
  * based; their steps are the command sequences the site documents.
  */
 import { TOOLKIT } from './export/vendor/toolkit'

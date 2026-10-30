@@ -13,6 +13,7 @@ import { TOOLS } from '../tools'
 import { LICENSES } from './licenses'
 import { PHASE_COMMANDS } from './vendor/phaseCommands'
 import { STANDARDS_COMMANDS } from './vendor/standardsCommands'
+import { WORKFLOW_COMMANDS } from './vendor/workflowCommands'
 
 /**
  * One line per command: what the command actually writes. The command files
@@ -35,6 +36,11 @@ const COMMAND_NOTES: Record<string, string> = {
   'index-standards': '`standards/standards/index.yml` — one line per standard',
   'inject-standards': 'the standards relevant to the current task, read in place',
   'shape-spec': '`standards/specs/<date>-<slug>/{plan,shape,references,standards}.md`',
+  'write-spec': '`agent-os/specs/<spec>/spec.md` — stories, requirements, approach, scope',
+  'create-tasks': '`agent-os/specs/<spec>/tasks.md` — ordered, grouped, each with an acceptance',
+  'implement-tasks': 'the code, ticked off in `tasks.md`, then `verification/final-verification.md`',
+  'orchestrate-tasks': '`agent-os/specs/<spec>/orchestration.yml` — groups, agents, standards',
+  'improve-skills': 'sharper descriptions on the Skills compiled from your standards',
 }
 
 const REQUIRED_STACK = `# Requirements
@@ -71,7 +77,7 @@ and the rules in \`business-logic.md\`.
 
 The commands and skills in \`.agents/\` are files an agent reads. Nothing in the
 app depends on them, and no account or key is involved. Start at
-\`docs/guides/commands.md\` for the fifteen commands, and \`TOOLKIT.md\` for the
+\`docs/guides/commands.md\` for the twenty commands, and \`TOOLKIT.md\` for the
 eight tools they belong to.
 
 ## Checks
@@ -133,7 +139,7 @@ someone else's manual, and nothing asks you to visit a website to understand it.
 | --- | --- |
 | \`../requirements.md\` | What has to be installed before anything runs |
 | \`guides/process.md\` | The five stages, what each one produces, and when it is done |
-| \`guides/commands.md\` | The fifteen agent commands, what each writes |
+| \`guides/commands.md\` | The twenty agent commands, what each writes |
 | \`guides/toolkit.md\` | The eight builder tools, their steps and where they live |
 | \`guides/standards.md\` | How standards and specs are discovered, indexed and injected |
 | \`guides/tokens.md\` | The token contract every component reads |
@@ -184,9 +190,12 @@ and state management, and the test implementations. See
   const standardsCommands = STANDARDS_COMMANDS.map(
     (c) => `| \`/prodops:${c.name}\` | ${COMMAND_NOTES[c.name] ?? 'Maintains the standards layer'} |`,
   ).join('\n')
+  const workflowCommands = WORKFLOW_COMMANDS.map(
+    (c) => `| \`/prodops:${c.name}\` | ${COMMAND_NOTES[c.name] ?? 'Runs one step of the workflow layer'} |`,
+  ).join('\n')
   files.push({
     path: 'docs/guides/commands.md',
-    content: `# The fifteen commands
+    content: `# The twenty commands
 
 They are files, not a service: \`.agents/commands/prodops/\` holds one markdown
 file per command, named after the command. Any agent that reads markdown
@@ -203,6 +212,12 @@ ${phases}
 | Command | What it writes |
 | --- | --- |
 ${standardsCommands}
+
+## The workflow layer (five)
+
+| Command | What it writes |
+| --- | --- |
+${workflowCommands}
 
 ## Running them
 

@@ -24,6 +24,8 @@ import { EditorPage } from '../src/views/EditorPage'
 import { WikiPage } from '../src/views/WikiPage'
 import { CoveragePage } from '../src/views/CoveragePage'
 import { ToolPanel, ToolsPage } from '../src/views/ToolsPage'
+import { LibraryPage } from '../src/views/LibraryPage'
+import { KitsPage } from '../src/views/KitsPage'
 import { NextStepGuide } from '../src/components/NextStepGuide'
 import { Toast } from '../src/components/ui'
 import { TOOLS } from '../src/tools'
@@ -95,6 +97,8 @@ const views: [string, () => string][] = [
   ['editor', () => wrap(<EditorPage project={project} />)],
   ['wiki', () => wrap(<WikiPage project={project} />)],
   ['coverage', () => wrap(<CoveragePage project={project} />)],
+  ['library', () => wrap(<LibraryPage project={project} />)],
+  ['kits', () => wrap(<KitsPage project={project} />)],
 ]
 
 let failed = 0
@@ -492,7 +496,7 @@ checks.push(
   ['standards standards indexed', pkgHas('standards/standards/index.yml') && pkgPrefix('standards/standards/') >= 8],
   ['standards specs with visuals', pkgPrefix('standards/specs/') >= project.sections.length * 4],
   ['product planning outputs exported', pkgHas('product/product-overview.md') && pkgHas('product/product-roadmap.md') && pkgHas('product/data-shape/data-shape.md') && pkgHas('product/design-system/colors.json') && pkgHas('product/design-system/typography.json') && pkgHas('product/shell/spec.md')],
-  ['the fifteen commands are installed', pkgPrefix('.agents/commands/prodops/') === 15 && pkg.find((f) => f.path === '.agents/commands/prodops/product-vision.md')!.content.startsWith('# Product Vision') && pkg.find((f) => f.path === '.agents/commands/prodops/export-product.md')!.content.includes('product-plan/instructions/incremental/01-shell.md')],
+  ['the twenty commands are installed', pkgPrefix('.agents/commands/prodops/') === 20 && pkgHas('.agents/commands/prodops/write-spec.md') && pkgHas('.agents/commands/prodops/create-tasks.md') && pkgHas('.agents/commands/prodops/implement-tasks.md') && pkgHas('.agents/commands/prodops/orchestrate-tasks.md') && pkgHas('.agents/commands/prodops/improve-skills.md') && pkg.find((f) => f.path === '.agents/commands/prodops/product-vision.md')!.content.startsWith('# Product Vision') && pkg.find((f) => f.path === '.agents/commands/prodops/export-product.md')!.content.includes('product-plan/instructions/incremental/01-shell.md')],
   ['prodops skill vendored into the canon', pkg.find((f) => f.path === '.agents/skills/frontend-design/SKILL.md')!.content.startsWith('---\nname: frontend-design') && pkg.some((f) => f.path === '.agents/skills/project-design-system/SKILL.md')],
   ['the package documents itself', ['docs/README.md', 'docs/LICENSES.md', 'docs/guides/process.md', 'docs/guides/commands.md', 'docs/guides/toolkit.md', 'docs/guides/standards.md', 'docs/guides/tokens.md', 'docs/guides/codebase-implementation.md', 'requirements.md'].every((path) => pkgHas(path))],
   ['no page in the package names a third party outside the licences', (() => {

@@ -28,7 +28,7 @@ UI contract, a working API and a test suite. Read this before changing anything.
 | \`shell/\` | the app shell components |
 | \`standards/\` | product docs, indexed standards, specs |
 | \`.agents/skills/\` | the canonical skills (agents canon) |
-| \`.agents/commands/\` | the fifteen ProdOps slash commands |
+| \`.agents/commands/\` | the twenty ProdOps slash commands |
 
 ## Rules
 

@@ -26,7 +26,7 @@ A representative product (clinic, seed 4242) exports:
 | Standards-layer files | 69 (specs, standards, product docs, skills) |
 | Free-tool files | 78 under `.agents/skills/`, 4 under `template/starter/` |
 | Backend files | 15 (`server/`), 11 executable tests |
-| Slash commands | 15 (ten stage commands, five standards commands) |
+| Slash commands | 20 (ten stage commands, five standards, five workflow) |
 | Audit checks | 24 |
 
 ---
@@ -72,7 +72,7 @@ the UI walks the same five stages in the same order.
 | `sections/<id>/components/*.tsx` | ✅ | Props-only, responsive, typechecked |
 | `sections/<id>/screenshot` | ✅ `.svg` | One per section |
 | `product/` planning folder | ✅ | `product-overview`, `product-roadmap`, `data-shape/`, `design-system/*.json`, `shell/spec.md` |
-| Slash commands | ✅ | `.agents/commands/prodops/*.md` — the ten stage commands (`vendor/phaseCommands.ts`) |
+| Slash commands | ✅ | `.agents/commands/prodops/*.md` — the ten stage commands (`vendor/phaseCommands.ts`), five standards (`vendor/standardsCommands.ts`) and five workflow (`vendor/workflowCommands.ts`) |
 | `.agents/skills/frontend-design/SKILL.md` | ✅ | the design skill; the compiled per-product one sits beside it at `.agents/skills/project-design-system/SKILL.md` |
 | `.agents/commands/prodops/*.md` | ✅ | the five standards commands, in the same folder as the stage commands |
 
@@ -215,3 +215,24 @@ no console errors
 bad: 0
 ✓ built in ~4s
 ```
+
+---
+
+## 9. The canon — the library, the kits, and the workflow commands
+
+The five stages are the method. This section is the rest of the school's material, carried in the
+same build so none of it is a page you leave the workspace to read.
+
+| Surface | Where it is | Count | Verified by |
+| --- | --- | --- | --- |
+| Video series | Library → Series | 6 series, 133 lessons | `scripts/unit.test.ts` (six series, every one with lessons) |
+| Videos | Library → Videos | 24 catalogued of 133 (newest page of `/library/all`) | the same test, plus the row in `/coverage` |
+| Courses | Library → Courses | 4 Pro courses, each pointed at its series | `/coverage` → Canon |
+| Workshops | Library → Workshops | 16: 2 live, 12 replays, 2 on demand | `/coverage` → Canon |
+| Articles | Library → Articles | 21, dated | `/coverage` → Canon |
+| Build kits | Build kits (`/kits`) | 6, each naming a real archetype | `npm run smoke` clicks Start and asserts a CRM compiles |
+| Commands | `.agents/commands/prodops/` | 20: ten stage, five standards, five workflow | `render-check` + `unit.test.ts` |
+
+Every row is data in `src/data/builderMethods.ts` — scraped 2026-10-30, each entry carrying the
+upstream URL its `Open` arrow uses. Nothing on the two pages is fetched at runtime, so a kit or a
+series reads the same offline as it does with a connection.

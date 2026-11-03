@@ -23,7 +23,6 @@ import { FlowsPage } from './views/FlowsPage'
 import { PersonasPage } from './views/PersonasPage'
 import { SystemPage } from './views/SystemPage'
 import { PrototypePage } from './views/PrototypePage'
-import { EditorPage } from './views/EditorPage'
 import { WikiPage } from './views/WikiPage'
 import { CoveragePage } from './views/CoveragePage'
 import { ToolsPage } from './views/ToolsPage'
@@ -35,6 +34,8 @@ import { started } from './lib/state'
 import { nextRoleStep, roleAllows, roleById } from './lib/roles'
 import { ProjectsMenu, RoleGate, RoleNav, RolePicker } from './components/role'
 import { RoleStepPage } from './views/RoleStepPage'
+import { VisualEditorPage } from './views/VisualEditorPage'
+import { SpecsPage } from './views/SpecsPage'
 
 /**
  * What each stage holds once there is a product to hold it.
@@ -149,7 +150,8 @@ const TRACK_NAV = [
   { path: 'flows', label: 'User Flows', icon: 'Route' },
   { path: 'system', label: 'Tech Stack', icon: 'Layers' },
   { path: 'prototype', label: 'Prototype', icon: 'Play' },
-  { path: 'editor', label: 'Token editor', icon: 'Sliders' },
+  { path: 'editor', label: 'Visual editor', icon: 'Wand2' },
+  { path: 'specs', label: 'Spec folder', icon: 'FileText' },
   { path: 'wiki', label: 'Wiki', icon: 'BookOpen' },
   { path: 'coverage', label: 'Coverage', icon: 'ShieldCheck' },
 ] as const
@@ -165,7 +167,18 @@ export function App() {
   // process start to finish instead of the five stages, and routes outside
   // the role are gated — a BA workspace does not show design pages.
   const role = active.roleId ? roleById(active.roleId) : undefined
-  const roleStep = role && path[0] === 'role' ? role.steps.find((s) => s.id === path[1]) : undefined
+  // A project can engage several roles; the primary one owns the rail, the rest
+  // are listed under it and each keeps its own steps, reviews and spec folder.
+  const extraRoles = (active.roles ?? [])
+    .filter((id) => id !== active.roleId)
+    .map((id) => roleById(id))
+    .filter((r): r is NonNullable<typeof r> => Boolean(r))
+  // Step ids are unique across roles in practice; the primary role is checked
+  // first, then any extra role the project also runs.
+  const roleStep = path[0] === 'role'
+    ? role?.steps.find((s) => s.id === path[1]) ??
+      extraRoles.flatMap((extra) => extra.steps).find((s) => s.id === path[1])
+    : undefined
 
   const done = useMemo(() => completedPhases(active, captures), [active, captures])
   const stats = useMemo(() => sectionStats(active, captures), [active, captures])
@@ -217,7 +230,8 @@ export function App() {
     if (p[0] === 'flows') return <FlowsPage project={active} />
     if (p[0] === 'system') return <SystemPage project={active} />
     if (p[0] === 'prototype') return <PrototypePage project={active} />
-    if (p[0] === 'editor') return <EditorPage project={active} />
+    if (p[0] === 'editor') return <VisualEditorPage project={active} />
+    if (p[0] === 'specs') return <SpecsPage project={active} />
     if (p[0] === 'wiki') return <WikiPage project={active} />
     if (p[0] === 'coverage') return <CoveragePage project={active} />
     if (p[0] === 'tools') return <ToolsPage project={active} />
@@ -250,11 +264,17 @@ export function App() {
     // own is gated — that is why a BA workspace shows no design pages.
     const top = path[0] ?? ''
     if (role) {
+      // The spec folder belongs to every role: it is where their documents go.
+      if (top === 'specs') return renderFor(path)
       if (top === 'role') {
-        if (!roleStep) return <RoleGate role={role} reason="That step is not in this role's process." />
+        const owner = role.steps.find((s) => s.id === path[1])
+          ? role
+          : extraRoles.find((extra) => extra.steps.some((s) => s.id === path[1]))
+        const step = owner?.steps.find((s) => s.id === path[1])
+        if (!owner || !step) return <RoleGate role={role} reason="That step is not in this role's process." />
         return (
-          <RoleStepPage role={role} step={roleStep}>
-            {renderFor(pathOf(roleStep.path))}
+          <RoleStepPage role={owner} step={step}>
+            {renderFor(pathOf(step.path))}
           </RoleStepPage>
         )
       }
@@ -301,7 +321,7 @@ export function App() {
             // A role owns its process from start to finish: the rail shows the
             // role's steps — e.g. BUSINESS ANALYSIS PROCESS · 7 STEPS — and
             // nothing from the other roles.
-            <RoleNav role={role} activeStepId={path[0] === 'role' ? path[1] : undefined} />
+            <RoleNav role={role} extras={extraRoles} activeStepId={path[0] === 'role' ? path[1] : undefined} />
           ) : (
             <>
           {/* The five stages, in order, each with its own completion mark. This
@@ -347,7 +367,7 @@ export function App() {
               coverage — is derived from a product, so it is not offered until
               a product has been described, and under a role only the pages
               that role owns are offered. An empty page is not a feature. */}
-          {TRACK_NAV.filter((item) => ['tools', 'library', 'kits'].includes(item.path) || (role ? role.track.includes(item.path) : started(active))).map((item) => (
+          {TRACK_NAV.filter((item) => ['tools', 'library', 'kits', 'specs'].includes(item.path) || (role ? role.track.includes(item.path) : started(active))).map((item) => (
             <Link
               key={item.path}
               to={item.path}

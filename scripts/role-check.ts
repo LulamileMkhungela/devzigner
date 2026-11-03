@@ -100,11 +100,32 @@ check('BA workspace · the inspector offers the three review actions', ['Approve
 check('BA workspace · the role skill is named with its path', rail1.includes('.agents/skills/business-analysis/SKILL.md') || text(w1).includes('.agents/skills/business-analysis/SKILL.md'))
 check('BA workspace · skill starts optional (not integrated)', !rail1.includes('Integrated') && Boolean(findButton(w1, /\bIntegrate\b/)))
 
-// Approve step 1 → the next step must be named, and the decision stored.
+// Approval is gated on the clarifying questions: pressing Approve with none
+// answered must not store a decision.
 findButton(w1, /\bApprove\b/)?.click()
-await sleep(350)
+await sleep(300)
+const gated = JSON.parse(w1.localStorage.getItem(STORAGE_KEY) ?? '[]')[0]
+check('BA workspace · approval is refused until the questions are answered', !gated?.stepReviews?.['business-analysis.vision-outcome'])
+
+// Answer them, then approve → the decision stores and the next step is named.
+const answerAll = async (w: Window & typeof globalThis) => {
+  const boxes = [...w.document.querySelectorAll('.lz-insp-q textarea')] as HTMLTextAreaElement[]
+  for (const [i, box] of boxes.entries()) {
+    box.focus()
+    const setter = Object.getOwnPropertyDescriptor(w.HTMLTextAreaElement.prototype, 'value')!.set!
+    setter.call(box, `Answer ${i + 1} — a real decision from the builder`)
+    box.dispatchEvent(new (w as unknown as { Event: typeof Event }).Event('input', { bubbles: true }))
+    await sleep(60)
+  }
+  await sleep(250)
+}
+await answerAll(w1)
+findButton(w1, /\bApprove\b/)?.click()
+await sleep(400)
 const stored1 = JSON.parse(w1.localStorage.getItem(STORAGE_KEY) ?? '[]')[0]
 check('BA workspace · approving a step stores the decision on the project', stored1?.stepReviews?.['business-analysis.vision-outcome']?.decision === 'approved')
+check('BA workspace · the answers are stored with the project', Object.keys(stored1?.answers ?? {}).filter((k) => k.startsWith('business-analysis.vision-outcome')).length === 2)
+check('BA workspace · approving writes the step documents into the spec folder', (stored1?.artifacts ?? []).some((a: { file: string }) => a.file.startsWith('spec/business-analysis/')))
 check('BA workspace · after approval the rail names what is next', /Next:\s*Stakeholders & scope/.test(text(w1)), text(w1).match(/Next:.*?·/)?.[0] ?? '')
 
 // Integrate the skill → its own seven steps show.
@@ -124,6 +145,14 @@ check('BA workspace · database design is gated too (it is not a BA step)', /Not
 w1.location.hash = '#/sections'
 await sleep(300)
 check('BA workspace · its own stages still open (sections holds the requirements)', !/Not in the Business Analysis process/.test(text(w1)))
+
+// The spec folder lists what was written, and the visual editor is reachable
+// from the design role.
+w1.location.hash = '#/specs'
+await sleep(400)
+check('spec folder · the saved documents are listed', /Vision & outcome/.test(text(w1)) && /spec\/business-analysis/.test(text(w1)))
+check('spec folder · the markdown renders as real prose', Boolean(w1.document.querySelector('.lz-md h1')))
+check('spec folder · the reviewer can download the folder', Boolean(findButton(w1, /Download spec folder/)))
 
 // Reject and proceed-revisit actions store too.
 w1.location.hash = '#/role/requirements'
@@ -178,6 +207,35 @@ const stored3 = JSON.parse(w3.localStorage.getItem(STORAGE_KEY) ?? '[]')[0]
 check('role picker · choosing a role stores it and opens the role process', stored3?.roleId === 'business-analysis' && w3.location.hash.startsWith('#/role/'), `${stored3?.roleId} ${w3.location.hash}`)
 check('role picker · the rail now shows the BA process label', /BUSINESS ANALYSIS PROCESS · 7 STEPS/.test(text(w3)))
 w3.close()
+
+/* ---- scenario 4: the design role and its visual editor --------------------- */
+
+const designer = describedProject('design-project', 'product-design')
+designer.roles = ['qa-testing']
+const w4 = await boot({ [STORAGE_KEY]: JSON.stringify([designer]), [ACTIVE_KEY]: JSON.stringify('design-project') })
+await sleep(500)
+check('design role · mounts and opens its first step', w4.location.hash.startsWith('#/role/'), w4.location.hash)
+const designRail = text(w4)
+check('design role · the rail groups the process by discipline', /FOUNDATIONS/.test(designRail) || /Foundations/.test(designRail))
+check('design role · the whole design process is listed', /Foundations/.test(designRail) && /Screens/.test(designRail) && /Visual craft/.test(designRail))
+check('design role · an extra role is shown as also running', /Also running/.test(designRail) && /QA/.test(designRail))
+
+w4.location.hash = '#/editor'
+await sleep(600)
+const editor = text(w4)
+check('visual editor · opens for the design role', /Visual editor/.test(editor) && /Where the look comes from/.test(editor))
+check('visual editor · offers the generated system, token import and Figma', /Generated/.test(editor) && /Import tokens/.test(editor) && /Figma/.test(editor))
+check('visual editor · renders the real screen beside the controls', Boolean(w4.document.querySelector('.lz-ved-frame')))
+
+findButton(w4, /\bFigma\b/)?.click()
+await sleep(200)
+const figmaInput = w4.document.querySelector('input[aria-label="Figma file URL"]') as HTMLInputElement | undefined
+check('visual editor · a Figma file can be linked', Boolean(figmaInput))
+
+w4.location.hash = '#/specs'
+await sleep(400)
+check('spec folder · the BA spec folder is not shown to a workspace with no BA documents', Boolean(w4.document.querySelector('.lz-specs')))
+w4.close()
 
 await rm(OUT, { recursive: true, force: true })
 

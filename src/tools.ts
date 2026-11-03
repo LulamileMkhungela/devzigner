@@ -89,6 +89,21 @@ function skillPhases(id: string): { steps: string[]; stepFiles?: string[] } {
   return { steps: anyH2 }
 }
 
+/** The role playbooks that ship beside the eight tools. */
+export const ROLE_SKILL_IDS = [
+  'business-analysis',
+  'database-design',
+  'data-analysis',
+  'ux-research',
+  'ui-design',
+  'cx-design',
+  'product-design',
+  'software-engineering',
+  'qa-testing',
+  'devops',
+  'project-management',
+]
+
 export const TOOLS: Tool[] = [
   {
     id: 'prd-creator',
@@ -177,6 +192,23 @@ export const TOOLS: Tool[] = [
     steps: ['Product', 'Data Shape', 'Design', 'Sections', 'Export'],
   },
 ]
+
+/**
+ * Role playbooks.
+ *
+ * The eight free tools above stay exactly eight — that list is the toolkit the
+ * builder installs. A role's playbook is a different kind of thing: it is the
+ * process the workspace runs for that discipline, and every one of them ships in
+ * the same `.agents/skills/` folder so an agent can follow it. `products()` and
+ * `qa-check` were created here because no tool upstream covered those roles.
+ */
+export const ROLE_SKILLS = TOOLKIT.filter((tool) => ROLE_SKILL_IDS.includes(tool.id)).map((tool) => ({
+  id: tool.id,
+  name: tool.name,
+  blurb: tool.blurb,
+  ships: `.agents/skills/${tool.id}/`,
+  files: tool.files.length,
+}))
 
 export function toolById(id: string): Tool | undefined {
   return TOOLS.find((tool) => tool.id === id)

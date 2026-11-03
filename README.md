@@ -43,29 +43,59 @@ clicked.
 
 ### Roles
 
-A workspace can run as one **role**, and a role owns its process from start to finish. The role
-picker sits at the top of the left panel next to the project history dropdown. When a role is set,
-the rail shows that role's steps — e.g. under *Business Analysis* the **BUSINESS ANALYSIS
-PROCESS · 7 STEPS** — and routes outside the role are gated, so a BA workspace shows no design
-pages and no database pages (database design is the *Data & database design* role's process).
+A workspace runs as one **role**, and every role owns its process from start to finish. The role
+picker sits at the top of the left panel next to the project history dropdown. A role is made of
+**disciplines** (the rail groups its steps under them) and each step asks **clarifying questions**
+before it can be approved, then writes **documents** into the spec folder.
+
+The full SDLC is covered, one role per discipline:
 
 | Role | Process | Skill |
 | --- | --- | --- |
-| **Business Analysis** | 7 steps: vision & outcome → stakeholders & scope → current state → requirements → analysis & prioritisation → solution flows → validation & handoff | `.agents/skills/business-analysis/SKILL.md` (created — none existed) |
-| **Data & database design** | 6 steps: entities → fields & types → relationships → schema & constraints → sample data → backend contract | `.agents/skills/database-design/SKILL.md` (created — none existed) |
-| **Product design** | 5 steps: tokens → shell → section screens → prototype → token editor | `.agents/skills/design-system/SKILL.md` |
-| **Engineering & handoff** | 5 steps: specs → sample data → screens & screenshots → export package → audit | `template/starter/` |
+| **Business Analysis** | 7 steps · discovery → definition → validate | `.agents/skills/business-analysis/SKILL.md` (created) |
+| **Data analysis** | 5 steps · decision question → metrics → sources → model → insight | `.agents/skills/data-analysis/SKILL.md` (created) |
+| **UX research** | 5 steps · plan → participants → interviews → synthesis → opportunity map | `.agents/skills/ux-research/SKILL.md` (created) |
+| **UI & interface design** | 5 steps · inventory → layout → components → accessibility → handoff | `.agents/skills/ui-design/SKILL.md` (created) |
+| **Customer experience** | 5 steps · journey map → touchpoints → blueprint → moments → measurement | `.agents/skills/cx-design/SKILL.md` (created) |
+| **Product design** | 6 steps · brief → tokens → shell → screens → **visual editor** → prototype | `.agents/skills/product-design/SKILL.md` (created) + the Design System skill |
+| **Data & database design** | 6 steps · entities → fields → relationships → schema → sample data → contract | `.agents/skills/database-design/SKILL.md` (created) |
+| **Software engineering** | 6 steps · architecture → API → front end → back end → tests → review | `template/starter/` + the agents canon |
+| **QA & testing** | 5 steps · plan → cases → functional → regression → sign-off | `.agents/skills/qa-testing/SKILL.md` (created) |
+| **DevOps & platform** | 5 steps · environments → pipeline → observability → security → runbook | `.agents/skills/devops/SKILL.md` (created) |
+| **Project management** | 5 steps · charter → breakdown → schedule → risks → status | `.agents/skills/project-management/SKILL.md` (created) |
 
-Every step of every role carries the same three review actions — **approve**, **reject**,
-**proceed but revisit** — stored on the project, and the rail always names the next step. The
-role's skill is shown with an **Integrate** toggle: off by default, and when integrated its own
-steps (parsed from its SKILL.md) show in the inspector. Role workspaces use the three-pane IDE
-layout: process on the left, the step's work in the centre, the inspector (review actions,
-what's next, skill) on the right.
+Database design is **not** part of Business Analysis — it is its own role, and the BA rail never
+shows it.
 
-Not every project is new: the **project history dropdown** at the top of the rail lists every
-workspace project this browser holds; click one and all of its data — brief, stages, role,
-reviews — loads.
+**Questions, then a decision.** Every step asks two clarifying questions, each with the reason it is
+asked. Approve is refused until they are answered, so a spec can never be approved on a blank. The
+right panel carries three actions on every step of every role: **Approve**, **Reject**, and
+**Proceed — revisit** (good enough to move on, flagged to come back to). The rail always names what
+is next, and a `?` marks a step with unanswered questions.
+
+**What a step writes.** Every step defines its documents — a spec, a process map, a roadmap, a
+visual sheet — and approving the step writes them into the spec folder. They are browsable at
+**Spec folder**, downloadable one by one or as a zip, and they ship in the handoff under
+`spec/<role>/…`, together with `product/reviews.md` (every decision) and `product/clarifications.md`
+(the answers). Nothing is invented: a value the builder has not decided is written as *not answered
+yet*.
+
+**References.** A PDF, an image, a research deck or a link can be attached to the project from the
+inspector or the spec folder; it is stored with the project, opens from the list and stays with the
+work.
+
+**The visual editor** (design roles) starts from a choice rather than a blank canvas: the generated
+design system, an imported tokens file (`tokens.json` / `theme.css` — parsed, applied and kept), or a
+linked Figma file. Then it edits the interface directly — hue, accent, radius, spacing, shell, card
+style — with the real screens rendering beside it, and keeps variants as commits.
+
+**Several roles, one project.** The role picker also lets a project engage extra roles (a BA project
+that also runs design and QA). Each keeps its own steps, reviews and spec folder; the rail shows the
+primary role and lists the others as “also running”.
+
+Not every project is new: the **project history dropdown** lists every workspace project this
+browser holds, with its role and document count; click one and all of its data — brief, stages, role,
+reviews, answers, saved specs, references — loads.
 
 ### The prototype track
 

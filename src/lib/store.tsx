@@ -6,9 +6,25 @@
 // builder has confirmed — unless the description itself changed.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { DesignOverrides, Genome, ModuleKey, Project, RegistryComponent, ReviewDecision, Section, SystemOverrides, UserFlow, Version } from '../types'
+import type {
+  DesignOverrides,
+  DesignSource,
+  Genome,
+  ModuleKey,
+  Project,
+  ProjectReference,
+  RegistryComponent,
+  ReviewDecision,
+  RoleArtifact,
+  Section,
+  SystemOverrides,
+  UserFlow,
+  Version,
+} from '../types'
 import { compileProject, defaultModuleSeeds, emptyProject, genomeFromSeed, remixSeed, type CompileOptions } from '../engine'
 import { migrateProjects } from './migrate'
+import { roleById } from './roles'
+import { renderDeliverable, stepDocuments } from './documents'
 import { KEYS, readJson, writeJson } from './storage'
 
 const STORAGE_KEY = KEYS.projects
@@ -52,8 +68,27 @@ interface StoreValue {
   newProject: () => Project
   /* ---- roles: the process the workspace runs, and its reviews ---- */
   setRole: (roleId: string | null) => void
+  /** Engages another role on top of the primary one — a project can run several. */
+  toggleRole: (roleId: string) => void
   reviewStep: (key: string, decision: ReviewDecision, note?: string) => void
+  /**
+   * Review *and* save the step's documents in one state update. Approving a step
+   * writes its spec, so the decision and the documents must not be two writes —
+   * the second would read a stale project and drop the first.
+   */
+  reviewStepAndSave: (roleId: string, stepId: string, decision: ReviewDecision, note?: string) => RoleArtifact[]
   toggleSkill: (toolId: string) => void
+  /** Answer (or clear) one clarifying question: key is `${roleId}.${stepId}.q{n}`. */
+  setAnswer: (key: string, answer: string) => void
+  /** Generate every document a step defines and save it into the spec folder. */
+  saveStepDocuments: (roleId: string, stepId: string) => RoleArtifact[]
+  /** Save one document by kind. */
+  saveDocument: (roleId: string, stepId: string, kind: RoleArtifact['kind']) => RoleArtifact | undefined
+  removeArtifact: (id: string) => void
+  /** Bring a PDF, image, document or link into the workspace as reference material. */
+  addReference: (reference: Omit<ProjectReference, 'id' | 'addedAt'>) => void
+  removeReference: (id: string) => void
+  setDesignSource: (source: DesignSource) => void
   theme: Theme
   setTheme: (t: Theme) => void
   toggleTheme: () => void
@@ -477,6 +512,38 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     [active, replace],
   )
 
+  /**
+   * One review plus the documents it writes, in a single replace. This is the
+   * path the inspector uses for approve and proceed: a decision is never
+   * recorded without the paperwork that belongs with it.
+   */
+  const reviewStepAndSave = useCallback(
+    (roleId: string, stepId: string, decision: ReviewDecision, note?: string) => {
+      if (!active) return []
+      const role = roleById(roleId)
+      const step = role?.steps.find((s) => s.id === stepId)
+      if (!role || !step) return []
+      const saved: RoleArtifact[] = stepDocuments(active, role, step).map(({ deliverable, body }) => ({
+        id: `${role.id}.${step.id}.${deliverable.kind}`,
+        roleId: role.id,
+        stepId: step.id,
+        kind: deliverable.kind,
+        file: deliverable.file,
+        title: `${step.title} — ${deliverable.label}`,
+        body,
+        createdAt: Date.now(),
+      }))
+      const keep = (active.artifacts ?? []).filter((artifact) => !saved.some((entry) => entry.id === artifact.id))
+      const stepReviews = {
+        ...(active.stepReviews ?? {}),
+        [`${role.id}.${step.id}`]: { decision, note, at: Date.now() },
+      }
+      replace({ ...active, stepReviews, artifacts: [...keep, ...saved] })
+      return saved
+    },
+    [active, replace],
+  )
+
   /** Integrate (or drop) the role's skill — the builder's choice, never forced. */
   const toggleSkill = useCallback(
     (toolId: string) => {
@@ -487,6 +554,119 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     },
     [active, replace],
   )
+  /** Engage (or disengage) a second role on this project. */
+  const toggleRole = useCallback(
+    (roleId: string) => {
+      if (!active) return
+      const current = active.roles ?? []
+      const next = current.includes(roleId) ? current.filter((id) => id !== roleId) : [...current, roleId]
+      replace({ ...active, roles: next })
+    },
+    [active, replace],
+  )
+
+  /** One clarifying answer. An empty answer clears the key rather than storing "". */
+  const setAnswer = useCallback(
+    (key: string, answer: string) => {
+      if (!active) return
+      const answers = { ...(active.answers ?? {}) }
+      if (answer.trim()) answers[key] = answer
+      else delete answers[key]
+      replace({ ...active, answers })
+    },
+    [active, replace],
+  )
+
+  /** Save every document a step defines. Re-saving replaces the same path. */
+  const saveStepDocuments = useCallback(
+    (roleId: string, stepId: string) => {
+      if (!active) return []
+      const project = active
+      const role = roleById(roleId)
+      const step = role?.steps.find((s) => s.id === stepId)
+      if (!role || !step) return []
+      const documents = stepDocuments(project, role, step)
+      const saved: RoleArtifact[] = documents.map(({ deliverable, body }) => ({
+        id: `${role.id}.${step.id}.${deliverable.kind}`,
+        roleId: role.id,
+        stepId: step.id,
+        kind: deliverable.kind,
+        file: deliverable.file,
+        title: `${step.title} — ${deliverable.label}`,
+        body,
+        createdAt: Date.now(),
+      }))
+      const others = (project.artifacts ?? []).filter(
+        (artifact) => !saved.some((entry) => entry.roleId === artifact.roleId && entry.stepId === artifact.stepId && entry.kind === artifact.kind),
+      )
+      replace({ ...project, artifacts: [...others, ...saved] })
+      return saved
+    },
+    [active, replace],
+  )
+
+  const saveDocument = useCallback(
+    (roleId: string, stepId: string, kind: RoleArtifact['kind']) => {
+      if (!active) return undefined
+      const role = roleById(roleId)
+      const step = role?.steps.find((s) => s.id === stepId)
+      const deliverable = step?.deliverables.find((d) => d.kind === kind)
+      if (!role || !step || !deliverable) return undefined
+      const artifact: RoleArtifact = {
+        id: `${role.id}.${step.id}.${deliverable.kind}`,
+        roleId: role.id,
+        stepId: step.id,
+        kind: deliverable.kind,
+        file: deliverable.file,
+        title: `${step.title} — ${deliverable.label}`,
+        body: renderDeliverable(active, role, step, deliverable),
+        createdAt: Date.now(),
+      }
+      const others = (active.artifacts ?? []).filter((entry) => entry.id !== artifact.id)
+      replace({ ...active, artifacts: [...others, artifact] })
+      return artifact
+    },
+    [active, replace],
+  )
+
+  const removeArtifact = useCallback(
+    (id: string) => {
+      if (!active) return
+      replace({ ...active, artifacts: (active.artifacts ?? []).filter((artifact) => artifact.id !== id) })
+    },
+    [active, replace],
+  )
+
+  /** Reference material: a PDF, an image, a document or a link, kept with the project. */
+  const addReference = useCallback(
+    (reference: Omit<ProjectReference, 'id' | 'addedAt'>) => {
+      if (!active) return
+      const entry: ProjectReference = {
+        ...reference,
+        id: `ref-${Date.now().toString(36)}-${Math.floor(Math.random() * 1296).toString(36)}`,
+        addedAt: Date.now(),
+      }
+      replace({ ...active, references: [entry, ...(active.references ?? [])].slice(0, 40) })
+    },
+    [active, replace],
+  )
+
+  const removeReference = useCallback(
+    (id: string) => {
+      if (!active) return
+      replace({ ...active, references: (active.references ?? []).filter((reference) => reference.id !== id) })
+    },
+    [active, replace],
+  )
+
+  const setDesignSource = useCallback(
+    (source: DesignSource) => {
+      if (!active) return
+      replace({ ...active, designSource: source })
+    },
+    [active, replace],
+  )
+
   const setTheme = useCallback((t: Theme) => setThemeState(t), [])
   const toggleTheme = useCallback(() => setThemeState((t) => (t === 'dark' ? 'light' : 'dark')), [])
 
@@ -603,8 +783,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setActive,
       newProject,
       setRole,
+      toggleRole,
       reviewStep,
+      reviewStepAndSave,
       toggleSkill,
+      setAnswer,
+      saveStepDocuments,
+      saveDocument,
+      removeArtifact,
+      addReference,
+      removeReference,
+      setDesignSource,
       theme,
       setTheme,
       toggleTheme,
@@ -647,8 +836,17 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       setActive,
       newProject,
       setRole,
+      toggleRole,
       reviewStep,
+      reviewStepAndSave,
       toggleSkill,
+      setAnswer,
+      saveStepDocuments,
+      saveDocument,
+      removeArtifact,
+      addReference,
+      removeReference,
+      setDesignSource,
       theme,
       setTheme,
       toggleTheme,

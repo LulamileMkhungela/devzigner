@@ -10,6 +10,8 @@ import type { Project } from '../types'
 import type { PackageFile } from './package'
 import { TOOLS } from '../tools'
 import { TOOLKIT } from './vendor/toolkit'
+import { answerKey, reviewKey, roleById } from '../lib/roles'
+import { projectRoleIds, roleSpecFiles, savedArtifactFiles } from '../lib/documents'
 
 const header = `# Agent instructions — PROJECT
 
@@ -199,6 +201,110 @@ was built, decisions made, conventions introduced and any deviation from the PRD
   return files
 }
 
+/**
+ * The spec folder: every document the engaged roles define, plus the ones the
+ * builder actually saved. This is the "spec, process, roadmap" half of the
+ * handoff — an agent implementing the product reads `spec/` before it writes a
+ * line, and a reviewer can check the reasoning against the build.
+ */
+export function buildSpecFolder(project: Project): PackageFile[] {
+  const files: PackageFile[] = []
+  const push = (path: string, content: string) => files.push({ path, content: content.endsWith('\n') ? content : content + '\n' })
+
+  const generated = roleSpecFiles(project)
+  const saved = savedArtifactFiles(project)
+  const seen = new Set<string>()
+  for (const file of saved) {
+    if (seen.has(file.path)) continue
+    seen.add(file.path)
+    push(file.path, file.content)
+  }
+  for (const file of generated) {
+    if (seen.has(file.path)) continue
+    seen.add(file.path)
+    push(file.path, file.content)
+  }
+
+  const roles = projectRoleIds(project).map((id) => roleById(id)).filter((role): role is NonNullable<typeof role> => Boolean(role))
+  if (roles.length > 0) {
+    push(
+      'spec/README.md',
+      `# Spec folder — ${project.name}
+
+Every document a role writes lives here, one folder per role. They are generated from the
+compiled product and the builder's answers, then updated when a step is approved or a document
+is saved.
+
+| Role | Process | Documents |
+| --- | --- | --- |
+${roles.map((role) => `| **${role.name}** | ${role.processLabel} | ${role.steps.reduce((n, step) => n + step.deliverables.length, 0)} |`).join('\n')}
+
+## What is in here
+
+${files.map((file) => `- \`${file.path}\``).join('\n')}
+
+## How to use it
+
+1. Read \`spec/<role>/\` before implementing anything in that discipline.
+2. Treat a "not answered yet" line as an open decision, not as permission to invent one.
+3. The review decisions on each step are in \`product/reviews.md\`; an unapproved step is not settled.
+`,
+    )
+    push(
+      'product/reviews.md',
+      `# Review decisions — ${project.name}
+
+Every step of every role this project runs, with the builder's decision. The three decisions are
+**approved**, **rejected**, and **proceed — revisit** (good enough to move on, flagged to come back to).
+
+${roles
+  .map((role) => {
+    const rows = role.steps
+      .map((step, index) => {
+        const review = project.stepReviews?.[reviewKey(role.id, step.id)]
+        const decision = review ? (review.decision === 'proceed-revisit' ? 'proceed — revisit' : review.decision) : 'not reviewed'
+        return `| ${index + 1} | ${step.title} | ${decision} | ${review?.note ?? '—'} |`
+      })
+      .join('\n')
+    return `## ${role.name} — ${role.processLabel}\n\n| # | Step | Decision | Note |\n| --- | --- | --- | --- |\n${rows}\n`
+  })
+  .join('\n')}
+`,
+    )
+  }
+
+  // The clarified answers, as their own file: the reasoning behind every spec.
+  const answers = Object.entries(project.answers ?? {})
+  if (answers.length > 0) {
+    push(
+      'product/clarifications.md',
+      `# Clarifying questions — ${project.name}
+
+The questions each step asked before it could be signed off, and the builder's answers. A spec in
+\`spec/\` is only as good as these answers.
+
+${roles
+  .map((role) =>
+    role.steps
+      .map((step) => {
+        const rows = step.questions
+          .map((question, index) => {
+            const answer = project.answers?.[answerKey(role.id, step.id, index)] ?? '_Not answered._'
+            return `- **${question.question}**\n  ${answer}`
+          })
+          .join('\n')
+        return `## ${role.name} · ${step.title}\n\n${rows}`
+      })
+      .join('\n\n'),
+  )
+  .join('\n\n')}
+`,
+    )
+  }
+
+  return files
+}
+
 export function buildToolkit(project: Project): PackageFile[] {
   const files: PackageFile[] = []
   const push = (path: string, content: string) => files.push({ path, content: content.endsWith('\n') ? content : content + '\n' })
@@ -221,6 +327,7 @@ a symlink to AGENTS.md, so there is exactly one copy of the instructions.
   push('scripts/link-agents.sh', linker)
   push('favicon.svg', favicon(project))
   files.push(...prdPlan(project))
+  files.push(...buildSpecFolder(project))
 
   const rows = TOOLS.map(
     (tool, index) => `| ${index + 1} | **${tool.name}** | ${tool.kind} | ${tool.ships} |`,

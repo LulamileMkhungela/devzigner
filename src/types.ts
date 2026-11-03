@@ -498,6 +498,69 @@ export interface Project extends CompileInput {
   stepReviews?: Record<string, StepReview>
   /** Toolkit skills the builder chose to integrate into this project. */
   integratedSkills?: string[]
+  /**
+   * The other roles this workspace also runs — a project can engage several
+   * roles (BA plus design plus QA), and each keeps its own process and
+   * reviews while `roleId` remains the primary one the rail opens on.
+   */
+  roles?: string[]
+  /**
+   * Answers to the clarifying questions each step asks, keyed
+   * `${roleId}.${stepId}.q{n}`. A step cannot be approved until every question
+   * has an answer.
+   */
+  answers?: Record<string, string>
+  /** Reference material the builder brought in: PDFs, images, links. */
+  references?: ProjectReference[]
+  /** Documents generated per role step and saved into the spec folder. */
+  artifacts?: RoleArtifact[]
+  /**
+   * The design system the builder chose to work from, when they did not take
+   * the generated one: the generated tokens, an imported system's tokens, or
+   * their own Figma file.
+   */
+  designSource?: DesignSource
+}
+
+/** A file the builder brought into the workspace as reference material. */
+export interface ProjectReference {
+  id: string
+  name: string
+  /** The MIME type the browser reported. */
+  type: string
+  /** Bytes — kept small, and shown so the builder knows what they are carrying. */
+  size: number
+  kind: 'image' | 'pdf' | 'doc' | 'link'
+  /** A data URL for a file, or the URL for a link. */
+  data: string
+  /** What this reference is for, in the builder's words. */
+  note?: string
+  addedAt: number
+}
+
+/** Where the interface's look comes from. */
+export interface DesignSource {
+  kind: 'generated' | 'imported' | 'figma'
+  /** The system's name, e.g. "ProdOps generated", "Figma — Acme DS". */
+  label: string
+  /** A Figma file/URL, when the builder imported one. */
+  url?: string
+  /** Tokens captured from the imported system, when there were any. */
+  tokens?: { name: string; value: string }[]
+  setAt: number
+}
+
+/** A document a role step generated and saved. */
+export interface RoleArtifact {
+  id: string
+  roleId: string
+  stepId: string
+  kind: 'spec' | 'process' | 'roadmap' | 'markdown' | 'visual'
+  /** Where it writes in the handoff, e.g. `spec/business-analysis/01-vision-outcome.md`. */
+  file: string
+  title: string
+  body: string
+  createdAt: number
 }
 
 /**

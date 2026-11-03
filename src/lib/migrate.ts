@@ -147,6 +147,27 @@ export function migrateProject(value: unknown): Project | null {
     if (Array.isArray(record.integratedSkills)) {
       rebuilt.integratedSkills = record.integratedSkills.filter((id): id is string => typeof id === 'string')
     }
+    // Same rule for the rest of the workspace's own record: answers to the
+    // clarifying questions, the specs already saved, the reference material the
+    // builder brought in, the extra roles, and the design source. A rebuild
+    // recompiles the product; it must not throw away the builder's thinking.
+    if (Array.isArray(record.roles)) {
+      rebuilt.roles = record.roles.filter((id): id is string => typeof id === 'string')
+    }
+    if (record.answers && typeof record.answers === 'object' && !Array.isArray(record.answers)) {
+      rebuilt.answers = record.answers as Project['answers']
+    }
+    if (Array.isArray(record.references)) {
+      rebuilt.references = record.references.filter((reference) => reference && typeof reference.id === 'string')
+    }
+    if (Array.isArray(record.artifacts)) {
+      rebuilt.artifacts = record.artifacts.filter(
+        (artifact) => artifact && typeof artifact.id === 'string' && typeof artifact.body === 'string',
+      )
+    }
+    if (record.designSource && typeof record.designSource === 'object') {
+      rebuilt.designSource = record.designSource as Project['designSource']
+    }
 
     return rebuilt
   } catch {

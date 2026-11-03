@@ -15,14 +15,27 @@ import { ARCHETYPES, compileProject } from '../src/engine'
 import { describeIntake, intakeGaps, profileIdea } from '../src/engine/intake'
 import { BLOCK_COMPONENT_NAMES } from '../src/engine/system'
 import { buildPackage } from '../src/export/package'
-import { TOOLS } from '../src/tools'
+import { ROLE_SKILLS, TOOLS, vendoredSkillPhases } from '../src/tools'
 import { ARTICLES, COUNTS, COURSES, KITS, SERIES, SESSIONS, VIDEOS } from '../src/data/builderMethods'
 import { FRAMEWORKS } from '../src/export/frameworks'
 import { migrateProject } from '../src/lib/migrate'
 import { migrateProject, migrateProjects } from '../src/lib/migrate'
 import { OLD_BRAND, rebrand } from './lib/brand'
 import { PHASES, completedPhases, confirmedPhases, isStageDone, nextStage, phaseBlockers, phaseReady } from '../src/lib/progress'
-import { ROLES, nextRoleStep, reviewKey, roleAllows, roleById, roleSkill, stepState } from '../src/lib/roles'
+import {
+  ROLES,
+  answerKey,
+  nextRoleStep,
+  reviewKey,
+  reviewSide,
+  roleAllows,
+  roleById,
+  roleSkill,
+  stepAnswers,
+  stepQuestionsAnswered,
+  stepState,
+} from '../src/lib/roles'
+import { renderDeliverable, roleSpecFiles } from '../src/lib/documents'
 
 const input = { archetypeId: 'clinic', seed: 4242, now: 1_760_000_000_000 } as const
 
@@ -719,7 +732,7 @@ test('every role owns a process from start to finish, and the rail can show it',
 
 test('the BA role does not see design or database pages', () => {
   const ba = roleById('business-analysis')!
-  assert.equal(ba.steps.length, 7, 'the BA process is seven steps')
+  assert.equal(ba.steps.length, 7, 'the BA process is seven steps, matching its skill file')
   assert.equal(ba.steps[0].title, 'Vision & outcome', 'BA starts at vision & outcome')
   assert.ok(!ba.phases.includes('design'), 'design is not a BA stage')
   assert.ok(!ba.phases.includes('data-shape'), 'database design is not in the BA role')
@@ -728,7 +741,7 @@ test('the BA role does not see design or database pages', () => {
   assert.ok(roleAllows(ba, ''), 'BA can open the product stage')
   assert.ok(roleAllows(ba, 'sections'), 'requirements live on the sections stage')
   assert.ok(roleAllows(ba, 'tools'), 'the canon opens under every role')
-  const db = roleById('data-design')!
+  const db = roleById('database-design')!
   assert.ok(db.phases.includes('data-shape'), 'database design lives in its own role')
   assert.ok(!roleAllows(db, 'design'))
 })
@@ -761,15 +774,11 @@ test('roles with no skill on the toolkit got one, and it ships in the package', 
   assert.ok(files.includes('.agents/skills/business-analysis/SKILL.md'))
   assert.ok(files.includes('.agents/skills/database-design/SKILL.md'))
   const baSkill = roleSkill(roleById('business-analysis')!)
-  assert.deepEqual(baSkill.steps, [
-    'Vision & outcome',
-    'Stakeholders & scope',
-    'Current state & problem',
-    'Requirements elicitation',
-    'Analysis & prioritisation',
-    'Solution & future state',
-    'Validation & handoff',
-  ])
+  // The skill file carries the full set of phases a BA runs; the role's rail
+  // groups them into six reviewable steps. Both start and end at the same place.
+  assert.equal(baSkill.steps[0], 'Vision & outcome')
+  assert.equal(baSkill.steps.at(-1), 'Validation & handoff')
+  assert.ok(baSkill.steps.includes('Requirements elicitation'))
 })
 
 test('a rebuilt record keeps its role, its reviews and its integrated skills', () => {
@@ -789,4 +798,153 @@ test('a rebuilt record keeps its role, its reviews and its integrated skills', (
   assert.equal(migrated.roleId, 'business-analysis')
   assert.equal(migrated.stepReviews?.['business-analysis.vision-outcome']?.decision, 'approved')
   assert.deepEqual(migrated.integratedSkills, ['business-analysis'], 'junk entries are dropped')
+})
+
+/* -------------------------------------------------------------------------
+   roles: disciplines, questions, documents, references and the spec folder
+   ---------------------------------------------------------------------- */
+
+test('the design role runs the whole design discipline, end to end', () => {
+  const design = roleById('product-design')!
+  assert.deepEqual(
+    design.tracks.map((track) => track.id),
+    ['foundations', 'screens', 'craft'],
+    'foundations, screens, then visual craft',
+  )
+  // Every step belongs to a declared track, and every track resolves to steps.
+  for (const role of ROLES) {
+    const ids = new Set(role.tracks.flatMap((track) => track.steps))
+    for (const step of role.steps) {
+      assert.ok(ids.has(step.id), `${role.id}.${step.id} is in no track`)
+      assert.ok(role.tracks.some((track) => track.id === step.track), `${role.id}.${step.id} names a missing track`)
+    }
+    assert.equal(ids.size, role.steps.length, `${role.id} tracks cover every step exactly once`)
+  }
+  // The design disciplines are separate roles, and the designer owns the editor.
+  for (const id of ['ux-research', 'ui-design', 'cx-design', 'product-design']) {
+    assert.ok(roleById(id), `${id} exists as a design discipline`)
+  }
+  assert.equal(design.designRole, true, 'the product design role owns the visual editor')
+  assert.ok(design.steps.some((step) => step.surface === 'visual'), 'the editor is a step of the process')
+})
+
+test('the SDLC is covered: analysis, data, design, engineering, QA, ops and delivery', () => {
+  const ids = ROLES.map((role) => role.id)
+  for (const required of [
+    'business-analysis',
+    'data-analysis',
+    'ux-research',
+    'ui-design',
+    'cx-design',
+    'product-design',
+    'database-design',
+    'software-engineering',
+    'qa-testing',
+    'devops',
+    'project-management',
+  ]) {
+    assert.ok(ids.includes(required), `${required} is a role`)
+  }
+  // Database design is its own role and never a BA step.
+  const ba = roleById('business-analysis')!
+  assert.ok(!ba.steps.some((step) => /database|schema|entit/i.test(step.title)), 'no database step inside BA')
+})
+
+test('every step asks clarifying questions, and every question explains why', () => {
+  for (const role of ROLES) {
+    for (const step of role.steps) {
+      assert.ok(step.questions.length >= 2, `${role.id}.${step.id} asks at least two questions`)
+      for (const question of step.questions) {
+        assert.ok(question.question.length > 10, `${role.id}.${step.id} has a real question`)
+        assert.ok(question.why.length > 10, `${role.id}.${step.id} explains why it asks`)
+      }
+      assert.ok(step.deliverables.length >= 1, `${role.id}.${step.id} writes at least one document`)
+      for (const deliverable of step.deliverables) {
+        assert.ok(deliverable.file.startsWith(`spec/${role.id}/`), `${deliverable.file} lives in the role's spec folder`)
+        assert.ok(/\.(md|html)$/.test(deliverable.file), `${deliverable.file} is a document`)
+      }
+    }
+  }
+})
+
+test('a step cannot be approved until its questions are answered — the document says so', () => {
+  const project = compileProject(input as never)
+  const role = roleById('business-analysis')!
+  const step = role.steps[0]
+  const unanswered = renderDeliverable(project, role, step, step.deliverables[0])
+  assert.ok(unanswered.includes('_Not answered yet._'), 'an unanswered question is marked, not invented')
+
+  const answered = {
+    ...project,
+    answers: {
+      [answerKey(role.id, step.id, 0)]: 'A clinic front desk that books, reminds and records',
+      [answerKey(role.id, step.id, 1)]: 'No-shows below 10% within one quarter',
+    },
+  }
+  const doc = renderDeliverable(answered, role, step, step.deliverables[0])
+  assert.ok(doc.includes('A clinic front desk that books, reminds and records'), 'the answer is in the spec')
+  assert.ok(!doc.includes('_Not answered yet._'), 'nothing is left unanswered')
+  assert.equal(stepAnswers(answered, role, step).filter((a) => a.trim()).length, 2)
+  assert.equal(stepQuestionsAnswered(project, role, step), 0)
+})
+
+test('the spec folder writes spec, process and roadmap documents for every role', () => {
+  const project = compileProject(input as never)
+  const withRole = { ...project, roleId: 'business-analysis', roles: ['product-design'] }
+  const files = roleSpecFiles(withRole).map((file) => file.path)
+  assert.ok(files.some((path) => path.includes('business-analysis') && path.endsWith('.md')))
+  assert.ok(files.some((path) => path.includes('product-design')))
+  assert.ok(files.some((path) => /\.html$/.test(path)), 'a visual sheet is HTML, not markdown')
+  // The handoff carries the spec folder, the reviews and the answers.
+  const pkg = buildPackage(withRole).map((file) => file.path)
+  assert.ok(pkg.includes('spec/README.md'), 'the spec folder has a README')
+  assert.ok(pkg.includes('product/reviews.md'), 'the reviews are written down')
+  assert.ok(pkg.includes('spec/business-analysis/01-vision-outcome.md'), 'step one of BA ships')
+  assert.ok(pkg.some((path) => path.startsWith('spec/product-design/')), 'the design role ships too')
+})
+
+test('every role skill is a real file, parsed, and shipped — created where none existed', () => {
+  const pkg = new Set(buildPackage(compileProject(input as never)).map((file) => file.path))
+  for (const role of ROLES) {
+    const skill = roleSkill(role)
+    assert.ok(pkg.has(skill.path) || role.skill.toolId === 'starter', `${role.id} ships ${skill.path}`)
+    if (role.skill.toolId !== 'starter') {
+      const parsed = vendoredSkillPhases(role.skill.toolId)
+      assert.ok(parsed.steps.length >= 4, `${role.id} parses its own steps from ${role.skill.path}`)
+      assert.equal(parsed.steps.length, role.steps.length, `${role.id} skill and process agree on the step count`)
+    }
+  }
+  // The eight free tools stay exactly eight; role playbooks are a separate list.
+  assert.equal(TOOLS.length, 8)
+  assert.ok(ROLE_SKILLS.length >= 11, 'every role ships a playbook')
+})
+
+test('references and the design source survive a reload, like the rest of the record', () => {
+  const legacy = {
+    id: 'legacy-4',
+    idea: 'a clinic front desk',
+    seed: 4242,
+    archetypeId: 'clinic',
+    createdAt: 1_700_000_000_000,
+    described: true,
+    roleId: 'product-design',
+    roles: ['qa-testing', 7],
+    answers: { 'product-design.design-brief.q1': 'Linear, Stripe' },
+    references: [
+      { id: 'ref-1', name: 'research.pdf', type: 'application/pdf', size: 10, kind: 'pdf', data: 'data:', addedAt: 1 },
+      null,
+    ],
+    artifacts: [
+      { id: 'a1', roleId: 'product-design', stepId: 'design-brief', kind: 'spec', file: 'spec/x.md', title: 't', body: '# hi', createdAt: 1 },
+      { id: 42 },
+    ],
+    designSource: { kind: 'figma', label: 'Figma — Acme', url: 'https://figma.com/file/x', setAt: 2 },
+  }
+  const migrated = migrateProject(legacy)!
+  assert.ok(migrated)
+  assert.deepEqual(migrated.roles, ['qa-testing'], 'junk role ids are dropped')
+  assert.equal(migrated.answers?.['product-design.design-brief.q1'], 'Linear, Stripe')
+  assert.equal(migrated.references?.length, 1, 'a null reference is dropped')
+  assert.equal(migrated.artifacts?.length, 1, 'an artifact without a body is dropped')
+  assert.equal(migrated.designSource?.kind, 'figma')
 })

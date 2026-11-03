@@ -137,6 +137,17 @@ export function migrateProject(value: unknown): Project | null {
     const custom = Array.isArray(record.flows) ? (record.flows as UserFlow[]).filter((flow) => flow?.custom) : []
     if (custom.length) rebuilt.flows = [...rebuilt.flows, ...custom]
 
+    // The workspace chrome is the builder's judgement, not compiled content:
+    // the role the workspace runs as, the reviews on its steps and the skills
+    // it integrated all survive a rebuild, like the confirmations above.
+    if (typeof record.roleId === 'string') rebuilt.roleId = record.roleId
+    if (record.stepReviews && typeof record.stepReviews === 'object' && !Array.isArray(record.stepReviews)) {
+      rebuilt.stepReviews = record.stepReviews as Project['stepReviews']
+    }
+    if (Array.isArray(record.integratedSkills)) {
+      rebuilt.integratedSkills = record.integratedSkills.filter((id): id is string => typeof id === 'string')
+    }
+
     return rebuilt
   } catch {
     return null

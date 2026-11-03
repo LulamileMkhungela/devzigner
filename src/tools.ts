@@ -182,6 +182,15 @@ export function toolById(id: string): Tool | undefined {
   return TOOLS.find((tool) => tool.id === id)
 }
 
+/**
+ * A vendored skill's phases, parsed from its own SKILL.md. Roles reuse this so
+ * the steps shown next to a role are the steps the skill file actually runs,
+ * not a copy that can drift.
+ */
+export function vendoredSkillPhases(id: string): { steps: string[]; stepFiles?: string[] } {
+  return skillPhases(id)
+}
+
 export function vendoredFileCount(id: string): number {
   return vendored(id)?.files.length ?? 0
 }

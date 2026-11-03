@@ -22,6 +22,7 @@ import { migrateProject } from '../src/lib/migrate'
 import { migrateProject, migrateProjects } from '../src/lib/migrate'
 import { OLD_BRAND, rebrand } from './lib/brand'
 import { PHASES, completedPhases, confirmedPhases, isStageDone, nextStage, phaseBlockers, phaseReady } from '../src/lib/progress'
+import { ROLES, nextRoleStep, reviewKey, roleAllows, roleById, roleSkill, stepState } from '../src/lib/roles'
 
 const input = { archetypeId: 'clinic', seed: 4242, now: 1_760_000_000_000 } as const
 
@@ -696,4 +697,96 @@ test('the auto-seeded sample is not treated as the builder’s product', () => {
     seed: 112233,
   })
   assert.equal(migrateProject(JSON.parse(JSON.stringify(sample))), null)
+})
+
+/* -------------------------------------------------------------------------
+   roles: a workspace runs as one role, with that role's process start to finish
+   ---------------------------------------------------------------------- */
+
+test('every role owns a process from start to finish, and the rail can show it', () => {
+  assert.ok(ROLES.length >= 3, 'there is more than one role')
+  for (const role of ROLES) {
+    assert.ok(role.steps.length >= 5, `${role.id} has a real process, not a stub`)
+    assert.ok(/PROCESS · \d+ STEPS$/.test(role.processLabel), `${role.id} names its process and step count`)
+    assert.equal(role.processLabel.match(/(\d+) STEPS$/)?.[1], String(role.steps.length), `${role.id} label matches its steps`)
+    for (const step of role.steps) {
+      assert.ok(step.title && step.decides && step.produces.length > 0, `${role.id}.${step.id} says what it decides and produces`)
+      assert.equal(typeof step.ready, 'function')
+      assert.equal(typeof step.blockers, 'function')
+    }
+  }
+})
+
+test('the BA role does not see design or database pages', () => {
+  const ba = roleById('business-analysis')!
+  assert.equal(ba.steps.length, 7, 'the BA process is seven steps')
+  assert.equal(ba.steps[0].title, 'Vision & outcome', 'BA starts at vision & outcome')
+  assert.ok(!ba.phases.includes('design'), 'design is not a BA stage')
+  assert.ok(!ba.phases.includes('data-shape'), 'database design is not in the BA role')
+  assert.ok(!roleAllows(ba, 'design'), 'the design route is gated for BA')
+  assert.ok(!roleAllows(ba, 'data-shape'), 'the data route is gated for BA')
+  assert.ok(roleAllows(ba, ''), 'BA can open the product stage')
+  assert.ok(roleAllows(ba, 'sections'), 'requirements live on the sections stage')
+  assert.ok(roleAllows(ba, 'tools'), 'the canon opens under every role')
+  const db = roleById('data-design')!
+  assert.ok(db.phases.includes('data-shape'), 'database design lives in its own role')
+  assert.ok(!roleAllows(db, 'design'))
+})
+
+test('every role step carries the same three review actions', () => {
+  const project = compileProject(input as never)
+  for (const role of ROLES) {
+    const key = reviewKey(role.id, role.steps[0].id)
+    const approved = { ...project, stepReviews: { [key]: { decision: 'approved' as const, at: 1 } } }
+    assert.equal(stepState(approved, role, role.steps[0]), 'approved')
+    assert.equal(nextRoleStep(approved, role).id, role.steps[1].id, 'an approved step makes the next one current')
+    const rejected = { ...project, stepReviews: { [key]: { decision: 'rejected' as const, at: 1 } } }
+    assert.equal(stepState(rejected, role, role.steps[0]), 'rejected')
+    assert.equal(nextRoleStep(rejected, role).id, role.steps[0].id, 'a rejected step is still the next thing to do')
+    const revisit = { ...project, stepReviews: { [key]: { decision: 'proceed-revisit' as const, at: 1 } } }
+    assert.equal(stepState(revisit, role, role.steps[0]), 'proceed-revisit')
+    assert.equal(nextRoleStep(revisit, role).id, role.steps[0].id, 'a revisit flag keeps the step open')
+  }
+})
+
+test('roles with no skill on the toolkit got one, and it ships in the package', () => {
+  const files = buildPackage(compileProject(input as never)).map((f) => f.path)
+  for (const role of ROLES) {
+    const skill = roleSkill(role)
+    assert.ok(skill.steps.length >= 5, `${role.id} skill parses at least five steps from its own file`)
+    if (skill.created) {
+      assert.ok(files.includes(skill.path), `${role.id}'s created skill ${skill.path} is in the package`)
+    }
+  }
+  assert.ok(files.includes('.agents/skills/business-analysis/SKILL.md'))
+  assert.ok(files.includes('.agents/skills/database-design/SKILL.md'))
+  const baSkill = roleSkill(roleById('business-analysis')!)
+  assert.deepEqual(baSkill.steps, [
+    'Vision & outcome',
+    'Stakeholders & scope',
+    'Current state & problem',
+    'Requirements elicitation',
+    'Analysis & prioritisation',
+    'Solution & future state',
+    'Validation & handoff',
+  ])
+})
+
+test('a rebuilt record keeps its role, its reviews and its integrated skills', () => {
+  const legacy = {
+    id: 'legacy-3',
+    idea: 'a clinic front desk',
+    seed: 4242,
+    archetypeId: 'clinic',
+    createdAt: 1_700_000_000_000,
+    described: true,
+    roleId: 'business-analysis',
+    stepReviews: { 'business-analysis.vision-outcome': { decision: 'approved', note: 'vision locked', at: 5 } },
+    integratedSkills: ['business-analysis', 42],
+  }
+  const migrated = migrateProject(legacy)!
+  assert.ok(migrated)
+  assert.equal(migrated.roleId, 'business-analysis')
+  assert.equal(migrated.stepReviews?.['business-analysis.vision-outcome']?.decision, 'approved')
+  assert.deepEqual(migrated.integratedSkills, ['business-analysis'], 'junk entries are dropped')
 })

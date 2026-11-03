@@ -41,6 +41,32 @@ decides), the artefacts, then the completion control. The header states position
 Data Shape* — rather than repeating the rail as links, because the rail is where the stages are
 clicked.
 
+### Roles
+
+A workspace can run as one **role**, and a role owns its process from start to finish. The role
+picker sits at the top of the left panel next to the project history dropdown. When a role is set,
+the rail shows that role's steps — e.g. under *Business Analysis* the **BUSINESS ANALYSIS
+PROCESS · 7 STEPS** — and routes outside the role are gated, so a BA workspace shows no design
+pages and no database pages (database design is the *Data & database design* role's process).
+
+| Role | Process | Skill |
+| --- | --- | --- |
+| **Business Analysis** | 7 steps: vision & outcome → stakeholders & scope → current state → requirements → analysis & prioritisation → solution flows → validation & handoff | `.agents/skills/business-analysis/SKILL.md` (created — none existed) |
+| **Data & database design** | 6 steps: entities → fields & types → relationships → schema & constraints → sample data → backend contract | `.agents/skills/database-design/SKILL.md` (created — none existed) |
+| **Product design** | 5 steps: tokens → shell → section screens → prototype → token editor | `.agents/skills/design-system/SKILL.md` |
+| **Engineering & handoff** | 5 steps: specs → sample data → screens & screenshots → export package → audit | `template/starter/` |
+
+Every step of every role carries the same three review actions — **approve**, **reject**,
+**proceed but revisit** — stored on the project, and the rail always names the next step. The
+role's skill is shown with an **Integrate** toggle: off by default, and when integrated its own
+steps (parsed from its SKILL.md) show in the inspector. Role workspaces use the three-pane IDE
+layout: process on the left, the step's work in the centre, the inspector (review actions,
+what's next, skill) on the right.
+
+Not every project is new: the **project history dropdown** at the top of the rail lists every
+workspace project this browser holds; click one and all of its data — brief, stages, role,
+reviews — loads.
+
 ### The prototype track
 
 Beside the five stages: **Tools → Personas → User Flows → Tech Stack → Prototype → Wiki →

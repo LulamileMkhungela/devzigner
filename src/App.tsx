@@ -6,7 +6,7 @@
 
 import { useEffect, useMemo, useState } from 'react'
 import { useStore } from './lib/store'
-import { Link, navigate, useRoute } from './lib/router'
+import { Link, navigate, pathOf, useRoute } from './lib/router'
 import { PHASES, completedPhases, phaseIndex, sectionStats } from './lib/progress'
 import { downloadProjectZip } from './lib/download'
 import { Icon } from './components/Icons'
@@ -32,6 +32,9 @@ import { KitsPage } from './views/KitsPage'
 import { AwaitingDescription } from './components/AwaitingDescription'
 import type { GuidePhase } from './components/StepGuide'
 import { started } from './lib/state'
+import { nextRoleStep, roleAllows, roleById } from './lib/roles'
+import { ProjectsMenu, RoleGate, RoleNav, RolePicker } from './components/role'
+import { RoleStepPage } from './views/RoleStepPage'
 
 /**
  * What each stage holds once there is a product to hold it.
@@ -158,11 +161,25 @@ export function App() {
   const [navOpen, setNavOpen] = useState(false)
   const [sectionsOpen, setSectionsOpen] = useState(true)
 
+  // The role this workspace runs as. When set, the rail shows that role's
+  // process start to finish instead of the five stages, and routes outside
+  // the role are gated — a BA workspace does not show design pages.
+  const role = active.roleId ? roleById(active.roleId) : undefined
+  const roleStep = role && path[0] === 'role' ? role.steps.find((s) => s.id === path[1]) : undefined
+
   const done = useMemo(() => completedPhases(active, captures), [active, captures])
   const stats = useMemo(() => sectionStats(active, captures), [active, captures])
   const currentPhase = path[0] === 'data-shape' || path[0] === 'design' || path[0] === 'shell' ? (path[0] === 'shell' ? 'design' : path[0]) : path[0] ?? 'product'
   const trackActive = TRACK_NAV.some((n) => n.path === path[0])
   const doneCount = PHASES.filter((phase) => done[phase.id]).length
+
+  // Landing rule for a role workspace: the process opens on the first step
+  // that is not approved yet, so "what is next" is the first thing on screen.
+  useEffect(() => {
+    if (path[0] === 'role' && !role) navigate('')
+    else if (role && path.length === 0) navigate(`role/${nextRoleStep(active, role).id}`)
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [path.join('/'), role?.id, active.id])
 
   useEffect(() => {
     document.body.classList.toggle('lz-nav-open', navOpen)
@@ -176,10 +193,8 @@ export function App() {
 
   const menuRef = useOutsideClose(() => setMenuOpen(false))
 
-  const section = path[0] === 'sections' && path[1] ? active.sections.find((s) => s.id === path[1]) : undefined
-  const screenId = path[0] === 'sections' && path[2] === 'screen-designs' ? path[3] : undefined
-
-  function page() {
+  /** Render the underlying page for a route, whatever chrome is around it. */
+  function renderFor(p: string[]) {
     // A stage with no product in it says so, and says what it will hold. The
     // toolkit is exempt: those eight tools are real files, not artefacts of a
     // product, and the Product stage is where the product comes from.
@@ -187,27 +202,29 @@ export function App() {
     // real catalogues, not artefacts of a product, so they open before there is
     // a product to open. Everything else waits for the description.
     const CANON = ['tools', 'library', 'kits']
-    const stage = path[0] ?? ''
+    const stage = p[0] ?? ''
     if (!started(active) && stage !== '' && !CANON.includes(stage)) {
       const intro = STAGE_INTRO[stage] ?? STAGE_INTRO['data-shape']
       return <AwaitingDescription {...intro} guide={stage as GuidePhase} />
     }
-    if (path[0] === 'data-shape') return <DataShapePage project={active} />
-    if (path[0] === 'design') return <DesignPage project={active} />
-    if (path[0] === 'shell') return <ShellDesignPage project={active} fullscreen={fullscreen} />
-    if (path[0] === 'export') return <ExportPage project={active} />
-    if (path[0] === 'personas') return <PersonasPage project={active} />
-    if (path[0] === 'flows') return <FlowsPage project={active} />
-    if (path[0] === 'system') return <SystemPage project={active} />
-    if (path[0] === 'prototype') return <PrototypePage project={active} />
-    if (path[0] === 'editor') return <EditorPage project={active} />
-    if (path[0] === 'wiki') return <WikiPage project={active} />
-    if (path[0] === 'coverage') return <CoveragePage project={active} />
-    if (path[0] === 'tools') return <ToolsPage project={active} />
-    if (path[0] === 'library') return <LibraryPage project={active} />
-    if (path[0] === 'kits') return <KitsPage project={active} />
-    if (path[0] === 'sections') {
-      if (!path[1]) return <SectionsPage project={active} />
+    const section = p[0] === 'sections' && p[1] ? active.sections.find((s) => s.id === p[1]) : undefined
+    const screenId = p[0] === 'sections' && p[2] === 'screen-designs' ? p[3] : undefined
+    if (p[0] === 'data-shape') return <DataShapePage project={active} />
+    if (p[0] === 'design') return <DesignPage project={active} />
+    if (p[0] === 'shell') return <ShellDesignPage project={active} fullscreen={fullscreen} />
+    if (p[0] === 'export') return <ExportPage project={active} />
+    if (p[0] === 'personas') return <PersonasPage project={active} />
+    if (p[0] === 'flows') return <FlowsPage project={active} />
+    if (p[0] === 'system') return <SystemPage project={active} />
+    if (p[0] === 'prototype') return <PrototypePage project={active} />
+    if (p[0] === 'editor') return <EditorPage project={active} />
+    if (p[0] === 'wiki') return <WikiPage project={active} />
+    if (p[0] === 'coverage') return <CoveragePage project={active} />
+    if (p[0] === 'tools') return <ToolsPage project={active} />
+    if (p[0] === 'library') return <LibraryPage project={active} />
+    if (p[0] === 'kits') return <KitsPage project={active} />
+    if (p[0] === 'sections') {
+      if (!p[1]) return <SectionsPage project={active} />
       if (!section) {
         return (
           <div className="lz-view">
@@ -225,6 +242,25 @@ export function App() {
       return <SectionPage project={active} section={section} />
     }
     return <ProductPage project={active} />
+  }
+
+  function page() {
+    // Role workspaces route through /role/:stepId: the step's page in the
+    // centre, the inspector on the right. Any other route the role does not
+    // own is gated — that is why a BA workspace shows no design pages.
+    const top = path[0] ?? ''
+    if (role) {
+      if (top === 'role') {
+        if (!roleStep) return <RoleGate role={role} reason="That step is not in this role's process." />
+        return (
+          <RoleStepPage role={role} step={roleStep}>
+            {renderFor(pathOf(roleStep.path))}
+          </RoleStepPage>
+        )
+      }
+      if (!roleAllows(role, top)) return <RoleGate role={role} />
+    }
+    return renderFor(path)
   }
 
   if (fullscreen) {
@@ -252,7 +288,22 @@ export function App() {
           </a>
         </div>
 
+        {/* The project history and the role, in the one row that is on screen
+            in every view: not every project is new, and a workspace runs as
+            one role at a time. */}
+        <div className="lz-dd-row">
+          <ProjectsMenu />
+          <RolePicker />
+        </div>
+
         <nav className="lz-nav" aria-label="Process">
+          {role ? (
+            // A role owns its process from start to finish: the rail shows the
+            // role's steps — e.g. BUSINESS ANALYSIS PROCESS · 7 STEPS — and
+            // nothing from the other roles.
+            <RoleNav role={role} activeStepId={path[0] === 'role' ? path[1] : undefined} />
+          ) : (
+            <>
           {/* The five stages, in order, each with its own completion mark. This
               is the process rail: it is why the panel exists, and it is the only
               place the stages are navigated from. */}
@@ -287,13 +338,16 @@ export function App() {
               <span className="lz-meter-fill" style={{ width: `${(doneCount / PHASES.length) * 100}%` }} />
             </span>
           </div>
+            </>
+          )}
 
           <p className="lz-nav-label">Workspace</p>
           {/* Tools are real files and always open. The rest of the track —
               personas, flows, tech stack, prototype, token editor, wiki,
               coverage — is derived from a product, so it is not offered until
-              a product has been described. An empty page is not a feature. */}
-          {TRACK_NAV.filter((item) => ['tools', 'library', 'kits'].includes(item.path) || started(active)).map((item) => (
+              a product has been described, and under a role only the pages
+              that role owns are offered. An empty page is not a feature. */}
+          {TRACK_NAV.filter((item) => ['tools', 'library', 'kits'].includes(item.path) || (role ? role.track.includes(item.path) : started(active))).map((item) => (
             <Link
               key={item.path}
               to={item.path}
@@ -308,8 +362,9 @@ export function App() {
           ))}
 
           {/* No sections, no list: an empty group under a heading is a
-              promise the workspace has not kept yet. */}
-          {active.sections.length > 0 && (
+              promise the workspace has not kept yet. Under a role, the list
+              appears only when the role owns the sections stage. */}
+          {active.sections.length > 0 && (!role || role.phases.includes('sections')) && (
           <div className="lz-nav-group">
             <button
               className="lz-nav-item lz-nav-group-toggle"
@@ -350,7 +405,7 @@ export function App() {
           <div className="lz-avatar" aria-hidden="true">{active.name.slice(0, 1).toUpperCase()}</div>
           <div className="lz-account">
             <div className="lz-account-name" title={active.name}>{active.name}</div>
-            <div className="lz-account-email">{active.archetypeLabel} · {doneCount}/5 phases</div>
+            <div className="lz-account-email">{active.archetypeLabel} · {role ? role.name : `${doneCount}/5 phases`}</div>
           </div>
           {/* The theme is one click away instead of two: it sits beside the
               account actions, and the same switch is still in the menu. */}
@@ -413,7 +468,7 @@ export function App() {
           </button>
           <strong>{active.name}</strong>
           <span className="lz-spacer" />
-          <span className="lz-pill">{trackActive ? TRACK_NAV.find((n) => n.path === path[0])?.label : PHASES[phaseIndex(currentPhase)]?.label ?? 'Product'}</span>
+          <span className="lz-pill">{roleStep ? `${role?.tag} · ${roleStep.title}` : trackActive ? TRACK_NAV.find((n) => n.path === path[0])?.label : PHASES[phaseIndex(currentPhase)]?.label ?? 'Product'}</span>
         </div>
 
         <div key={path.join('/') || 'product'}>{page()}</div>

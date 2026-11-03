@@ -433,6 +433,23 @@ export interface CompileInput {
   scopeChoice?: { include?: string[]; exclude?: string[] }
 }
 
+/* -------------------------------------------------------------------------
+   Roles — who the workspace is running as, and the review on each step
+   ------------------------------------------------------------------------- */
+
+/**
+ * The three review actions every role step carries. They are the same for
+ * every role in the system: a step is either approved, rejected, or allowed
+ * to proceed while flagged for a revisit.
+ */
+export type ReviewDecision = 'approved' | 'rejected' | 'proceed-revisit'
+
+export interface StepReview {
+  decision: ReviewDecision
+  note?: string
+  at: number
+}
+
 export interface Project extends CompileInput {
   /** Which compiler built this record — see COMPILER_VERSION. */
   compiler?: string
@@ -468,6 +485,19 @@ export interface Project extends CompileInput {
    * artefacts are actually complete — see `phaseReady` in lib/progress.
    */
   progress?: { confirmed: string[] }
+  /**
+   * The role this workspace runs as (see lib/roles). When set, the rail shows
+   * that role's process start to finish instead of the five stages, and stage
+   * pages outside the role are gated. Unset means the full five-stage flow.
+   */
+  roleId?: string
+  /**
+   * Review decisions per role step, keyed `${roleId}.${stepId}`. Survives a
+   * recompile the way confirmations do: a rebuild is not a fresh review.
+   */
+  stepReviews?: Record<string, StepReview>
+  /** Toolkit skills the builder chose to integrate into this project. */
+  integratedSkills?: string[]
 }
 
 /**

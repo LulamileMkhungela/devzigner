@@ -6,7 +6,7 @@
 // builder has confirmed — unless the description itself changed.
 
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from 'react'
-import type { DesignOverrides, Genome, ModuleKey, Project, RegistryComponent, Section, SystemOverrides, UserFlow, Version } from '../types'
+import type { DesignOverrides, Genome, ModuleKey, Project, RegistryComponent, ReviewDecision, Section, SystemOverrides, UserFlow, Version } from '../types'
 import { compileProject, defaultModuleSeeds, emptyProject, genomeFromSeed, remixSeed, type CompileOptions } from '../engine'
 import { migrateProjects } from './migrate'
 import { KEYS, readJson, writeJson } from './storage'
@@ -48,6 +48,12 @@ interface StoreValue {
   regenerate: (project: Project, module?: ModuleKey, patch?: Partial<CompileOptions>) => Project
   remove: (id: string) => void
   setActive: (id: string) => void
+  /** Start an empty project — history keeps the old ones in the dropdown. */
+  newProject: () => Project
+  /* ---- roles: the process the workspace runs, and its reviews ---- */
+  setRole: (roleId: string | null) => void
+  reviewStep: (key: string, decision: ReviewDecision, note?: string) => void
+  toggleSkill: (toolId: string) => void
   theme: Theme
   setTheme: (t: Theme) => void
   toggleTheme: () => void
@@ -167,6 +173,12 @@ function compileLikeProject(project: Project, patch: Partial<CompileOptions> = {
   // idea changed, in which case every stage has to be reviewed again.
   const reworded = patch.idea !== undefined && patch.idea.trim() !== project.idea.trim()
   next.progress = { confirmed: reworded ? [] : project.progress?.confirmed ?? [] }
+  // The workspace chrome is the builder's, not the compiler's: the role the
+  // workspace runs as, the reviews it has earned and the skills it integrated
+  // all survive a recompile, exactly like the stage confirmations.
+  next.roleId = project.roleId
+  next.stepReviews = project.stepReviews
+  next.integratedSkills = project.integratedSkills
   // Hand-written flows belong to the product that was described; a rewrite
   // starts without them rather than importing a flow nobody asked for.
   return reworded ? next : withCustomFlows(next, project)
@@ -433,6 +445,48 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   )
 
   const setActive = useCallback((id: string) => setActiveId(id), [])
+
+  const newProject = useCallback(() => {
+    // A blank project with its own id: the history dropdown keeps every
+    // project the builder has, so a new one is added, never a replacement.
+    const blank = emptyProject()
+    blank.id = `p-${Date.now().toString(36)}-${Math.floor(Math.random() * 1296).toString(36)}`
+    blank.updatedAt = Date.now()
+    setProjects((prev) => [blank, ...prev].slice(0, 24))
+    setActiveId(blank.id)
+    setBooks((prev) => ({ ...prev, [blank.id]: { branch: 'main', versions: [] } }))
+    return blank
+  }, [])
+
+  /** Run this workspace as a role — its process replaces the five-stage rail. */
+  const setRole = useCallback(
+    (roleId: string | null) => {
+      if (!active) return
+      replace({ ...active, roleId: roleId ?? undefined })
+    },
+    [active, replace],
+  )
+
+  /** One of the three review actions on a role step: approve / reject / proceed-but-revisit. */
+  const reviewStep = useCallback(
+    (key: string, decision: ReviewDecision, note?: string) => {
+      if (!active) return
+      const stepReviews = { ...(active.stepReviews ?? {}), [key]: { decision, note, at: Date.now() } }
+      replace({ ...active, stepReviews })
+    },
+    [active, replace],
+  )
+
+  /** Integrate (or drop) the role's skill — the builder's choice, never forced. */
+  const toggleSkill = useCallback(
+    (toolId: string) => {
+      if (!active) return
+      const current = active.integratedSkills ?? []
+      const next = current.includes(toolId) ? current.filter((id) => id !== toolId) : [...current, toolId]
+      replace({ ...active, integratedSkills: next })
+    },
+    [active, replace],
+  )
   const setTheme = useCallback((t: Theme) => setThemeState(t), [])
   const toggleTheme = useCallback(() => setThemeState((t) => (t === 'dark' ? 'light' : 'dark')), [])
 
@@ -547,6 +601,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       regenerate,
       remove,
       setActive,
+      newProject,
+      setRole,
+      reviewStep,
+      toggleSkill,
       theme,
       setTheme,
       toggleTheme,
@@ -587,6 +645,10 @@ export function StoreProvider({ children }: { children: ReactNode }) {
       regenerate,
       remove,
       setActive,
+      newProject,
+      setRole,
+      reviewStep,
+      toggleSkill,
       theme,
       setTheme,
       toggleTheme,

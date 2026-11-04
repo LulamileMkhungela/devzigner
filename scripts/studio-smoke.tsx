@@ -2,7 +2,7 @@ import { JSDOM } from 'jsdom'
 import { strict as assert } from 'node:assert'
 import { createServer } from 'vite'
 import JSZip from 'jszip'
-const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost:5173/workspace/', pretendToBeVisual: true })
+const dom = new JSDOM('<div id="root"></div>', { url: 'http://localhost:5173/', pretendToBeVisual: true })
 const win = dom.window
 Object.assign(globalThis, { window: win, document: win.document, HTMLElement: win.HTMLElement, Element: win.Element, Node: win.Node, DOMParser:win.DOMParser, localStorage: win.localStorage, IS_REACT_ACT_ENVIRONMENT: true })
 win.confirm = () => true
@@ -59,6 +59,7 @@ try {
   }
   const roleText=()=>win.document.querySelector('.deliverables')!.textContent!
   assert.match(win.document.body.textContent!, /Orbit dashboard · fictional example/)
+  assert.doesNotMatch(win.document.body.textContent!, /Back to website/)
   for (const role of ['Business analysis','Design','Development','Quality assurance','Delivery & operations']) assert.match(win.document.querySelector('nav[aria-label="Choose your role"]')!.textContent!,new RegExp(role))
   assert.match(roleText(),/business-requirements.md/);assert.match(roleText(),/functional-requirements.md/);assert.doesNotMatch(roleText(),/design-tokens|solution\/|Application code/)
   assert.equal(win.document.querySelector('[role=dialog]'), null, 'connections are inline, not a password popup')

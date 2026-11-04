@@ -20,7 +20,7 @@
     "walkthrough": "tsx --tsconfig tsconfig.scripts.json scripts/walkthrough.tsx",
     "example-app": "tsx --tsconfig tsconfig.scripts.json scripts/example-app.ts",
     "test": "node --import tsx --test scripts/unit.test.ts",
-    "site-check": "tsx --tsconfig tsconfig.scripts.json scripts/site-check.ts",
+    "site-check": "node --import tsx --test scripts/workspace-server.test.ts",
     "kit": "tsx --tsconfig tsconfig.scripts.json scripts/emit-kit.ts",
     "test:assistant": "node --import tsx --test scripts/assistant.test.ts && tsx --tsconfig tsconfig.scripts.json scripts/assistant-smoke.tsx",
     "test:studio": "node --import tsx --test scripts/studio.test.ts && tsx scripts/studio-smoke.tsx"

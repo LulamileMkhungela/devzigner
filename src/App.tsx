@@ -29,6 +29,7 @@ import { CoveragePage } from './views/CoveragePage'
 import { ToolsPage } from './views/ToolsPage'
 import { LibraryPage } from './views/LibraryPage'
 import { KitsPage } from './views/KitsPage'
+import { PlanningAssistant } from './components/PlanningAssistant'
 import { AwaitingDescription } from './components/AwaitingDescription'
 import type { GuidePhase } from './components/StepGuide'
 import { started } from './lib/state'
@@ -242,7 +243,7 @@ export function App() {
         <div className="lz-brand">
           <img className="lz-brand-mark" src="/prodops-mark.svg" alt="" width={22} height={22} />
           <span className="lz-brand-name">ProdOps</span>
-          <span className="lz-mode-chip" title="Compiled in this browser. No keys, no model calls.">Local</span>
+          <span className="lz-mode-chip" title="Planning is local. The optional assistant sends messages to the configured AI provider.">Local</span>
           {/* The way back to the site, in the one row that is on screen in every
               view at every width. The panel row below it stays for the reader
               who looks there; this one is for the reader who is lost. */}
@@ -425,12 +426,12 @@ export function App() {
             <img src="/lulamile-mkhungela.png" alt="Lulamile Mkhungela" width={28} height={28} loading="lazy" />
           </span>
           <span>
-            <b>ProdOps</b> — developed by <b>Lulamile Mkhungela</b>. Compiled in this browser: no keys, no model calls,
-            no data leaves the page.
+            <b>ProdOps</b> — developed by <b>Lulamile Mkhungela</b>. Plans are stored in this browser. The optional assistant sends your messages to the configured AI provider.
           </span>
         </footer>
       </main>
 
+      <PlanningAssistant key={active.id} project={active} stage={currentPhase} />
       <Toast />
     </div>
   )

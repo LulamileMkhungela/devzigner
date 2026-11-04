@@ -1,415 +1,79 @@
-<img src="public/prodops-wordmark.svg" alt="ProdOps" width="260" />
-
 # ProdOps
 
-**A product-planning and UI-design framework, built by [Lulamile Mkhungela](https://github.com/LulamileMkhungela).**
+Product owner: Lulamile Mkhungela.
 
-ProdOps is where a product idea becomes something an agent can build: the vision, the data
-shape, the design system, the sections, the screens and the handoff — decided in that order,
-written to files, and compiled in the browser with no model, no key and no data leaving the page.
+ProdOps has two distinct parts: the captured public site at `/` and a new role-based product workspace at `/workspace/`. The old workspace is no longer the application entry point. Its source is retained for existing projects and reference; this new workspace uses a separate browser storage key and does not migrate old projects automatically.
 
-It sits between design thinking and generative AI. You describe the problem; ProdOps asks for
-the decisions a designer would make, writes each artefact, and refuses to tick a stage until
-you have reviewed it. The output is a working prototype made only of design-system components,
-plus a package an implementation agent can build from without inventing UI.
+## Run the site and workspace
 
-```
-idea → product → data shape → design system → sections → screens → export
+```sh
+npm ci
+npm run build
+npm run preview:site
 ```
 
----
+The site server binds to `0.0.0.0:5173` by default; set `PORT` to change it. `npm run dev` runs the workspace in Vite for development. The public site is a local capture, not a live mirror: some captured pages were blocked by Cloudflare and are displayed as notices. It cannot be guaranteed identical to the current Builder Methods site or provide its online services.
 
-## The workspace
+## Workspace workflow
 
-The shell is two panes. The process rail on the left holds the five stages, in order, each with
-its own completion mark and a meter of how far the process has got; the work is on the right.
-The rail also holds the prototype track, the section list and the account. Below 900px the rail
-becomes a drawer opened from the top bar.
+The left panel lists role-specific process steps and the resulting `specs/` folders. The workspace includes business/PO, product/UX/UI/CX design, development, quality assurance and delivery/operations. Select a step and ask the configured AI to create a draft. The AI is instructed to ask a focused follow-up only when essential details are missing; it can ask up to three questions. If the brief is clear, it can draft directly. Results depend on the configured model. Roles can start independently; no role has to wait for another to set up the project. Each step can be marked in progress, approved, rejected, or proceed with a revisit, with a note and a suggested next step. Editing approved work, upstream files or shared context marks affected approvals for revisit. These are local workflow aids, not multi-user authorization. Business analysis includes conceptual and logical data, relationships and business rules; the development process includes physical database design and migrations.
 
-| Stage | Page | What it holds |
-| --- | --- | --- |
-| **Product** | `/` | The description field, then vision (problems, personas, differentiators, success measures, principles, voice, non-goals) and the roadmap. |
-| **Data Shape** | `/data-shape` | Entities with fields and seeded rows, the relationships, and the generated schema. |
-| **Design** | `/design` | Colour roles, type roles, palette, scale, radii, elevation, motion, then the shell and its preview. |
-| **Sections** | `/sections` | The build order. Every row shows completion, priority and spec/data/screen/screenshot progress. |
-| **Section** | `/sections/:id` | Four steps: Spec → Sample data → Screen designs → Screenshots. |
-| **Screen design** | `/sections/:id/screen-designs/:name` | The rendered screen at 30 / 60 / 100 %, edge grips that resize from the centre, a light/dark switch, fullscreen. |
-| **Export** | `/export` | Readiness checklist, package card, what is included, the two usage paths, the audit and every file in the ZIP. |
+Every generated step requires `specs/<role>/<step>/shape.md`, `references.md`, `standards.md` and `plan.md`; the folders appear in the left panel. They are drafts: review and edit them. Every request includes all project Markdown, editable design and solution files, and the complete local skill Markdown library, plus the relevant Agent OS commands. The AI is instructed to apply the skills relevant to the current role. To avoid silently dropping context, generation stops with a message if project context exceeds the supported limit. All 20 local Agent OS commands are mapped to at least one process; this does not mean that an autonomous agent has executed those commands. New skills cover product, experience design, quality and delivery where the repository lacked them. All skills and commands are included in workspace and skills exports. Markdown skills are instructions for an AI, not executable programs.
 
-Every phase page has the same anatomy: header (where you are), the how-to guide (what this stage
-decides), the artefacts, then the completion control. The header states position — *Stage 2 of 5 ·
-Data Shape* — rather than repeating the rail as links, because the rail is where the stages are
-clicked.
+Attach up to twelve references per project (PDF, PNG, JPEG, WebP or text/source files, 2 MB each and 2.5 MB total; text files up to 20 KB) to individual steps. PDF text is extracted locally from the first 12 pages; scanned PDFs without text should be supplied as images. Images are sent to the provider as image inputs, which requires an image-capable model. All imported text and extracted PDF text is included in project AI context across roles. Up to four images from the current step are included when generating that step. Optionally import a single public GitHub text file by repository URL, branch and path; the server calls GitHub's public API without credentials. This is read-only, does not sync or discover a repository, and GitHub sees the request. Reference files and extracted text are stored in browser storage and included in workspace exports; do not upload sensitive documents without considering provider privacy and local device access.
 
-### The prototype track
+Each role sees its own deliverables: business and functional requirements for business analysis, design requirements and tokens for design, application files for development, and relevant QA or delivery work for those roles. Other roles see the shared brief and business requirements as a read-only handoff, labelled with the originating step's current status; development and QA also see design requirements. Each role can add its own context without overwriting the shared brief. An approval is a local recorded decision, not authentication or an automatic sign-off. Requirements and context marked **Example template** are editable placeholders, not verified facts. New projects include templates for business, functional and design requirements and a starter design system; use **Use step template** to add missing starter documents for any process without overwriting existing files.
 
-Beside the five stages: **Tools → Personas → User Flows → Tech Stack → Prototype → Wiki →
-Coverage**, with the token editor next to them.
+The design role's **Design system & tokens** step has editable named colors, a sample component preview, a starter component guide and JSON/CSS token files. You can remove the starter and import named six-digit hex colors from JSON; unsupported formats are not imported. Changes to colors and radius automatically update `solution/styles.css` only when it contains the ProdOps token block; components must use those CSS variables. Hard-coded colors and arbitrary imported component systems do not automatically change. The example dashboard uses the variables. Verify contrast and accessibility. This is not a full visual screen editor.
 
-| Page | What it does |
-| --- | --- |
-| **Tools** (`/tools`) | The eight builder tools, each with the steps it actually runs, parsed from the tool's own instruction file, and the file each step lives in. |
-| **Personas** (`/personas`) | Each persona with its goal, pain and quote, joined to the flows it walks and the screens those flows land on — plus who the product is explicitly not for. |
-| **User Flows** (`/flows`) | Four UX flows compiled from the screens — first value, core loop, exception, setup — each step pointing at a real route. |
-| **Tech Stack** (`/system`) | The decision record: tech stack per layer, the component registry (primitive / composite / pattern) with the tokens each entry may use, the AppShell regions, the data-layer rules. Editable. |
-| **Prototype** (`/prototype`) | A working AppShell with real routes and seeded records, assembled only from registry components. Type to filter, sort a table, submit a validated form, create a record, switch breakpoints. |
-| **Token editor** (`/editor`) | Primary and accent hue, radius, spacing, shell and card style. Every change re-runs the compiler, so nothing downstream can drift. |
-| **Wiki** (`/wiki`) | The product wiki: product, flows, data layer, design system, components, shell, screens, stack, audit and handoff, plus branches and snapshots. |
-| **Coverage** (`/coverage`) | The parity audit. Every row rebuilds the package and checks the artefact is really in it. Nothing here is asserted in prose. |
-| **Library** (`/library`) | The school's own library, read in the workspace: 6 series (133 videos), 4 courses, the workshop calendar, 21 articles — searchable, tagged, and dated by the scrape. |
-| **Build kits** (`/kits`) | The six pre-shaped products. Start one and it compiles through the five stages instead of being cloned. |
+Development can create or import individual HTML, CSS, SCSS, JS, TS, JSX, TSX, JSON or Markdown files into `solution/` (up to 30 files at a time, 50 KB each; folder paths are not retained). Selecting an HTML file shows its own static preview beside the editor; CSS shows the related page and scripts do not execute. TypeScript, Angular, React and SCSS cannot be compiled or rendered in this workspace; an external development environment is needed for those. Editing, templates, previews and exporting do not require Claude.
 
----
+The workspace export contains files, readable role-context notes, reference originals, project state, skills, commands and readable HTML versions of generated shape documents. Solution-only export includes files under `solution/`. Import a full ZIP into another browser using its project snapshot; edits made directly to individual ZIP entries are not imported. Project history and the active project are saved in local browser storage, not on a shared server or in Git. Use the project dropdown and plus button to switch or create projects; importing a workspace ZIP adds a separate project. The earlier single-studio project is migrated into this history when possible. Storage limits vary; watch the save indicator and export backups. There are no accounts, live multi-user collaboration, Git branches/worktrees, screenshot capture, repository discovery, a general-purpose development runtime, or automatic test execution in this version. Do not enter secrets into project documents.
 
-## What the package contains
+## Connect Claude and Figma in the workspace
 
-`npm run build` compiles a product; **Export → Download** writes it out. It is a folder, not a PDF.
+Open **Connect Claude & Figma** at the top of the workspace. Paste an Anthropic API key and select a model ID; **Connect Claude** sends a small test request, which may incur a charge. A Claude subscription is not itself an API key. Paste a Figma personal access token with `file_content:read`; the key is marked unverified until you test or import a selected frame. The token must also have access to the file. Keys take precedence over any server-configured provider for that tab; disconnect to use the server-configured integration again.
 
-| Path | What it is |
-| --- | --- |
-| `product-overview.md`, `roadmap.md`, `product/` | the product's decisions, as the first thing an agent reads |
-| `design-system/` | `tokens.json` (W3C DTCG), `tokens.css`, the component registry and the shell |
-| `sections/<id>/` | `spec.md`, `sample-data.json`, one props-based component per screen, `tests.md`, screenshots |
-| `src/data/` | the data layer behind an interface: `types.ts`, `repository.ts`, `mock-adapter.ts`, `http-adapter.ts` |
-| `src/shell/` | `AppShell`, `MainNav`, `UserMenu` — built from tokens, not literals |
-| `server/` | a dependency-free reference API on Node's own test runner, with the status machine from the data shape |
-| `.agents/` | the twenty commands, the four skills, and the agents canon |
-| `standards/` | mission, roadmap, tech stack, the standards index and spec folders |
-| `TOOLKIT.md`, `docs/` | the tools, their real steps, the guides and the licences |
-| `product-plan/` | the handoff: instructions, prompts, milestones and the one-shot prompt |
+Keys are kept only in the current tab's application memory, not browser project storage or ZIP exports. Reloading or closing the tab removes them. Requests carrying a personal key are accepted only from same-origin HTTPS (or localhost HTTP for development). **The ProdOps server receives the keys** and forwards them to fixed Anthropic or Figma API hosts. Only enter keys on a server you trust. Operators must use HTTPS, prevent logging credential headers and request bodies, and add suitable authentication and rate limiting for deployed services. Same-origin checks are not user authentication; browser memory is not protection against a compromised site or extensions. Do not share keys in project text or screenshots.
 
-The export is not locked to React. `npm run export-check` compiles the same product to React,
-Vue 3, Svelte 5, Preact, Solid, Angular, Lit and web components, each with its own compiler.
+The direct Anthropic Messages API is used, not a Claude Code CLI, OAuth session or ChatGPT subscription. The test checks the key's access to the chosen model, not the quality of future generation. Your API provider may charge for generation and tests. The browser never chooses the API host, and provider redirects are refused. A server operator may still optionally configure a shared provider via environment variables as described below; server configuration is not required for personal-key use.
 
-### The twenty commands
+For Figma, paste a selected frame link (with `node-id`) into **Tell the AI what you need**, or choose **Add a reference → Figma frame → Import or refresh frame**. ProdOps reads the selected node via Figma's REST API, saves a bounded Markdown summary of layout, colors, text, typography and available properties, and sends it to the configured AI as untrusted context. Import again to refresh. A successful frame test verifies access to that frame, not every file. This read-only integration is not MCP or OAuth and does not give unrestricted Figma access. The import is limited to four levels, 180 nodes, 2 MB of API response and approximately 18,000 characters; complex frames may be incomplete. It does not download Figma images or render the Figma canvas.
 
-One folder, one markdown file per command — ten for the five stages, five for the standards
-layer, five for the workflow that turns a shaped idea into shipped code. Any agent that reads
-markdown commands can run them; there is nothing to install.
+Upload a screenshot separately to compare with the static HTML/CSS preview. The live editor and comparison preview are sandboxed with scripts and external assets disabled: they are not running Angular/React apps, automated visual diffs or shared live sessions. For trusted plain HTML/JavaScript projects, an optional interactive preview executes only `solution/app.js` with `solution/index.html` and CSS in an isolated sandbox; storage is unavailable, external resources are restricted, the frame can navigate itself, and code can consume browser resources. Never run untrusted code. The workspace does not compile frameworks, run tests or ship changes.
 
-| Stage commands | Standards commands | Workflow commands |
-| --- | --- | --- |
-| `/prodops:product-vision`, `/prodops:product-roadmap` | `/prodops:plan-product` | `/prodops:write-spec` |
-| `/prodops:data-shape` | `/prodops:discover-standards`, `/prodops:index-standards` | `/prodops:create-tasks` |
-| `/prodops:design-tokens`, `/prodops:design-shell` | `/prodops:inject-standards` | `/prodops:implement-tasks`, `/prodops:orchestrate-tasks` |
-| `/prodops:shape-section`, `/prodops:sample-data`, `/prodops:design-screen`, `/prodops:screenshot-design` | `/prodops:shape-spec` | `/prodops:improve-skills` |
-| `/prodops:export-product` | | |
+To reuse an Angular or other component system, use **Add a reference** to upload multiple `.ts`, `.html`, `.scss`, `.css`, and other supported text files (20 KB per text file), select **Angular** or another frontend style and ask the AI to follow them. The AI can draft editable files in `solution/` during the development implementation step or `design/components/` during design screens; it does not install Angular packages, compile, run tests or guarantee that output matches the original system. Review and build the exported files in an appropriate IDE. This workflow does not connect arbitrary component registries or run Angular locally.
 
-### The eight builder tools, installed
+## Orbit dashboard example
 
-| Tool | Kind | Installed at |
-| --- | --- | --- |
-| **PRD Creator** | agent skill | `.agents/skills/prd-creator/` |
-| **Skill Builder** | agent skill | `.agents/skills/skill-builder/` |
-| **Design System** | agent skill | `.agents/skills/design-system/` |
-| **Starter** | template | `template/starter/` |
-| **Agents canon** | convention | `.agents/skills/agents-{repo,manifest}/`, `AGENTS.md`, `scripts/link-agents.sh` |
-| **Favicon Creator** | agent skill | `.agents/skills/favicon-creator/` |
-| **Standards** | workflow | `standards/` + the five standards commands |
-| **ProdOps flow** | workflow | `product-plan/` + the ten stage commands |
+Orbit is a fictional delivery dashboard with business and functional requirements, design requirements, named tokens, a component guide, editable code and example work across all five roles. Open the dashboard from the project picker, then choose a role to see its relevant work. In Development, **Try the dashboard** runs the current HTML/CSS/JavaScript in an isolated browser preview; filter work and mark tasks done or reopen them. Data is fictional and in memory; changes to tasks reset on reload. The example has no real users, accounts, shared backend or deployment. Its approvals, research and release checks are illustrative, not real evidence. Any older CASA project already in browser history is retained as a normal saved project so edits are not deleted.
 
-Skills live once, in `.agents/skills/`; instructions live once, in `AGENTS.md`; `CLAUDE.md` and
-`.claude/skills` are symlinks created by `scripts/link-agents.sh`.
+## Optional server-wide AI setup
 
-### The canon, in the workspace
+Instead of personal keys, an administrator can configure an OpenAI-compatible chat-completions API (which can use OpenAI models) or the Anthropic Messages API (Claude) for a trusted, protected server. Existing ChatGPT, Claude and Codex browser accounts are not connected automatically. Without a provider, the dashboard example, manual editing and exports still work.
 
-Builder Methods is four surfaces — the eight free tools, the two reference workflows, the Pro
-library and the six build kits. ProdOps ships all four inside one app, so none of it has to be a
-tab you leave the workspace to read:
+Example for an OpenAI-compatible API:
 
-| Surface | Where it is here | Count |
-| --- | --- | --- |
-| Free tools | **Tools** (`/tools`) + `.agents/skills/` | 8 |
-| Workflows | `.agents/commands/prodops/` — the ten stage commands, five standards, five workflow | 20 |
-| Video library | **Library** (`/library`) — every series with its lesson count, plus the current catalogue | 6 series · 133 videos |
-| Courses | **Library → Courses** — the four Pro courses, each pointed at its series | 4 |
-| Workshops | **Library → Workshops** — live sessions, replays and the two free on-demand workshops | 16 |
-| Articles | **Library → Articles** — the archive, with dates | 21 |
-| Build kits | **Build kits** (`/kits`) — each one compiles into the five stages, not cloned | 6 |
-
-The catalogue is data in `src/data/builderMethods.ts`, scraped on 2026-10-30 and carrying its
-source URL. The kit rows hand their description to the Product stage and their archetype to the
-compiler, which is the difference between reading about a kit and building from one.
-
----
-
-## Running it
-
-```bash
-npm install
-npm run dev            # http://localhost:5173
+```sh
+export PRODOPS_AI_PROVIDER="openai-compatible"
+export PRODOPS_AI_URL="https://api.openai.com/v1/chat/completions"
+export PRODOPS_AI_MODEL="your-model-name"
+export PRODOPS_AI_API_KEY="your-provider-key"
+export PRODOPS_AI_TRUSTED_LOCAL="1"
+npm run build && npm run preview:site
 ```
 
-Build and verify:
+For Anthropic, set `PRODOPS_AI_PROVIDER=anthropic`, `PRODOPS_AI_URL=https://api.anthropic.com/v1/messages` and the appropriate model and API key. Local OpenAI-compatible model servers may use HTTP on `localhost`, `127.0.0.1` or `[::1]`, without an API key. For this server-wide option, the provider key remains on the server; no access-password prompt is shown in the workspace. Requests go through same-origin `/api/studio`; the provider receives the brief, all project Markdown, editable design and solution files, all skill Markdown, imported text references, role-specific context, previous answers and current-step images. Some models may not support the prompt size, images or structured output.
 
-```bash
-npm run build          # tsc + vite production build
-npm run render-check   # server-renders every view, checks the shell, the animation and the export contract
-npm run export-check   # writes generated components to disk and typechecks them
-npm run smoke          # mounts the app in jsdom and clicks through it, including real form input
-npm run qa             # compiles all 12 archetypes × 3 seeds, checks invariants
-npm run walkthrough    # the whole process in jsdom with zero user input: idea → package
-npm run browser-check  # the production bundle, seven storage scenarios, no console errors
-npm run example-app    # builds the exported package into a real Vite + Tailwind app
-npm run check          # all of the above, then the production build
-npm run standalone     # one self-contained HTML file — script, styles and fonts inlined
-npm run preview:static # serve dist/ on 0.0.0.0:5173 — no dev server, no websocket
-npm run snapshot       # every page as one static HTML file — no JavaScript at all
-npm run site-check     # the reference site copy: pages, links, and the restored behaviour
-npm run preview:site   # the reference copy at / and the workspace at /workspace/
-npm run kit            # rewrite the installable toolkit: .agents/, standards/, AGENTS.md
+**Security:** `PRODOPS_AI_TRUSTED_LOCAL=1` explicitly opts into a server with no application-level user authentication or rate limiting. Use it only in a trusted local environment or behind separately configured authentication and spending limits; do not expose a configured provider to the public. The same-origin check alone is not authentication. Existing agent subscriptions and browser logins are not shared with this server.
+
+If your network uses a trusted system TLS proxy, start Node with `NODE_USE_SYSTEM_CA=1` on supported Node versions so provider and GitHub HTTPS certificates validate; do not disable certificate validation.
+
+This is intended for a trusted single-user environment. The same-origin check is not production authentication, authorization, rate limiting, spending controls or multi-user isolation. Use HTTPS and a protected server for deployment, and consider provider privacy and costs. Manual editing and exports work without a model.
+
+## Checks
+
+```sh
+npm run build
+npm run test:studio
 ```
-
-## The docs, applied
-
-Thirteen documents describe how a product gets planned, shaped and shipped. They live in
-[`docs/`](docs/README.md), and each one is applied by a named surface rather than quoted:
-
-| Command | Stage in the workspace | What it writes |
-| --- | --- | --- |
-| `/product-vision`, `/product-roadmap` | Product (`/`) | `product/product-overview.md`, `product-roadmap.md`, `_build_plan/prd.md` |
-| `/data-shape` | Data Shape (`/data-shape`) | `data-shape/data-shape.md`, `schema.sql` |
-| `/design-tokens`, `/design-shell` | Design (`/design`, `/shell`) | `design-system/{colors,typography}.json`, `product/shell/spec.md` |
-| `/shape-section`, `/sample-data` | Section (`/sections/:id`) | `sections/<name>/{shape.md,plan.md}` |
-| `/design-screen`, `/screenshot-design` | Section → screens | `sections/<name>/visuals/`, the rendered screens |
-| `/export-product` | Export (`/export`) | `product-plan/` — the whole handoff |
-
-`/coverage` in the workspace is the same table, checked against the package that actually exists;
-`/wiki` explains the canon the eight tools share.
-
-The commands themselves are in the repository, not only in that table: `npm run kit` writes
-`.agents/skills/<tool>/`, `.agents/commands/prodops/`, `standards/`, `template/starter/`,
-`AGENTS.md` and `scripts/link-agents.sh`. Every `cp -r prodops/…` line in the Installation
-section of the eight tool pages names one of those paths, and `npm run site-check` fails if a
-page promises a path this checkout does not have.
-
-## The tools page
-
-`/tools.html` keeps the captured page — the eight cards, in the site's own listing — and above
-them a browser whose left panel is the captured documentation sidebar of the selected tool
-(`Getting Started` → Overview, Installation, Learn to build, How it works; `The workflow` → 1 to
-8; `Using the output`). The tabs across the top of the article swap the panel in place, the
-panel's anchors are scoped so they never collide with the page underneath, and the sidebar marks
-the section you are reading as you scroll.
-
-Below that browser the page is exactly the capture: the same cards, the same words. Nothing was
-taken away to make room for the tabs.
-
-There is no backend, no database and no network call at runtime. Projects are stored in
-`localStorage`, with automatic pruning if the quota is reached. Clearing site data clears
-projects; use **Export → Download package** to keep anything you care about.
-
-There is no "new product" dialog. The Product stage opens on a description field with a
-placeholder and the four things a complete answer contains, and the compiler reads what you
-write — the archetype, the name, the problem statement and the persona's segment all come from
-your words. Rewriting it rebuilds the product and clears the ticks.
-
-Rewriting the description is the one action that empties every tick, so it is the one action that
-has to say where to start again: a receipt stays in the composer — *0 of 5 confirmed*, the stage
-road with the next stage marked, and a **Confirm Product** button that goes there — and the toast
-that confirms the rebuild carries the same button, so it can be acted on rather than read.
-
-A tick is earned, not compiled. Artefacts can be complete while a stage is still open; each
-stage ends with **Mark stage complete**, which stays disabled and lists what is missing until
-the stage's own artefacts are there. The next stage's button stays locked until the one before
-it is confirmed, and completed stages can be reopened.
-
-That claim is executed, not asserted. `npm run walkthrough` renders the app in jsdom, never uses
-a model and never asks a question, then walks Product → Data Shape → Design → Sections → Export,
-confirming each stage the way a builder does and checking the package it lands on.
-`npm run browser-check` types a description into the real production bundle and asserts the
-product changes with it. `npm run example-app` treats the package as an app: it copies the
-tokens, shell, sections and data shapes into a scratch Vite project and runs a real build. If
-the handoff could not be compiled, that build fails.
-
----
-
-## The site at `/`
-
-`site/` is a captured copy of the public site this workspace was modelled on: 147 files, 112 pages,
-91 of them with real server-rendered content, served offline with absolute links rewritten to local paths and
-no analytics. It is the evidence the information architecture was copied from something real rather
-than invented for a demo, so it is edited only where it named the old brand: the wordmarks, the
-author portrait, the social cards, the object-store images, the absolute canonicals and two crawler
-artefacts were renamed in place, and every reference followed, so the mirror's own links still
-resolve to real files. Everything else that makes the site *ProdOps's* rather than somebody else's
-happens on the way out, in `scripts/lib/brand.ts`:
-
-- the name, the byline, the handles and the social links are rewritten;
-- the five products in the copy are renamed to ProdOps's eight tools;
-- the two wordmarks are replaced with the ProdOps lockup, inlined as data URIs so the logo needs no
-  request at all and still shows when a page is opened from disk;
-- every page is re-titled, and pages whose title never carried a brand get one.
-
-Nothing in the tree is named after the old brand any more, and no URL points at it: the wordmark and
-portrait files were renamed inside the capture (`images/logos/prodops-wordmark.svg`,
-`images/marks/prodops-mark.svg`) and the references followed, so the mirror's own links still resolve
-to real files rather than depending on a redirect. Photograph slots get the square mark instead of a
-wordmark, because a lockup is unreadable at 40px. `npm run site-check` fails if any served or
-mirrored page still carries the old brand, the old host in *any* position — text, comment, canonical
-or structured data — or the old product names, if a page is not titled ProdOps, if the byline is
-missing, or if the logo needs a request to appear.
-
-Attribution is not lost with the branding: the MIT notices for the work this builds on live in
-`docs/LICENSES.md`, which is where a licence requires them — on the package, not on the storefront.
-
-### The same orange, everywhere
-
-The logo is drawn in the site's own two brand tokens — `#f0621a` on dark surfaces and `#ea580c` on
-light ones — and the workspace's accent is those same two values, so the app and the site are one
-product rather than two palettes that nearly match. `npm run site-check` fails if a mark is drawn in
-any other orange.
-
-### The header, and light and dark
-
-The workspace used to be a badge floating over the corner of every page. It is now a nav action,
-first in the header before **Log in**, where a destination belongs — and it travels into the mobile
-drawer with the other links. Beside **Join Pro** is the theme switch: the capture already carried a
-`.dark` token block and both wordmarks, so the switch is one class on `<html>`, resolved by a four-line
-script in the head before the first paint (no white flash for a reader whose machine is dark, and no
-flash of the wrong logo). The choice is remembered per browser; with no JavaScript the pages stay in
-the light theme they were captured in. The workspace has the same switch in its own header, and its
-light and dark themes are both real themes rather than one theme and an inversion.
-
-### Contrast, measured
-
-The brand orange is bright, and white on it is 3.3:1 — under AA at the sizes these
-controls use. So the label on the brand is ink (`#141110`, 5.8:1 on `#f0621a` and 5.3:1 on
-`#ea580c`), the Access Free fill runs as a narrow band so the colour can move without changing
-how light the button is, and brand-coloured *text* on the light page is one step darker
-(`#b9430a`, 5.2:1). `npm run site-check` computes those ratios rather than asserting them in a
-comment.
-
-### Rand, South African time, and how people actually pay
-
-- **Prices are in rand.** The capture was priced in dollars — Pro at $299 a year, a five-seat team at
-  $1,495, a workshop ticket at $50 — and every one of them is now shown as `R5 499`, `R27 499` and
-  `R899`, including the price inside the structured data (rand, `ZAR`), because that is the number a
-  search result would quote.
-- **Session times are South African, and computed rather than shifted.** Every session read
-  "2:00 PM ET"; each is now "21:00 SAST". Eastern Time is UTC−5 outside American daylight saving and
-  UTC−4 inside it, and South Africa is UTC+2 all year, so 2:00 PM ET is 20:00 SAST in April and 21:00
-  in November. `scripts/lib/sast.ts` computes the rule from the session's own date, and dates are
-  written day-first (`3 November 2026`). Each session page says the zone once — *SAST, GMT+2, all
-  year* — because SAST is two hours ahead of GMT, not equal to it, and a reader who thinks in GMT
-  should know that before they plan an evening.
-- **Booking the founder is paid the same way.** The contact page gained *Book a session*: send the
-  note, the scope and amount come back in writing, then PayShap, instant EFT or an invoice, with the
-  reference `BOOKING`. No price is printed for a booking — a talk and a three-day build do not cost
-  the same, and a made-up number would be worse than a question.
-- **Payment is PayShap, an instant EFT, or an invoice** — none of which charges a fee to the payer or
-  the seller, and none of which needs a card. The captured checkout step was a hand-off to a card
-  processor; the payment block replaces that step on all three checkout pages. The PayShap ID and the
-  banking details live in one object — `MERCHANT` in `scripts/lib/payments.ts` — and while a field is
-  empty the page offers to send that detail instead of inventing one.
-- **The founder is in the sign-off as himself**: the block that carried a product mark now carries
-  his photograph (`site/images/people/lulamile-mkhungela.png`), cropped to the face, with his name and
-  `Founder, ProdOps` beside it. The workspace footer credits the same face.
-
-| URL | What you get |
-| --- | --- |
-| `/` | the copy: home, tools, the tool pages, articles, sessions, pro |
-| `/workspace/` | ProdOps itself — the five stages, the eight tools, the export |
-| `/prodops-standalone.html` | the workspace as one file, no server |
-| `/prodops-snapshot.html` | every workspace page as static markup, no JavaScript |
-
-On `/tools.html` a browser sits above the captured listing: the tool page's own documentation sidebar
-in the left column, and a tab strip with one panel in the right column. Each tab reads that
-tool's real page into the panel without a page load, so comparing two tools costs one click instead
-of two page loads. `npm run site-check` asserts both halves: eight tabs that swap the panel and the
-original eight-row list still in the left column and still displayed.
-
-Every tool page carries its Installation section: the three ways to install it, the commands, and
-where the files ship. That section is written against this repository, because the live site keeps
-its own instructions behind an email gate and the crawler only ever saw the gate — the captured page
-has the form and none of the words behind it. "Access free" takes the reader to that section instead
-of promising a download this copy cannot serve.
-
-`npm run site-check` also counts the pages, reads every internal link and image, and operates the
-served copy the way a visitor does — opens the mobile drawer, submits the newsletter form, opens a
-tool page — so "interactive" is a test result, not a claim.
-
-21 URLs came back as a bot challenge and are replaced at serve time with a local notice that says so
-and links back to the workspace. Teaser videos were never captured, so each player becomes a
-labelled panel and its play button is marked unavailable instead of doing nothing.
-
----
-
-## Why this exists
-
-Product ideas do not fail for lack of code. They fail because the decisions behind the code were
-never made: who it is for, what the data actually is, which colours and spacing are allowed, what
-each screen has to do before it counts as done. An agent asked to invent all of that while
-building will invent it inconsistently, and every later change has to be negotiated twice.
-
-ProdOps makes those decisions artefacts. The screens are then a demonstration of the spec, and
-the spec is what you ship from.
-
-## The three inputs
-
-Every artefact is a pure function of three inputs, so the same inputs always produce a
-byte-identical package.
-
-1. **Seed** — a phrase, shown in the UI, that drives every random choice.
-2. **Archetype** — one of twelve domain packs (marketplace ops, clinical scheduling, dispatch,
-   money ops, hiring, events and more), each with real entities, status machines, field
-   definitions, requirements, risks and copy. Your description picks it, or you pick it.
-3. **Genome** — density, motion, contrast and card style. Re-rolling one module never silently
-   rewrites another.
-
-`prodops.json` in the export carries the inputs, so a package can be regenerated and diffed.
-
-## How the audit stays honest
-
-Every claim in **Coverage** and **Export** is computed from the built package, at click time:
-file counts, required paths, framework compilations, token contrast, test presence. If a row
-could not be checked, it would not be a row.
-
----
-
-## Architecture
-
-```
-src/engine/        the compiler: intake, archetypes, brief, data, design, screens, audit
-src/export/        package generation: components, tokens, API, tests, docs, handoff
-src/views/         one file per route
-src/components/    the shell, the guide, the stage confirm, the registry previews
-src/lib/           router, store, storage, progress, migrations
-scripts/           the checks: render, export, walkthrough, qa, smoke, browser, site
-scripts/lib/       serve-time repairs: the clone adapter, its runtime, its branding
-```
-
-The data layer is separated from the UI in the app and in the export. Tokens are W3C DTCG. Every
-design is responsive by default, and every prototype input is a real input.
-
-## What this is not
-
-- **Not user research.** Personas and quotes are synthetic and labelled as such. The brief tells
-  you to validate with three real interviews before locking a roadmap.
-- **Not a benchmark.** Targets are directional design goals, not measured averages.
-- **Not a replacement for taste.** It compiles a defensible starting system; choosing which parts
-  to keep is still a human job.
-- **Not an AI service.** No model is called, at build time or at run time. There are no keys and
-  no accounts.
-
-## Design principles of the compiler
-
-1. **Determinism over novelty.** A design decision you cannot reproduce is not a decision.
-2. **Artefacts must be checkable.** If a claim cannot be computed from the output, it does not
-   belong in the audit.
-3. **Module isolation.** Re-rolling one module must not silently rewrite another.
-4. **Honest seams.** Synthetic personas, directional metrics and unimplemented components are
-   labelled, not disguised.
-5. **The handoff is the product.** The screens are a demonstration of the spec; the spec is what
-   you ship from.
-
----
-
-*ProdOps is designed and developed by **Lulamile Mkhungela**. Built as a working answer to a
-simple question: what if the whole design phase required nothing from you but a description of
-what you want built?*
-
-*Some agent instructions and command files in the package are redistributed under the MIT
-licence; their notices are in `src/export/licenses.ts` and ship at `docs/LICENSES.md`. Nothing
-else in the product, its file names, its commands or its documentation comes from anywhere but
-this repository.*

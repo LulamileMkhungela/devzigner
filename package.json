@@ -21,11 +21,14 @@
     "example-app": "tsx --tsconfig tsconfig.scripts.json scripts/example-app.ts",
     "test": "node --import tsx --test scripts/unit.test.ts",
     "site-check": "tsx --tsconfig tsconfig.scripts.json scripts/site-check.ts",
-    "kit": "tsx --tsconfig tsconfig.scripts.json scripts/emit-kit.ts"
+    "kit": "tsx --tsconfig tsconfig.scripts.json scripts/emit-kit.ts",
+    "test:assistant": "node --import tsx --test scripts/assistant.test.ts && tsx --tsconfig tsconfig.scripts.json scripts/assistant-smoke.tsx",
+    "test:studio": "node --import tsx --test scripts/studio.test.ts && tsx scripts/studio-smoke.tsx"
   },
   "dependencies": {
     "jszip": "^3.10.1",
     "lucide-react": "^0.554.0",
+    "pdfjs-dist": "^4.10.38",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"
   },
@@ -50,7 +53,7 @@
     "vue": "^3.5.44"
   },
   "license": "MIT",
-  "description": "ProdOps \u2014 a product-planning and UI-design framework by Lulamile Mkhungela. Five stages from an idea to a handoff: product, data shape, design system, sections, export.",
+  "description": "ProdOps — a product-planning and UI-design framework by Lulamile Mkhungela. Five stages from an idea to a handoff: product, data shape, design system, sections, export.",
   "author": "Lulamile Mkhungela",
   "keywords": [
     "design-system",

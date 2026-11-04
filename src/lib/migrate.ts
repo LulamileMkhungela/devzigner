@@ -125,6 +125,7 @@ export function migrateProject(value: unknown): Project | null {
     const rebuilt = compileProject(options)
     if (typeof record.id === 'string') rebuilt.id = record.id
     if (typeof record.createdAt === 'number') rebuilt.createdAt = record.createdAt
+    if (record.decisions && typeof record.decisions === 'object') rebuilt.decisions = record.decisions
 
     // Confirmations are the builder's own judgement; a rebuild must not hand
     // them back for free, nor take earned ticks away.

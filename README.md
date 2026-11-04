@@ -2,9 +2,9 @@
 
 Product owner: Lulamile Mkhungela.
 
-ProdOps has two distinct parts: the captured public site at `/` and a new role-based product workspace at `/workspace/`. The old workspace is no longer the application entry point. Its source is retained for existing projects and reference; this new workspace uses a separate browser storage key and does not migrate old projects automatically.
+ProdOps opens directly into its role-based product workspace at `/`. The former public marketing site is no longer served. The earlier `/workspace/` address continues to open the same workspace, so existing bookmarks and browser-local projects still work. Legacy captured site and workspace source files remain in the repository for reference but are not part of the served site.
 
-## Run the site and workspace
+## Run the workspace
 
 ```sh
 npm ci
@@ -12,7 +12,7 @@ npm run build
 npm run preview:site
 ```
 
-The site server binds to `0.0.0.0:5173` by default; set `PORT` to change it. `npm run dev` runs the workspace in Vite for development. The public site is a local capture, not a live mirror: some captured pages were blocked by Cloudflare and are displayed as notices. It cannot be guaranteed identical to the current Builder Methods site or provide its online services.
+The workspace server binds to `0.0.0.0:5173` by default; set `PORT` to change it. Open `http://localhost:5173/`. `npm run dev` runs the same workspace in Vite for development. The `preview:site` command name is retained for compatibility; it serves only the workspace and its APIs.
 
 ## Workspace workflow
 
@@ -76,4 +76,5 @@ This is intended for a trusted single-user environment. The same-origin check is
 ```sh
 npm run build
 npm run test:studio
+npm run site-check
 ```

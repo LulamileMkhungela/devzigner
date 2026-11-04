@@ -1,5 +1,6 @@
 import { StepGuide } from '../components/StepGuide'
 import { BriefComposer } from '../components/BriefComposer'
+import { ProductDecisions } from '../components/ProductDecisions'
 import { ScopeReview } from '../components/ScopeReview'
 import { StageConfirm } from '../components/StageConfirm'
 import { useState } from 'react'
@@ -41,7 +42,7 @@ export function ProductPage({ project }: { project: Project }) {
         <BriefComposer />
         <div className="lz-card lz-what-next">
           <h2>What happens when you build</h2>
-          <p>One description, five stages. If something is missing it asks — it never invents it.</p>
+          <p>Your description becomes a starting draft across five stages. Review the suggestions and change anything that does not fit.</p>
           <ol className="lz-what-next-list">
             {PHASES.map((phase, index) => (
               <li key={phase.id}>
@@ -85,6 +86,8 @@ export function ProductPage({ project }: { project: Project }) {
       />
 
       <BriefComposer />
+
+      <ProductDecisions project={project} />
 
       <ScopeReview project={project} />
 

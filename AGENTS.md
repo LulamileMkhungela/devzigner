@@ -1,10 +1,17 @@
 # ProdOps — agent instructions
 
+> **Current workspace:** `src/main.tsx` mounts the role-based studio in
+> `src/studio/`. `server/studio.ts` injects the existing skills into an optional,
+> model using either a tab-scoped personal key or server configuration in explicitly trusted mode; generation is not a local compiler and never proves
+> code was run or tested. The previous five-stage workspace described below is
+> retained as legacy source and is no longer the active entry point. See
+> `README.md` for current setup, handoff, privacy and deployment limits. The fictional Orbit dashboard is in `src/studio/dashboard.ts`; sample approvals are illustrative, not evidence.
+
 ProdOps is a product-planning workspace: it turns an idea into a specified,
 designed, exportable product without asking the builder for a model, a key or
 an account. This file is the entry point for any agent working in this repo.
 
-Credit: Product and build by Lulamile Mkhungela.
+Product owner: Lulamile Mkhungela.
 
 ## Two contexts
 
@@ -46,9 +53,9 @@ the pages print, and `/coverage` recomputes them in the browser.
 Standards set-up (`/discover-standards`, `/index-standards`, `/inject-standards`,
 `/plan-product`, `/shape-spec`) is in the same folder.
 
-## Rules the app enforces, and so should you
+## Legacy five-stage rules (not the current studio)
 
-- **No keys, no data, no model.** Everything here is local and deterministic.
+- **Local compiler, optional assistant.** The compiler runs locally. The opt-in assistant sends conversation and project context to a server-configured provider; never claim it is offline or has built or tested anything. The legacy assistant required an access password; the current studio does not. The current studio must only enable its no-password AI endpoint in an explicitly trusted environment or behind separate authentication. Personal keys must remain in tab memory and travel only to the fixed provider through a trusted server; never save or log them. Server-configured credentials stay server-side.
 - **A stage ticks only when it is confirmed**, never merely because its
   artefacts exist. Complete is not the same as done.
 - **One decision at a time, with a proposed default and its reasoning.**

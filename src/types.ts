@@ -462,6 +462,8 @@ export interface Project extends CompileInput {
   /** Every section the pack offered, and whether the description kept it. */
   scope?: ScopeDecision[]
   engineNotes: string[]
+  /** Decisions written by the builder; suggestions remain separate. */
+  decisions?: { inScope?: string; outOfScope?: string; information?: string; design?: string; standards?: string }
   /**
    * Stages the builder has confirmed. Artefacts compiling is not the same as the
    * person having reviewed them, so a tick is earned by confirming a stage whose

@@ -61,6 +61,7 @@ interface StoreValue {
   confirmStage: (id: string) => void
   unconfirmStage: (id: string) => void
   setBrief: (idea: string) => Project
+  setDecisions: (decisions: NonNullable<Project["decisions"]>) => void
   /* ---- scope: which of the pack's sections this product is ---- */
   setSectionScope: (id: string, included: boolean) => void
   toast: string
@@ -162,6 +163,7 @@ function compileLikeProject(project: Project, patch: Partial<CompileOptions> = {
   const next = compileProject(options)
   next.id = project.id
   next.createdAt = project.createdAt
+  next.decisions = project.decisions
   next.updatedAt = Date.now()
   // A recompile keeps the stages the builder already confirmed — unless the
   // idea changed, in which case every stage has to be reviewed again.
@@ -424,6 +426,11 @@ export function StoreProvider({ children }: { children: ReactNode }) {
   )
 
   /** Rewrite the product from the builder's own description. */
+  const setDecisions = useCallback((decisions: NonNullable<Project['decisions']>) => {
+    if (!active) return
+    replace({ ...active, decisions, updatedAt: Date.now(), progress: { confirmed: [] } })
+  }, [active, replace])
+
   const setBrief = useCallback(
     (idea: string) => {
       if (!active) return active
@@ -559,6 +566,7 @@ export function StoreProvider({ children }: { children: ReactNode }) {
     confirmStage,
     unconfirmStage,
     setBrief,
+    setDecisions,
       toast,
       notify,
       toastAction,

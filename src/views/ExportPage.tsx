@@ -55,7 +55,7 @@ export function ExportPage({ project }: { project: Project }) {
         project={project}
         current="export"
         title="Export"
-        subtitle="Everything the build needs, generated locally. No keys, no model calls."
+        subtitle="Your plan, suggested screens and implementation handoff. Review everything before building."
         actions={
           <button className="lz-btn small" onClick={() => { regenerate(project); notify('Recompiled from the same seed') }}>
             <Icon name="RefreshCw" size={13} /> Recompile

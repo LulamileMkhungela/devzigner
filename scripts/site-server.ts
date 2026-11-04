@@ -17,6 +17,9 @@
  *      a page leads to the working tool.
  */
 import { createServer } from 'node:http'
+import { handleStudio, studioConfig } from '../server/studio'
+import { handleGithubReference } from '../server/github-reference'
+import { figmaConfig, handleFigmaReference } from '../server/figma-reference'
 import { readFile, stat } from 'node:fs/promises'
 import { extname, join, normalize, sep } from 'node:path'
 import { adaptPage, blockedPage, isBlocked } from './lib/clone'
@@ -66,6 +69,10 @@ const inside = (parent: string, child: string) => child === parent || child.star
 const server = createServer(async (request, response) => {
   const url = new URL(request.url ?? '/', `http://${request.headers.host ?? 'localhost'}`)
   let path = decodeURIComponent(url.pathname)
+
+  if (path === '/api/figma-reference') return void handleFigmaReference(request, response, figmaConfig(process.env))
+  if (path === '/api/github-reference') return void handleGithubReference(request, response)
+  if (path === '/api/studio') return void handleStudio(request, response, studioConfig(process.env))
 
   // The workspace: the compiled app, with hash routing inside it.
   if (path === '/workspace' || path.startsWith('/workspace/')) {
@@ -138,5 +145,5 @@ const server = createServer(async (request, response) => {
 })
 
 server.listen(PORT, '0.0.0.0', () => {
-  console.log(`site/ at http://0.0.0.0:${PORT}/ · workspace at /workspace/ · no websocket, no backend`)
+  console.log(`site/ at http://0.0.0.0:${PORT}/ · workspace at /workspace/ · AI generation available when configured`)
 })
